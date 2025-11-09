@@ -164,3 +164,8 @@ cython_debug/
 
 # Data folder
 data/
+.venv/
+.ipynb_checkpoints/
+data/
+*.csv
+.DS_Store
