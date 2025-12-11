@@ -1,0 +1,13 @@
+{
+    "policy_annual_premium": 1200.0,
+    "total_claim_amount": 15000.0,
+    "vehicle_age": 5,
+    "days_since_bind": 300,
+    "months_as_customer": 24,
+    "capital-gains": 0,
+    "capital-loss": 0,
+    "injury_share": 0.4,
+    "property_share": 0.6,
+    "umbrella_limit": 0,
+    "incident_hour_of_the_day": 14
+}

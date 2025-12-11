@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fraud Detection API - Client</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .config-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .config-title {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 5px;
+            color: #495057;
+            font-size: 14px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .predict-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .predict-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .predict-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result-section {
+            margin-top: 30px;
+            padding: 25px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .result-section.show {
+            display: block;
+        }
+
+        .result-section.fraud {
+            background: #fff5f5;
+            border: 2px solid #fc8181;
+        }
+
+        .result-section.legit {
+            background: #f0fff4;
+            border: 2px solid #68d391;
+        }
+
+        .result-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .result-item {
+            padding: 12px;
+            background: white;
+            border-radius: 6px;
+        }
+
+        .result-label {
+            font-size: 12px;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+
+        .result-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .error-message {
+            background: #fff5f5;
+            border: 2px solid #fc8181;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🛡️ Insurance Fraud Detection</h1>
+        <p class="subtitle">AI-powered fraud probability assessment for insurance claims</p>
+
+        <!-- Model Configuration -->
+        <div class="config-section">
+            <div class="config-title">Model Configuration</div>
+            <div class="config-grid">
+                <div class="form-group">
+                    <label for="model">Model Type</label>
+                    <select id="model">
+                        <option value="rf">Random Forest</option>
+                        <option value="et">Extra Trees</option>
+                        <option value="xgb" selected>XGBoost</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="scenario">Deployment Scenario</label>
+                    <select id="scenario">
+                        <option value="dashboard" selected>Dashboard (Calibrated)</option>
+                        <option value="auto_flagger">Auto-Flagger (Uncalibrated)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Claim Input Form -->
+        <form id="claimForm">
+            <div class="input-grid">
+                <div class="form-group">
+                    <label for="policy_annual_premium">Policy Annual Premium ($)</label>
+                    <input type="number" id="policy_annual_premium" step="0.01" value="1200" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="total_claim_amount">Total Claim Amount ($)</label>
+                    <input type="number" id="total_claim_amount" step="0.01" value="15000" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="vehicle_age">Vehicle Age (years)</label>
+                    <input type="number" id="vehicle_age" min="0" value="5" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="days_since_bind">Days Since Policy Bind</label>
+                    <input type="number" id="days_since_bind" min="0" value="300" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="months_as_customer">Months as Customer</label>
+                    <input type="number" id="months_as_customer" min="0" value="24" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="injury_share">Injury Damage Share</label>
+                    <input type="number" id="injury_share" step="0.01" min="0" max="1" value="0.4" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="property_share">Property Damage Share</label>
+                    <input type="number" id="property_share" step="0.01" min="0" max="1" value="0.6" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="umbrella_limit">Umbrella Policy Limit</label>
+                    <input type="number" id="umbrella_limit" min="0" value="0" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="incident_hour_of_the_day">Incident Hour (0-23)</label>
+                    <input type="number" id="incident_hour_of_the_day" min="0" max="23" value="14" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="capital_gains">Capital Gains ($)</label>
+                    <input type="number" id="capital_gains" step="0.01" value="0">
+                </div>
+
+                <div class="form-group">
+                    <label for="capital_loss">Capital Loss ($)</label>
+                    <input type="number" id="capital_loss" step="0.01" value="0">
+                </div>
+            </div>
+
+            <button type="submit" class="predict-btn" id="predictBtn">
+                🔍 Analyze Claim
+            </button>
+        </form>
+
+        <!-- Result Display -->
+        <div id="resultSection" class="result-section">
+            <div class="result-title" id="resultTitle">Analysis Result</div>
+            <div class="result-grid">
+                <div class="result-item">
+                    <div class="result-label">Model Used</div>
+                    <div class="result-value" id="resultModel">-</div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">Fraud Probability</div>
+                    <div class="result-value" id="resultProbability">-</div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">Decision</div>
+                    <div class="result-value" id="resultDecision">-</div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">Scenario</div>
+                    <div class="result-value" id="resultScenario">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Display -->
+        <div id="errorMessage" class="error-message"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('claimForm');
+        const predictBtn = document.getElementById('predictBtn');
+        const resultSection = document.getElementById('resultSection');
+        const errorMessage = document.getElementById('errorMessage');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Hide previous results/errors
+            resultSection.classList.remove('show', 'fraud', 'legit');
+            errorMessage.classList.remove('show');
+
+            // Disable button
+            predictBtn.disabled = true;
+            predictBtn.textContent = '⏳ Analyzing...';
+
+            try {
+                // Gather form data
+                const formData = {
+                    policy_annual_premium: parseFloat(document.getElementById('policy_annual_premium').value),
+                    total_claim_amount: parseFloat(document.getElementById('total_claim_amount').value),
+                    vehicle_age: parseInt(document.getElementById('vehicle_age').value),
+                    days_since_bind: parseInt(document.getElementById('days_since_bind').value),
+                    months_as_customer: parseInt(document.getElementById('months_as_customer').value),
+                    'capital-gains': parseFloat(document.getElementById('capital_gains').value || 0),
+                    'capital-loss': parseFloat(document.getElementById('capital_loss').value || 0),
+                    injury_share: parseFloat(document.getElementById('injury_share').value),
+                    property_share: parseFloat(document.getElementById('property_share').value),
+                    umbrella_limit: parseInt(document.getElementById('umbrella_limit').value),
+                    incident_hour_of_the_day: parseInt(document.getElementById('incident_hour_of_the_day').value)
+                };
+
+                // Get model configuration
+                const model = document.getElementById('model').value;
+                const scenario = document.getElementById('scenario').value;
+
+                // Make API request
+                const response = await fetch(`/predict?model=${model}&scenario=${scenario}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Prediction failed');
+                }
+
+                const result = await response.json();
+
+                // Display results
+                displayResults(result);
+
+            } catch (error) {
+                console.error('Error:', error);
+                errorMessage.textContent = `Error: ${error.message}`;
+                errorMessage.classList.add('show');
+            } finally {
+                // Re-enable button
+                predictBtn.disabled = false;
+                predictBtn.textContent = '🔍 Analyze Claim';
+            }
+        });
+
+        function displayResults(result) {
+            // Update result values
+            document.getElementById('resultModel').textContent =
+                `${result.model} ${result.calibrated ? '(Calibrated)' : '(Uncalibrated)'}`;
+
+            const probability = (result.probability * 100).toFixed(1);
+            document.getElementById('resultProbability').textContent = `${probability}%`;
+
+            // Determine decision text
+            let decision = '-';
+            if (result.threshold_flag) {
+                decision = result.threshold_flag === 'AUTO_FLAG' ?
+                    '🚨 FLAG FOR REVIEW' : '✅ AUTO APPROVE';
+            } else {
+                // For dashboard mode
+                if (result.probability >= 0.7) decision = '🔴 High Risk';
+                else if (result.probability >= 0.5) decision = '🟡 Medium Risk';
+                else decision = '🟢 Low Risk';
+            }
+            document.getElementById('resultDecision').textContent = decision;
+
+            document.getElementById('resultScenario').textContent =
+                result.scenario === 'auto_flagger' ? 'Auto-Flagger' : 'Dashboard';
+
+            // Style result section
+            resultSection.classList.add('show');
+            if (result.probability >= 0.5) {
+                resultSection.classList.add('fraud');
+                document.getElementById('resultTitle').textContent = '⚠️ High Fraud Risk Detected';
+            } else {
+                resultSection.classList.add('legit');
+                document.getElementById('resultTitle').textContent = '✓ Low Fraud Risk';
+            }
+        }
+    </script>
+</body>
+
+</html>
