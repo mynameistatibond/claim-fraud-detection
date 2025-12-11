@@ -1,3 +1,15 @@
+---
+title: Fraud Detector
+emoji: 🕵️‍♀️
+colorFrom: blue
+colorTo: purple
+sdk: docker
+sdk_version: "1.0"
+app_file: app.py
+pinned: false
+---
+
+
 # Fraud Detection API
 
 Production-ready inference API for insurance fraud detection using pre-trained ML models.
