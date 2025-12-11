@@ -149,31 +149,34 @@
             </div>
         </div>
 
-        <form id="claimForm">
+        <form id="claimForm" novalidate>
             <div class="input-grid">
                 <!-- Numeric Fields -->
-                <div class="form-group"><label>Annual Premium ($)</label><input type="number" id="policy_annual_premium"
-                        value="1200"></div>
-                <div class="form-group"><label>Claim Amount ($)</label><input type="number" id="total_claim_amount"
-                        value="52000"></div>
-                <div class="form-group"><label>Vehicle Age (Years)</label><input type="number" id="vehicle_age"
-                        value="12"></div>
-                <div class="form-group"><label>Days Since Bind</label><input type="number" id="days_since_bind"
-                        value="300"></div>
-                <div class="form-group"><label>Months as Customer</label><input type="number" id="months_as_customer"
-                        value="48"></div>
+                <div class="form-group"><label>Annual Premium ($)</label><input type="text" inputmode="decimal"
+                        id="policy_annual_premium" value="1200"></div>
+                <div class="form-group"><label>Claim Amount ($)</label><input type="text" inputmode="decimal"
+                        id="total_claim_amount" value="52000"></div>
+                <div class="form-group"><label>Vehicle Age (Years)</label><input type="text" inputmode="numeric"
+                        id="vehicle_age" value="12"></div>
+                <div class="form-group"><label>Days Since Bind</label><input type="text" inputmode="numeric"
+                        id="days_since_bind" value="300"></div>
+                <div class="form-group"><label>Months as Customer</label><input type="text" inputmode="numeric"
+                        id="months_as_customer" value="48"></div>
 
-                <div class="form-group"><label>Injury Share (0-1)</label><input type="number" step="0.01"
+                <div class="form-group"><label>Injury Share (0-1)</label><input type="text" inputmode="decimal"
                         id="injury_share" value="0.1"></div>
-                <div class="form-group"><label>Property Share (0-1)</label><input type="number" step="0.01"
+                <div class="form-group"><label>Property Share (0-1)</label><input type="text" inputmode="decimal"
                         id="property_share" value="0.1"></div>
-                <div class="form-group"><label>Umbrella Limit</label><input type="number" id="umbrella_limit" value="0">
+                <div class="form-group"><label>Umbrella Limit</label><input type="text" inputmode="numeric"
+                        id="umbrella_limit" value="0">
                 </div>
-                <div class="form-group"><label>Incident Hour (0-23)</label><input type="number"
+                <div class="form-group"><label>Incident Hour (0-23)</label><input type="text" inputmode="numeric"
                         id="incident_hour_of_the_day" value="14"></div>
 
-                <div class="form-group"><label>Cap Gains</label><input type="number" id="capital_gains" value="0"></div>
-                <div class="form-group"><label>Cap Loss</label><input type="number" id="capital_loss" value="0"></div>
+                <div class="form-group"><label>Cap Gains</label><input type="text" inputmode="decimal"
+                        id="capital_gains" value="0"></div>
+                <div class="form-group"><label>Cap Loss</label><input type="text" inputmode="decimal" id="capital_loss"
+                        value="0"></div>
 
                 <!-- New Categorical Fields -->
                 <div class="form-group">
@@ -216,28 +219,48 @@
                     </select>
                 </div>
 
-                <div class="form-group"><label>Vehicles Involved</label><input type="number"
+                <div class="form-group"><label>Vehicles Involved</label><input type="text" inputmode="numeric"
                         id="number_of_vehicles_involved" value="1"></div>
-                <div class="form-group"><label>Bodily Injuries</label><input type="number" id="bodily_injuries"
-                        value="1"></div>
+                <div class="form-group"><label>Bodily Injuries</label><input type="text" inputmode="numeric"
+                        id="bodily_injuries" value="1"></div>
             </div>
 
-            <button type="submit" class="predict-btn" id="predictBtn">🔍 Analyze Claim</button>
+            <button type="button" class="predict-btn" id="predictBtn">🔍 Analyze Claim</button>
         </form>
 
         <div id="resultSection" class="result-section">
             <h2 id="resultTitle">Result</h2>
             <p id="resultText"></p>
         </div>
-        <div id="errorBox" style="color:red; margin-top:10px; display:none;"></div>
+        <div id="errorBox"
+            style="color:red; margin-top:10px; display:none; padding:10px; background:#ffeeee; border:1px solid red; border-radius:4px;">
+        </div>
     </div>
 
     <script>
-        document.getElementById('claimForm').addEventListener('submit', async (e) => {
+        // Helper to parse localized numbers (handles comma vs dot)
+        function parseNum(id, isFloat = true) {
+            const el = document.getElementById(id);
+            if (!el) return 0;
+
+            // Replace comma with dot and remove non-numeric chars except . and -
+            let valStr = el.value.replace(',', '.').replace(/[^0-9.-]/g, '');
+
+            if (valStr === '' || valStr === '.') return 0;
+
+            const num = parseFloat(valStr);
+            return isNaN(num) ? 0 : (isFloat ? num : Math.round(num));
+        }
+
+        document.getElementById('predictBtn').addEventListener('click', async (e) => {
+            // Prevent default just in case, though type="button" shouldn't submit
             e.preventDefault();
+
             const btn = document.getElementById('predictBtn');
             const res = document.getElementById('resultSection');
             const err = document.getElementById('errorBox');
+
+            console.log("Analyze button clicked");
 
             btn.disabled = true;
             btn.innerText = "Analyzing...";
@@ -245,28 +268,31 @@
             err.style.display = 'none';
 
             try {
+                // Construct payload using robust parser
                 const formData = {
                     // Numeric
-                    policy_annual_premium: parseFloat(document.getElementById('policy_annual_premium').value),
-                    total_claim_amount: parseFloat(document.getElementById('total_claim_amount').value),
-                    vehicle_age: parseInt(document.getElementById('vehicle_age').value),
-                    days_since_bind: parseInt(document.getElementById('days_since_bind').value),
-                    months_as_customer: parseInt(document.getElementById('months_as_customer').value),
-                    "capital-gains": parseFloat(document.getElementById('capital_gains').value),
-                    "capital-loss": parseFloat(document.getElementById('capital_loss').value),
-                    injury_share: parseFloat(document.getElementById('injury_share').value),
-                    property_share: parseFloat(document.getElementById('property_share').value),
-                    umbrella_limit: parseInt(document.getElementById('umbrella_limit').value),
-                    incident_hour_of_the_day: parseInt(document.getElementById('incident_hour_of_the_day').value),
+                    policy_annual_premium: parseNum('policy_annual_premium'),
+                    total_claim_amount: parseNum('total_claim_amount'),
+                    vehicle_age: parseNum('vehicle_age', false),
+                    days_since_bind: parseNum('days_since_bind', false),
+                    months_as_customer: parseNum('months_as_customer', false),
+                    "capital-gains": parseNum('capital_gains'),
+                    "capital-loss": parseNum('capital_loss'),
+                    injury_share: parseNum('injury_share'),
+                    property_share: parseNum('property_share'),
+                    umbrella_limit: parseNum('umbrella_limit', false),
+                    incident_hour_of_the_day: parseNum('incident_hour_of_the_day', false),
 
-                    // Categorical
+                    // Categorical (Direct values)
                     incident_severity: document.getElementById('incident_severity').value,
                     collision_type: document.getElementById('collision_type').value,
                     police_report_available: document.getElementById('police_report_available').value,
                     authorities_contacted: document.getElementById('authorities_contacted').value,
-                    number_of_vehicles_involved: parseInt(document.getElementById('number_of_vehicles_involved').value),
-                    bodily_injuries: parseInt(document.getElementById('bodily_injuries').value)
+                    number_of_vehicles_involved: parseNum('number_of_vehicles_involved', false),
+                    bodily_injuries: parseNum('bodily_injuries', false)
                 };
+
+                console.log("Sending payload:", formData);
 
                 const model = document.getElementById('model').value;
                 const scenario = document.getElementById('scenario').value;
@@ -279,7 +305,10 @@
 
                 const data = await response.json();
 
-                if (!response.ok) throw new Error(data.detail || 'Error');
+                if (!response.ok) {
+                    console.error("API Error:", data);
+                    throw new Error(data.detail || 'Server provided no error detail');
+                }
 
                 // Display
                 res.classList.remove('fraud', 'legit');
@@ -301,7 +330,8 @@
                 document.getElementById('resultText').innerHTML = detail;
 
             } catch (error) {
-                err.innerText = error.message;
+                console.error("Frontend Error:", error);
+                err.innerText = "Error: " + error.message;
                 err.style.display = 'block';
             } finally {
                 btn.disabled = false;
