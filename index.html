@@ -303,12 +303,20 @@
                     body: JSON.stringify(formData)
                 });
 
-                const data = await response.json();
-
                 if (!response.ok) {
-                    console.error("API Error:", data);
-                    throw new Error(data.detail || 'Server provided no error detail');
+                    const errorText = await response.text();
+                    console.error("Server Error raw:", errorText);
+                    let errorMsg = "Server Error";
+                    try {
+                        const errJson = JSON.parse(errorText);
+                        errorMsg = errJson.detail || errorText;
+                    } catch (e) {
+                        errorMsg = errorText;
+                    }
+                    throw new Error(errorMsg);
                 }
+
+                const data = await response.json();
 
                 // Display
                 res.classList.remove('fraud', 'legit');

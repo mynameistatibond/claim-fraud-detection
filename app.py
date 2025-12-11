@@ -129,9 +129,10 @@ async def predict(
         proba = loaded_model.predict_proba(final_df)[0, 1]
         
     except Exception as e:
-        logger.error(f"Prediction error: {e}")
-        # Return detail for debugging
-        raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
+        import traceback
+        error_msg = f"{str(e)}\n\nTraceback:\n{traceback.format_exc()}"
+        logger.error(f"Prediction error: {error_msg}")
+        raise HTTPException(status_code=500, detail=error_msg)
     
     threshold_flag = None
     if scenario == "auto_flagger":
