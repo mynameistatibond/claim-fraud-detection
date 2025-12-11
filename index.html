@@ -320,6 +320,7 @@
 
                 // Display
                 res.classList.remove('fraud', 'legit');
+                res.style.display = 'block'; // Explicitly override the 'none' set earlier
                 res.classList.add('show');
 
                 const probPct = (data.probability * 100).toFixed(1);
