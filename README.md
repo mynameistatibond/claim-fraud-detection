@@ -53,9 +53,17 @@ curl -X POST "http://localhost:7860/predict?model=xgb&scenario=dashboard" \
     "injury_share": 0.4,
     "property_share": 0.6,
     "umbrella_limit": 0,
-    "incident_hour_of_the_day": 14
+    "incident_hour_of_the_day": 14,
+    "incident_severity": "Major Damage",
+    "collision_type": "Rear Collision",
+    "police_report_available": "YES",
+    "authorities_contacted": "Police",
+    "number_of_vehicles_involved": 2,
+    "bodily_injuries": 1
   }'
 ```
+
+The API now accepts both numeric and categorical features, automatically handling preprocessing and missing values.
 
 ### Example Response
 

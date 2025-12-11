@@ -1,7 +1,6 @@
 """
 Fraud Detection API - FastAPI Backend
-Serves predictions from pre-trained ML models (RandomForest, ExtraTrees, XGBoost)
-Supports both calibrated and uncalibrated versions with two deployment scenarios.
+Serves predictions from pre-trained ML models using full preprocessing pipeline.
 """
 
 from fastapi import FastAPI, HTTPException, Query
@@ -13,23 +12,26 @@ import joblib
 import numpy as np
 from pathlib import Path
 import logging
+import pandas as pd
+from preprocessing import preprocess_input
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Initialize FastAPI app
-app = FastAPI(title="Fraud Detection API", version="1.0.0")
+app = FastAPI(title="Fraud Detection API", version="2.0.0")
 
 # Model configuration
 MODELS_DIR = Path("models")
-THRESHOLD_AUTO_FLAG = 0.53  # Placeholder - adjust based on your F2 optimization
+THRESHOLD_AUTO_FLAG = 0.53
 
 # Model registry
 MODELS = {}
 
 class ClaimInput(BaseModel):
-    """Input schema for claim predictions"""
+    """Input schema accepting Raw + New Categorical Features"""
+    # Numeric
     policy_annual_premium: float = Field(..., description="Annual policy premium")
     total_claim_amount: float = Field(..., description="Total claim amount")
     vehicle_age: int = Field(..., description="Age of vehicle in years")
@@ -41,9 +43,15 @@ class ClaimInput(BaseModel):
     property_share: float = Field(..., description="Share of property damage")
     umbrella_limit: int = Field(..., description="Umbrella policy limit")
     incident_hour_of_the_day: int = Field(..., ge=0, le=23)
-    hour_sin: Optional[float] = None
-    hour_cos: Optional[float] = None
     
+    # New Categorical Fields
+    collision_type: Optional[str] = Field(None, description="Front Collision, Side Collision, Rear Collision, or ?")
+    incident_severity: Optional[str] = Field(None, description="Major Damage, Minor Damage, Total Loss, Trivial Damage")
+    authorities_contacted: Optional[str] = Field(None, description="Police, Fire, Ambulance, Other, None")
+    number_of_vehicles_involved: Optional[int] = Field(1, description="Number of vehicles")
+    bodily_injuries: Optional[int] = Field(0, description="Number of injuries")
+    police_report_available: Optional[str] = Field(None, description="YES, NO, ?")
+
     class Config:
         populate_by_name = True
 
@@ -62,14 +70,12 @@ def load_models():
     
     for model_type in model_types:
         for cal_type in calibration_types:
-            # Expected filename format: best_tree_models_calibrated.joblib or best_tree_models_uncalibrated.joblib
             filename = f"best_tree_models_{cal_type}.joblib"
             filepath = MODELS_DIR / filename
             
             if filepath.exists():
                 try:
                     models_dict = joblib.load(filepath)
-                    # Models are stored in dict structure: {'Trees': {'RandomForest': model, 'XGBoost': model, ...}}
                     if 'Trees' in models_dict and model_type in models_dict['Trees']:
                         key = f"{model_type}_{cal_type}"
                         MODELS[key] = models_dict['Trees'][model_type]
@@ -78,112 +84,55 @@ def load_models():
                     logger.error(f"Error loading {filepath}: {e}")
     
     logger.info(f"Total models loaded: {len(MODELS)}")
-    if not MODELS:
-        logger.warning("No models loaded! Check models directory.")
 
 @app.on_event("startup")
 async def startup_event():
-    """Load models on application startup"""
     load_models()
 
 @app.get("/")
 async def root():
-    """Serve the frontend HTML"""
     return FileResponse("index.html")
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
-    return {
-        "status": "healthy",
-        "models_loaded": len(MODELS),
-        "available_models": list(MODELS.keys())
-    }
+    return {"status": "healthy", "models_loaded": len(MODELS)}
 
 @app.post("/predict", response_model=PredictionResponse)
 async def predict(
     claim_data: ClaimInput,
-    model: Literal["rf", "et", "xgb"] = Query("rf", description="Model type: rf=RandomForest, et=ExtraTrees, xgb=XGBoost"),
-    calibrated: bool = Query(True, description="Use calibrated model"),
-    scenario: Literal["auto_flagger", "dashboard"] = Query("dashboard", description="Prediction scenario")
+    model: Literal["rf", "et", "xgb"] = Query("rf"),
+    calibrated: bool = Query(True),
+    scenario: Literal["auto_flagger", "dashboard"] = Query("dashboard")
 ):
-    """
-    Predict fraud probability for an insurance claim.
-    
-    - **Scenario A (auto_flagger)**: Uses uncalibrated model + threshold for auto-flagging
-    - **Scenario B (dashboard)**: Uses calibrated model for ranking/prioritization
-    """
-    
-    # Map shorthand to full model names
     model_map = {"rf": "RandomForest", "et": "ExtraTrees", "xgb": "XGBoost"}
     model_name = model_map[model]
     
-    # Determine calibration type
     cal_type = "calibrated" if calibrated else "uncalibrated"
+    if scenario == "auto_flagger": cal_type = "uncalibrated"
+    elif scenario == "dashboard": cal_type = "calibrated"
+    
     model_key = f"{model_name}_{cal_type}"
     
-    # Override calibration based on scenario
-    if scenario == "auto_flagger":
-        cal_type = "uncalibrated"
-        model_key = f"{model_name}_uncalibrated"
-    elif scenario == "dashboard":
-        cal_type = "calibrated"
-        model_key = f"{model_name}_calibrated"
-    
-    # Get model
     if model_key not in MODELS:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Model {model_key} not found. Available: {list(MODELS.keys())}"
-        )
+        raise HTTPException(status_code=404, detail=f"Model {model_key} not found")
     
     loaded_model = MODELS[model_key]
     
-    # Prepare input data
-    # Calculate hour_sin and hour_cos if not provided
-    if claim_data.hour_sin is None or claim_data.hour_cos is None:
-        hour_rad = (claim_data.incident_hour_of_the_day / 24) * 2 * np.pi
-        claim_data.hour_sin = np.sin(hour_rad)
-        claim_data.hour_cos = np.cos(hour_rad)
-    
-    # Convert to dict and create feature array
-    # Note: The model expects the preprocessor to handle feature engineering
-    # We'll pass raw features as a dict
-    features_dict = claim_data.dict(by_alias=True)
-    
-    # For deployment, you would typically have a preprocessor that was saved with the model
-    # Here we assume the model is already wrapped in a pipeline that handles preprocessing
     try:
-        # Create input array - order must match training
-        # The pipeline should handle the transformation
-        input_data = {
-            'policy_annual_premium': features_dict['policy_annual_premium'],
-            'total_claim_amount': features_dict['total_claim_amount'],
-            'vehicle_age': features_dict['vehicle_age'],
-            'days_since_bind': features_dict['days_since_bind'],
-            'months_as_customer': features_dict['months_as_customer'],
-            'capital-gains': features_dict['capital-gains'],
-            'capital-loss': features_dict['capital-loss'],
-            'injury_share': features_dict['injury_share'],
-            'property_share': features_dict['property_share'],
-            'umbrella_limit': features_dict['umbrella_limit'],
-            'incident_hour_of_the_day': features_dict['incident_hour_of_the_day'],
-            'hour_sin': features_dict['hour_sin'],
-            'hour_cos': features_dict['hour_cos']
-        }
+        # Convert Pydantic to Dict
+        input_dict = claim_data.dict(by_alias=True)
         
-        # If model is a pipeline, it expects a DataFrame
-        import pandas as pd
-        input_df = pd.DataFrame([input_data])
+        # FULL PREPROCESSING
+        final_df = preprocess_input(input_dict)
         
-        # Get prediction probability
-        proba = loaded_model.predict_proba(input_df)[0, 1]  # Probability of fraud (class 1)
+        # Predict
+        proba = loaded_model.predict_proba(final_df)[0, 1]
         
     except Exception as e:
         logger.error(f"Prediction error: {e}")
+        # Return detail for debugging
         raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
     
-    # Determine threshold flag for auto_flagger scenario
     threshold_flag = None
     if scenario == "auto_flagger":
         threshold_flag = "AUTO_FLAG" if proba >= THRESHOLD_AUTO_FLAG else "AUTO_APPROVE"
