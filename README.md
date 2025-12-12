@@ -1,45 +1,69 @@
-Project Name
-==============================
+# Insurance Claim Fraud Prediction
 
-This repo is a Starting Pack for DS projects. You can rearrange the structure to make it fits your project.
+This project builds a machine learning pipeline to detect fraudulent insurance claims. It progresses from data analysis and feature engineering to training, calibrating, and evaluating tree-based models (XGBoost, Random Forest, etc.).
 
-Project Organization
-------------
+## 📂 Project Organization
 
-    ├── LICENSE
-    ├── README.md          <- The top-level README for developers using this project.
-    ├── data               <- Should be in your computer but not on Github (only in .gitignore)
-    │   ├── processed      <- The final, canonical data sets for modeling.
-    │   └── raw            <- The original, immutable data dump.
-    │
-    ├── models             <- Trained and serialized models, model predictions, or model summaries
-    │
-    ├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
-    │                         the creator's name, and a short `-` delimited description, e.g.
-    │                         `1.0-alban-data-exploration`.
-    │
-    ├── references         <- Data dictionaries, manuals, links, and all other explanatory materials.
-    │
-    ├── reports            <- The reports that you'll make during this project as PDF
-    │   └── figures        <- Generated graphics and figures to be used in reporting
-    │
-    ├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
-    │                         generated with `pip freeze > requirements.txt`
-    │
-    ├── src                <- Source code for use in this project.
-    │   ├── __init__.py    <- Makes src a Python module
-    │   │
-    │   ├── features       <- Scripts to turn raw data into features for modeling
-    │   │   └── build_features.py
-    │   │
-    │   ├── models         <- Scripts to train models and then use trained models to make
-    │   │   │                 predictions
-    │   │   ├── predict_model.py
-    │   │   └── train_model.py
-    │   │
-    │   ├── visualization  <- Scripts to create exploratory and results oriented visualizations
-    │   │   └── visualize.py
+```
+├── README.md          <- Project documentation
+├── requirements.txt   <- Python dependencies
+│
+├── data               <- Data source
+│   ├── raw            <- Immutable original data (insurance_claims.csv)
+│   └── processed      <- Cleaned and engineered datasets
+│
+├── models             <- Trained model artifacts (.joblib)
+│   ├── best_tree_models_uncalibrated.joblib
+│   └── [individual model files...]
+│
+├── notebooks          <- Analysis workflow (Run in order)
+│   ├── 00_data_analysis_&_vizualisations.ipynb   <- EDA & Data understanding
+│   ├── 01_preprocessing.ipynb                    <- Cleaning & Imputation
+│   ├── 02_baseline_comparison.ipynb              <- Simple baseline models
+│   ├── 03_feature_engineering_linear.ipynb       <- Advanced feature creation
+│   ├── 04_logreg_tuning.ipynb                    <- Logistic Regression baseline
+│   ├── 05_tree_training.ipynb                    <- Train Tree Models (XGB, RF, etc.)
+│   ├── 06_tree_calibration.ipynb                 <- Probability Calibration
+│   ├── 07_tree_shap.ipynb                        <- Model Interpretability (SHAP)
+│   ├── 08_tree_evaluation.ipynb                  <- Final Metrics & Financial Analyis
+│   └── 09_hobby_leakage_investigation.ipynb      <- Specific hypothesis testing
+│
+├── final_models       <- Production-ready models selected from experiments
+│
+├── fraud-detector     <- Deployable API (Flask) for serving predictions
+│   ├── app.py
+│   └── Dockerfile
+│
+└── src                <- Source code modules
+    ├── features       <- Feature generation scripts
+    ├── models         <- Model training scripts
+    └── visualization  <- Plotting utilities
+```
 
---------
+## 🚀 Getting Started
 
-<p><small>Project based on the <a target="_blank" href="https://drivendata.github.io/cookiecutter-data-science/">cookiecutter data science project template</a>. #cookiecutterdatascience</small></p>
+1.  **Install Dependencies**:
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+2.  **Run the Notebooks**:
+    Start Jupyter Lab or Jupyter Notebook and execute the notebooks in numerical order (00 -> 08).
+    *   **00-01**: Prepare the data.
+    *   **02-04**: Establish baselines.
+    *   **05**: Perform heavy training (Grid Search).
+    *   **06-08**: Refine, explain, and evaluate the best models.
+
+## 🧠 Key Findings
+*   **Tree models** (XGBoost, Random Forest) significantly outperform linear baselines.
+*   **Calibration** (Platt Scaling) is critical for accurate probability estimation.
+*   **SHAP Analysis** reveals that `incident_severity`, `policy_state`, and `insured_hobbies` are top drivers of fraud risk.
+
+## 🛠️ Fraud Detector API
+The `fraud-detector/` folder contains a containerized Flask API to serve specific models.
+To build and run:
+```bash
+cd fraud-detector
+docker build -t fraud-api .
+docker run -p 5000:5000 fraud-api
+```
