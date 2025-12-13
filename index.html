@@ -311,223 +311,235 @@
 
         <!-- CONFIG -->
         <div class="config-bar">
+            <!-- Model Selection -->
             <div class="control-group">
-                <label>Model Engine</label>
+                <label>Prediction Model</label>
                 <select id="model">
-                    <option value="xgb" selected>XGBoost (Standard)</option>
-                    <option value="voting">Voting Ensemble</option>
-                    <option value="rf">Random Forest</option>
+                    <option value="voting" selected>Voting Ensemble (Recommended)</option>
+                    <option value="xgb">XGBoost</option>
                     <option value="et">Extra Trees</option>
+                    <option value="rf">Random Forest</option>
                 </select>
+                <div class="helper-text" style="line-height: 1.4; margin-top: 8px;">
+                    The Voting Ensemble combines multiple models and provides the most stable and accurate results.
+                    Other models are available for comparison.
+                </div>
             </div>
+
+            <!-- Analysis Mode -->
             <div class="control-group">
-                <label>Analysis Context</label>
+                <label>Analysis Mode</label>
                 <select id="scenario">
-                    <option value="dashboard" selected>Dashboard Review (Calibrated)</option>
-                    <option value="auto_flagger">Auto-Flagger (Uncalibrated)</option>
+                    <option value="auto_flagger" selected>Auto-Flagger (Operational)</option>
+                    <option value="dashboard">Dashboard Review (Calibrated)</option>
+                </select>
+                <div id="scenario_desc" class="helper-text" style="line-height: 1.4; margin-top: 8px;">
+                    Optimized for detecting potentially fraudulent claims. Designed for automated or semi-automated
+                    flagging where recall is critical.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TIER 1 -->
+    <div class="tier-section">
+        <div class="tier-header"><span class="tier-title">01 / Incident & Injury</span></div>
+        <div class="form-grid">
+            <div class="control-group">
+                <label>Incident Severity</label>
+                <select id="incident_severity">
+                    <option value="Major Damage">Major damage</option>
+                    <option value="Minor Damage" selected>Minor damage</option>
+                    <option value="Total Loss">Total loss</option>
+                    <option value="Trivial Damage">Trivial damage</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <div class="slider-header"><label>Injury Share</label><span class="slider-val"
+                        id="val_injury_share">10%</span></div>
+                <input type="range" id="injury_share" min="0" max="100" step="5" value="10">
+            </div>
+
+            <div class="control-group">
+                <label>Collision Type</label>
+                <select id="collision_type">
+                    <option value="Rear Collision" selected>Rear collision</option>
+                    <option value="Front Collision">Front collision</option>
+                    <option value="Side Collision">Side collision</option>
+                    <option value="?">Unknown / Not Reported</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>Bodily Injuries</label>
+                <select id="bodily_injuries">
+                    <option value="0">0</option>
+                    <option value="1" selected>1</option>
+                    <option value="2">2</option>
+                    <option value="3">3+</option>
                 </select>
             </div>
         </div>
+    </div>
 
-        <!-- TIER 1 -->
-        <div class="tier-section">
-            <div class="tier-header"><span class="tier-title">01 / Incident & Injury</span></div>
-            <div class="form-grid">
-                <div class="control-group">
-                    <label>Incident Severity</label>
-                    <select id="incident_severity">
-                        <option value="Major Damage">Major damage</option>
-                        <option value="Minor Damage" selected>Minor damage</option>
-                        <option value="Total Loss">Total loss</option>
-                        <option value="Trivial Damage">Trivial damage</option>
-                    </select>
-                </div>
+    <!-- TIER 2 -->
+    <div class="tier-section">
+        <div class="tier-header"><span class="tier-title">02 / Claim Size & Timing</span></div>
+        <div class="form-grid">
+            <div class="control-group">
+                <div class="slider-header"><label>Total Claim</label><span class="slider-val"
+                        id="val_total_claim">$58,000</span></div>
+                <input type="range" id="total_claim_amount" min="1000" max="100000" step="1000" value="58000">
+            </div>
 
-                <div class="control-group">
-                    <div class="slider-header"><label>Injury Share</label><span class="slider-val"
-                            id="val_injury_share">10%</span></div>
-                    <input type="range" id="injury_share" min="0" max="100" step="5" value="10">
-                </div>
+            <div class="control-group">
+                <div class="slider-header"><label>Incident Time</label><span class="slider-val"
+                        id="val_hour">12:00</span></div>
+                <input type="range" id="incident_hour_of_the_day" min="0" max="23" step="1" value="12">
+                <div class="helper-text" id="helper_hour">Afternoon</div>
+            </div>
 
-                <div class="control-group">
-                    <label>Collision Type</label>
-                    <select id="collision_type">
-                        <option value="Rear Collision" selected>Rear collision</option>
-                        <option value="Front Collision">Front collision</option>
-                        <option value="Side Collision">Side collision</option>
-                        <option value="?">Unknown / Not Reported</option>
-                    </select>
-                </div>
+            <div class="control-group">
+                <div class="slider-header"><label>Property Share</label><span class="slider-val"
+                        id="val_prop_share">10%</span></div>
+                <input type="range" id="property_share" min="0" max="100" step="5" value="10">
+            </div>
+        </div>
+    </div>
 
-                <div class="control-group">
-                    <label>Bodily Injuries</label>
-                    <select id="bodily_injuries">
-                        <option value="0">0</option>
-                        <option value="1" selected>1</option>
-                        <option value="2">2</option>
-                        <option value="3">3+</option>
-                    </select>
-                </div>
+    <!-- TIER 3 -->
+    <div class="tier-section">
+        <div class="tier-header"><span class="tier-title">03 / Policy & Tenure</span></div>
+        <div class="form-grid">
+            <div class="control-group">
+                <div class="slider-header"><label>Annual Premium</label><span class="slider-val"
+                        id="val_premium">$1,200</span></div>
+                <input type="range" id="policy_annual_premium" min="500" max="3000" step="100" value="1200">
+            </div>
+
+            <div class="control-group">
+                <div class="slider-header"><label>Months as Customer</label><span class="slider-val"
+                        id="val_tenure">200</span></div>
+                <input type="range" id="months_as_customer" min="0" max="500" step="12" value="200">
+            </div>
+            <!-- Policy Age Abstracted -->
+            <div class="control-group">
+                <label>When did the policy start?</label>
+                <select id="days_since_bind">
+                    <option value="90">Less than 6 months ago</option>
+                    <option value="270">6–12 months ago</option>
+                    <option value="540">1–2 years ago</option>
+                    <option value="1500" selected>2–5 years ago</option>
+                    <option value="3000">More than 5 years ago</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- TIER 4 -->
+    <div class="tier-section">
+        <div class="tier-header"><span class="tier-title">04 / Vehicle Context</span></div>
+        <div class="form-grid">
+            <div class="control-group">
+                <div class="slider-header"><label>Vehicle Age</label><span class="slider-val" id="val_veh_age">10
+                        yrs</span></div>
+                <input type="range" id="vehicle_age" min="0" max="30" step="1" value="10">
+            </div>
+
+            <div class="control-group">
+                <label>Vehicles Involved</label>
+                <select id="number_of_vehicles_involved">
+                    <option value="1" selected>1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4+</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- TIER 5 -->
+    <div class="tier-section">
+        <div class="tier-header"><span class="tier-title">05 / Administrative</span></div>
+        <div class="form-grid">
+            <div class="control-group">
+                <label>Police Report Filed</label>
+                <select id="police_report_available">
+                    <option value="YES">Yes</option>
+                    <option value="NO">No</option>
+                    <option value="?">Unknown</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>Authorities Involved</label>
+                <select id="authorities_contacted">
+                    <option value="Police" selected>Police</option>
+                    <option value="Fire">Fire department</option>
+                    <option value="Ambulance">Ambulance</option>
+                    <option value="Other">Other</option>
+                    <option value="None">None</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- TIER 6 -->
+    <div class="tier-section" style="border-bottom: none;">
+        <div class="tier-header"><span class="tier-title">06 / Edge Variables</span></div>
+        <div class="form-grid">
+            <div class="control-group">
+                <label>Umbrella Limit</label>
+                <select id="umbrella_limit">
+                    <option value="0" selected>None</option>
+                    <option value="1000000">$1M</option>
+                    <option value="5000000">$5M</option>
+                    <option value="10000000">$10M+</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <div class="slider-header"><label>Insured Age</label><span class="slider-val" id="val_age">38
+                        yrs</span></div>
+                <input type="range" id="age" min="18" max="100" step="1" value="38">
             </div>
         </div>
 
-        <!-- TIER 2 -->
-        <div class="tier-section">
-            <div class="tier-header"><span class="tier-title">02 / Claim Size & Timing</span></div>
-            <div class="form-grid">
-                <div class="control-group">
-                    <div class="slider-header"><label>Total Claim</label><span class="slider-val"
-                            id="val_total_claim">$58,000</span></div>
-                    <input type="range" id="total_claim_amount" min="1000" max="100000" step="1000" value="58000">
-                </div>
-
-                <div class="control-group">
-                    <div class="slider-header"><label>Incident Time</label><span class="slider-val"
-                            id="val_hour">12:00</span></div>
-                    <input type="range" id="incident_hour_of_the_day" min="0" max="23" step="1" value="12">
-                    <div class="helper-text" id="helper_hour">Afternoon</div>
-                </div>
-
-                <div class="control-group">
-                    <div class="slider-header"><label>Property Share</label><span class="slider-val"
-                            id="val_prop_share">10%</span></div>
-                    <input type="range" id="property_share" min="0" max="100" step="5" value="10">
-                </div>
-            </div>
-        </div>
-
-        <!-- TIER 3 -->
-        <div class="tier-section">
-            <div class="tier-header"><span class="tier-title">03 / Policy & Tenure</span></div>
-            <div class="form-grid">
-                <div class="control-group">
-                    <div class="slider-header"><label>Annual Premium</label><span class="slider-val"
-                            id="val_premium">$1,200</span></div>
-                    <input type="range" id="policy_annual_premium" min="500" max="3000" step="100" value="1200">
-                </div>
-
-                <div class="control-group">
-                    <div class="slider-header"><label>Months as Customer</label><span class="slider-val"
-                            id="val_tenure">200</span></div>
-                    <input type="range" id="months_as_customer" min="0" max="500" step="12" value="200">
-                </div>
-                <!-- Policy Age Abstracted -->
-                <div class="control-group">
-                    <label>When did the policy start?</label>
-                    <select id="days_since_bind">
-                        <option value="90">Less than 6 months ago</option>
-                        <option value="270">6–12 months ago</option>
-                        <option value="540">1–2 years ago</option>
-                        <option value="1500" selected>2–5 years ago</option>
-                        <option value="3000">More than 5 years ago</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-
-        <!-- TIER 4 -->
-        <div class="tier-section">
-            <div class="tier-header"><span class="tier-title">04 / Vehicle Context</span></div>
-            <div class="form-grid">
-                <div class="control-group">
-                    <div class="slider-header"><label>Vehicle Age</label><span class="slider-val" id="val_veh_age">10
-                            yrs</span></div>
-                    <input type="range" id="vehicle_age" min="0" max="30" step="1" value="10">
-                </div>
-
-                <div class="control-group">
-                    <label>Vehicles Involved</label>
-                    <select id="number_of_vehicles_involved">
-                        <option value="1" selected>1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4+</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-
-        <!-- TIER 5 -->
-        <div class="tier-section">
-            <div class="tier-header"><span class="tier-title">05 / Administrative</span></div>
-            <div class="form-grid">
-                <div class="control-group">
-                    <label>Police Report Filed</label>
-                    <select id="police_report_available">
-                        <option value="YES">Yes</option>
-                        <option value="NO">No</option>
-                        <option value="?">Unknown</option>
-                    </select>
-                </div>
-
-                <div class="control-group">
-                    <label>Authorities Involved</label>
-                    <select id="authorities_contacted">
-                        <option value="Police" selected>Police</option>
-                        <option value="Fire">Fire department</option>
-                        <option value="Ambulance">Ambulance</option>
-                        <option value="Other">Other</option>
-                        <option value="None">None</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-
-        <!-- TIER 6 -->
-        <div class="tier-section" style="border-bottom: none;">
-            <div class="tier-header"><span class="tier-title">06 / Edge Variables</span></div>
-            <div class="form-grid">
-                <div class="control-group">
-                    <label>Umbrella Limit</label>
-                    <select id="umbrella_limit">
-                        <option value="0" selected>None</option>
-                        <option value="1000000">$1M</option>
-                        <option value="5000000">$5M</option>
-                        <option value="10000000">$10M+</option>
-                    </select>
-                </div>
-
-                <div class="control-group">
-                    <div class="slider-header"><label>Insured Age</label><span class="slider-val" id="val_age">38
-                            yrs</span></div>
-                    <input type="range" id="age" min="18" max="100" step="1" value="38">
-                </div>
+        <!-- CAPITAL IMPACT -->
+        <div class="control-group" style="margin-top: 40px;">
+            <label>Financial Capital Impact</label>
+            <div class="toggle-group">
+                <div class="toggle-opt active" onclick="setCapMode('none')">No capital impact</div>
+                <div class="toggle-opt" onclick="setCapMode('gain')">Capital gain</div>
+                <div class="toggle-opt" onclick="setCapMode('loss')">Capital loss</div>
             </div>
 
-            <!-- CAPITAL IMPACT -->
-            <div class="control-group" style="margin-top: 40px;">
-                <label>Financial Capital Impact</label>
-                <div class="toggle-group">
-                    <div class="toggle-opt active" onclick="setCapMode('none')">No capital impact</div>
-                    <div class="toggle-opt" onclick="setCapMode('gain')">Capital gain</div>
-                    <div class="toggle-opt" onclick="setCapMode('loss')">Capital loss</div>
-                </div>
+            <div id="cap_gain_box" class="hidden" style="margin-top: 20px;">
+                <div class="slider-header"><label>Capital Gain</label><span class="slider-val"
+                        id="val_cap_gain">$0</span></div>
+                <input type="range" id="capital_gains" min="0" max="100000" step="5000" value="0">
+            </div>
 
-                <div id="cap_gain_box" class="hidden" style="margin-top: 20px;">
-                    <div class="slider-header"><label>Capital Gain</label><span class="slider-val"
-                            id="val_cap_gain">$0</span></div>
-                    <input type="range" id="capital_gains" min="0" max="100000" step="5000" value="0">
-                </div>
-
-                <div id="cap_loss_box" class="hidden" style="margin-top: 20px;">
-                    <div class="slider-header"><label>Capital Loss</label><span class="slider-val"
-                            id="val_cap_loss">$0</span></div>
-                    <input type="range" id="capital_loss" min="-100000" max="0" step="5000" value="0">
-                </div>
+            <div id="cap_loss_box" class="hidden" style="margin-top: 20px;">
+                <div class="slider-header"><label>Capital Loss</label><span class="slider-val"
+                        id="val_cap_loss">$0</span></div>
+                <input type="range" id="capital_loss" min="-100000" max="0" step="5000" value="0">
             </div>
         </div>
+    </div>
 
-        <!-- ACTION -->
-        <div class="action-bar">
-            <button class="primary-btn" id="predictBtn">Analyze Claim</button>
-            <div id="errorBox" style="color: #ffcccc; margin-top: 20px; display: none; font-size: 14px;"></div>
-        </div>
+    <!-- ACTION -->
+    <div class="action-bar">
+        <button class="primary-btn" id="predictBtn">Analyze Claim</button>
+        <div id="errorBox" style="color: #ffcccc; margin-top: 20px; display: none; font-size: 14px;"></div>
+    </div>
 
-        <!-- RESULT -->
-        <div id="resultBox" class="result-box">
-            <div class="result-score" id="resultScore">--</div>
-            <div class="result-detail" id="resultText"></div>
-        </div>
+    <!-- RESULT -->
+    <div id="resultBox" class="result-box">
+        <div class="result-score" id="resultScore">--</div>
+        <div class="result-detail" id="resultText"></div>
+    </div>
 
     </div>
 
@@ -575,6 +587,16 @@
         updateVal('age', '', 'yrs');
         updateVal('months_as_customer', '');
         updateVal('incident_hour_of_the_day', '');
+
+        // --- SCENARIO DESCRIPTION Logic ---
+        const scenarioDesc = {
+            'auto_flagger': "Optimized for detecting potentially fraudulent claims. Designed for automated or semi-automated flagging where recall is critical.",
+            'dashboard': "Provides well-calibrated probabilities for human review and reporting. Recommended when the score is used for explanation or decision support."
+        };
+
+        document.getElementById('scenario').addEventListener('change', (e) => {
+            document.getElementById('scenario_desc').innerText = scenarioDesc[e.target.value];
+        });
 
         // --- CAPITAL TOGGLE Logic ---
         function setCapMode(mode) {
