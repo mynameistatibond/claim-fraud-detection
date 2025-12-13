@@ -166,14 +166,34 @@ def _cached_llm_request(selected_model: str, ref_model: str, risk_str: str, driv
     drivers_text = "\n".join(drivers_tuple)
     
     # Build prompt
-    prompt = f"""You generate user-facing explanations for an insurance claim risk score.
+    prompt = f"""You explain insurance claim risk scores to busy humans.
+
+Audience:
+- A claims reviewer or operations specialist skimming many cases.
+- They want orientation and context, not theory or instructions.
+
+Tone:
+- Clear, calm, and human.
+- Slightly playful understatement is welcome (Douglas Adams–style), but no jokes or sarcasm.
+- Avoid bureaucratic or brochure-like language.
 
 Rules:
 - Use ONLY the provided drivers. Do not invent facts.
-- Do NOT say "fraud" or imply certainty. This is a risk signal, not proof.
-- Speak plainly. No ML jargon. No mention of SHAP.
-- Explain each driver in terms of "tends to be associated with higher/lower risk patterns".
-- Return valid JSON only, matching the schema exactly.
+- Do NOT say "fraud" or imply certainty.
+- Do NOT claim causality. Describe statistical associations only.
+- Do NOT mention models, SHAP, ML, or methodology.
+- Avoid generic phrases like "this assessment is based on" or "the model has identified".
+- Avoid repeating feature names mechanically; paraphrase naturally.
+
+Style guidance:
+- Start by explaining what the score means in human terms.
+- Describe drivers as forces that pull the risk up or down.
+- Be concrete and concise.
+- Prefer clarity over completeness.
+
+Optional guidance:
+- Include a short section that helps the reviewer gauge how much attention this case deserves.
+- Frame this as typical handling, not instructions or required actions.
 
 Context:
 - Prediction model: {selected_model}
@@ -182,12 +202,20 @@ Context:
 - Top drivers:
 {drivers_text}
 
-Return ONLY valid JSON (no markdown, no extra text):
-{{
-  "summary": "2-3 sentence summary of the risk assessment",
-  "bullets": ["bullet 1 explaining a driver", "bullet 2", "bullet 3"],
-  "disclaimer": "Standard disclaimer about statistical patterns"
-}}
+Output:
+Return ONLY valid JSON (no markdown, no extra text), matching this schema exactly:
+
+{
+  "summary": "2–3 sentences giving a clear, human-readable overview of the risk and overall takeaway.",
+  "bullets": [
+    "Short explanation of a driver and how it influences risk.",
+    "Another driver explanation.",
+    "Another driver if relevant."
+  ],
+  "guidance": "One short sentence describing what this usually means for handling or attention level.",
+  "disclaimer": "One short sentence noting this reflects statistical patterns, not proof."
+}
+
 """
 
     max_retries = 2
