@@ -104,7 +104,7 @@ def call_openai_format_api(config: dict, prompt: str) -> str:
                 "content": prompt
             }
         ],
-        "max_tokens": 400,
+        "max_tokens": 2048,
         "temperature": 0.3
     }
     
@@ -131,7 +131,7 @@ def call_huggingface_api(config: dict, prompt: str) -> str:
     payload = {
         "inputs": prompt,
         "parameters": {
-            "max_new_tokens": 400,
+            "max_new_tokens": 2048,
             "temperature": 0.3,
             "return_full_text": False
         }
