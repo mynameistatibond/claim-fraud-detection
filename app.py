@@ -336,8 +336,14 @@ async def predict(
                          # No preprocessor found
                          pass
                  else:
+                     # Check for specific init error
+                     init_error = SHAP_INIT_ERRORS.get(model_key, "Unknown initialization failure")
+                     
                      explanation_items.append(ExplanationItem(
-                         feature="Init Failed", direction="DOWN", text="Explainer not initialized.", importance=0
+                         feature="Init Failed",
+                         direction="DOWN", 
+                         text=f"Error: {init_error}",
+                         importance=0.0
                      ))
              except Exception as e:
                  logger.warning(f"SHAP Error: {e}")
