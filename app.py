@@ -25,7 +25,7 @@ app = FastAPI(title="Fraud Detection API", version="2.0.0")
 
 # --- CONFIG ---
 MODELS_DIR = Path("models")
-APP_VERSION = "1.3.2"
+APP_VERSION = "1.3.3"
 THRESHOLD_AUTO_FLAG = 0.53
 
 # Model registry
@@ -106,6 +106,8 @@ class PredictionResponse(BaseModel):
     threshold_flag: Optional[str] = None
     scenario: str
     explanation: Optional[list[ExplanationItem]] = None
+    llm_explanation: Optional[dict] = None
+    app_version: str = "1.0.0"
 
 def load_models():
     """Load all available models on startup"""
