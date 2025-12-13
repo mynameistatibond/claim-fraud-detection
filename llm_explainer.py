@@ -16,6 +16,26 @@ HF_CANDIDATE_URLS = [
     "https://api-inference.huggingface.co/models/microsoft/Phi-3-mini-4k-instruct"
 ]
 
+def build_driver_lines(explanation_items: list, max_items: int = 5) -> str:
+    """
+    Convert ExplanationItem list into newline string lines:
+    - {feature} | {direction} | {text}
+    """
+    lines = []
+    for item in explanation_items[:max_items]:
+        if isinstance(item, dict):
+            feat = item.get('feature', 'Unknown')
+            direction = item.get('direction', 'N/A')
+            text = item.get('text', '')
+        else:
+            feat = getattr(item, 'feature', 'Unknown')
+            direction = getattr(item, 'direction', 'N/A')
+            text = getattr(item, 'text', '')
+            
+        lines.append(f"- {feat} | {direction} | {text}")
+    
+    return "\n".join(lines)
+
 @lru_cache(maxsize=256)
 def _cached_llm_request(selected_model: str, ref_model: str, risk_str: str, drivers_tuple: tuple) -> dict | None:
     """
