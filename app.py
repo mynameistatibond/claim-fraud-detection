@@ -286,15 +286,21 @@ async def predict(
                          X_query = prep.transform(final_df)
                          if hasattr(X_query, 'toarray'): X_query = X_query.toarray()
                          
+                         # Safety Check: Contract Alignment
+                         if X_query.shape[1] != BACKGROUND_DATA.shape[1]:
+                             raise ValueError(f"Shape Mismatch: Query {X_query.shape[1]} != BG {BACKGROUND_DATA.shape[1]}")
+                         
                          # Calculate SHAP
                          shap_values = explainer.shap_values(X_query)
                          
                          # Handle output shape
                          if isinstance(shap_values, list):
                              vals = shap_values[1][0]
-                         elif len(shap_values.shape) > 1 and shap_values.shape[1] > 1:
-                             vals = shap_values[0][1] 
+                         elif len(shap_values.shape) == 3:
+                             # Shape (1, features, 2) -> We want Sample 0, All features, Class 1
+                             vals = shap_values[0, :, 1]
                          else:
+                             # Shape (1, features) -> regression or binary XGBoost
                              vals = shap_values[0]
                          
                          # Map to Names
