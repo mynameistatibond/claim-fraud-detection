@@ -25,7 +25,7 @@ def get_llm_config():
             "provider": "groq",
             "url": "https://api.groq.com/openai/v1/chat/completions",
             "key": groq_key,
-            "model": "mixtral-8x7b-32768",
+            "model": "llama-3.3-70b-versatile",
             "format": "openai"
         }
     
