@@ -52,7 +52,7 @@ def _cached_llm_request(selected_model: str, ref_model: str, risk_str: str, driv
     api_token = os.environ.get("HF_TOKEN")
     if not api_token:
         logger.warning("HF_TOKEN missing. Skipping LLM explanation.")
-        return None
+        return {"error": "HF_TOKEN environment variable is missing."}
 
     headers = {
         "Authorization": f"Bearer {api_token}",
@@ -112,16 +112,16 @@ Return JSON:
                     time.sleep(1.5)
                     continue
                 else:
-                    logger.warning("HF API 503 Service Unavailable (Model Loading) after retry.")
-                    return None
+                    return {"error": "Model is loading (503). Try again in a moment."}
             
             if response.status_code == 429:
-                logger.warning("HF API 429 Rate Limit Reached.")
-                return None
-                
+                return {"error": "Rate limit reached (429)."}
+            
+            if response.status_code == 401:
+                return {"error": "Invalid HF_TOKEN (401). Check permissions."}
+
             if response.status_code != 200:
-                logger.warning(f"HF API Error {response.status_code}: {response.text}")
-                return None
+                return {"error": f"HF API Error {response.status_code}: {response.text[:50]}"}
                 
             # Parse Response
             result = response.json()
@@ -143,38 +143,32 @@ Return JSON:
                 data = json.loads(clean_text)
             except json.JSONDecodeError:
                 # Fallback: sometimes LLM adds text before/after
-                # Try to find first { and last }
                 start = clean_text.find('{')
                 end = clean_text.rfind('}')
                 if start != -1 and end != -1:
                     try:
                         data = json.loads(clean_text[start:end+1])
                     except:
-                        logger.warning("Failed to parse LLM JSON response.")
-                        return None
+                        return {"error": "Failed to parse LLM JSON response (inner)."}
                 else:
-                    logger.warning("No JSON object found in LLM response.")
-                    return None
+                    return {"error": "No JSON object found in LLM response."}
             
             # Schema Validation
             if not all(k in data for k in ("summary", "bullets", "disclaimer")):
-                logger.warning("LLM response missing required keys.")
-                return None
+                return {"error": "LLM response missing required keys."}
             
             if not isinstance(data["bullets"], list) or len(data["bullets"]) < 1:
-                logger.warning("LLM response 'bullets' is invalid.")
-                return None
+                return {"error": "LLM response 'bullets' is invalid."}
                 
             return data
 
         except requests.exceptions.Timeout:
-            logger.warning("HF API Request Timed Out.")
-            return None
+            return {"error": "HF API Request Timed Out."}
         except Exception as e:
             logger.error(f"LLM Explainer Exception: {e}")
-            return None
+            return {"error": f"Internal Error: {str(e)}"}
             
-    return None
+    return {"error": "Unknown error."}
 
 def generate_llm_explanation(
     selected_model_name: str,
@@ -203,4 +197,4 @@ def generate_llm_explanation(
         )
     except Exception as e:
         logger.error(f"Error in generate_llm_explanation wrapper: {e}")
-        return None
+        return {"error": f"Wrapper Error: {str(e)}"}

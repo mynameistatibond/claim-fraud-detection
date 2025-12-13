@@ -873,7 +873,7 @@
                 const llm = data.llm_explanation;
                 panel.style.display = 'block';
 
-                if (llm) {
+                if (llm && !llm.error) {
                     document.getElementById('llmSummaryText').innerText = llm.summary || "Summary unavailable.";
 
                     const bulletsUl = document.getElementById('llmBullets');
@@ -889,9 +889,10 @@
 
                     document.getElementById('llmDisclaimer').innerText = llm.disclaimer || "Disclaimer: These are statistical associations, not proof of fraud.";
                 } else {
-                    document.getElementById('llmSummaryText').innerText = "AI explanation unavailable at this time. Please rely on the Risk Drivers list below.";
+                    const errorMsg = (llm && llm.error) ? llm.error : "AI explanation unavailable at this time.";
+                    document.getElementById('llmSummaryText').innerHTML = `<span style="color: #ff9999;">⚠ ${errorMsg}</span>`;
                     document.getElementById('llmBullets').innerHTML = '';
-                    document.getElementById('llmDisclaimer').innerText = "";
+                    document.getElementById('llmDisclaimer').innerText = "Please rely on the Risk Drivers list below.";
                 }
 
                 // Scroll to explain box
