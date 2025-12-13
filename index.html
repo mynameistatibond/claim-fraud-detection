@@ -609,9 +609,14 @@
                 </div>
 
                 <!-- SHAP TRIGGER -->
-                <button id="viewDriversBtn"
-                    style="margin-top: 20px; background: transparent; border: 1px solid rgba(255,255,255,0.4); color: var(--clr-text); padding: 8px 16px; font-size: 13px; border-radius: 4px; cursor: pointer; opacity: 0.9; font-weight: 400; font-family: inherit;">
-                    View risk drivers</button>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button id="viewDriversBtn"
+                        style="background: transparent; border: 1px solid rgba(255,255,255,0.4); color: var(--clr-text); padding: 8px 16px; font-size: 13px; border-radius: 4px; cursor: pointer; opacity: 0.9; font-weight: 400; font-family: inherit; flex: 1;">
+                        View risk drivers</button>
+                    <button id="explainWhyBtn"
+                        style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.4); color: var(--clr-text); padding: 8px 16px; font-size: 13px; border-radius: 4px; cursor: pointer; opacity: 1.0; font-weight: 400; font-family: inherit; flex: 1;">
+                        Explain Why ✨</button>
+                </div>
             </div>
 
             <!-- RISK DRIVERS PANEL (Hidden) -->
@@ -632,6 +637,28 @@
 
                 <div style="margin-top: 15px; font-size: 11px; opacity: 0.4; font-style: italic;">
                     These factors indicate statistical associations, not proof of fraud.
+                </div>
+            </div>
+
+            <!-- LLM SUMMARY PANEL (Hidden) -->
+            <div id="llmSummaryBox" class="result-section"
+                style="display:none; margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--clr-divider);">
+                <div
+                    style="font-size: 14px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                    Explanation (Plain Language) <span
+                        style="font-size: 10px; opacity: 0.6; font-weight: normal; border: 1px solid rgba(255,255,255,0.3); padding: 1px 4px; border-radius: 3px;">AI
+                        GENERATED</span>
+                </div>
+
+                <div id="llmSummaryText" style="font-size: 15px; opacity: 0.9; line-height: 1.6; margin-bottom: 15px;">
+                </div>
+
+                <ul id="llmBullets"
+                    style="margin-bottom: 15px; padding-left: 20px; opacity: 0.85; font-size: 14px; line-height: 1.5;">
+                </ul>
+
+                <div id="llmDisclaimer"
+                    style="font-size: 12px; opacity: 0.5; font-style: italic; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
                 </div>
             </div>
 
