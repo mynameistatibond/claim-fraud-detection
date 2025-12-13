@@ -151,16 +151,22 @@ def load_shap_resources():
     
     # 3. Load Feature Metadata (Origin)
     if METADATA_PATH.exists():
-        FEATURE_METADATA = joblib.load(METADATA_PATH)
-        logger.info("Loaded feature metadata.")
+        try:
+            FEATURE_METADATA = joblib.load(METADATA_PATH)
+            logger.info("Loaded feature metadata.")
+        except Exception as e:
+            logger.warning(f"Failed to load metadata: {e}")
 
     # 4. Initialize TreeExplainers only (Sane Architecture)
     for key, model in MODELS.items():
         if "Voting" in key: continue
         
         # Only init on uncalibrated models to get clean trees
-        if "uncalibrated" in key and BACKGROUND_DATA is not None:
+        if "uncalibrated" in key:
             try:
+                 if BACKGROUND_DATA is None:
+                     raise ValueError("Background data not loaded")
+                     
                  _, estimator = get_pipeline_components(model)
                  
                  # Direct initialization: Estimator + Pre-Processed Data
@@ -175,6 +181,10 @@ def load_shap_resources():
                  
             except Exception as e:
                 logger.warning(f"Failed to init SHAP for {key}: {e}")
+                SHAP_INIT_ERRORS[key] = str(e)
+                # Map error to calibrated too so we see it
+                cal_key = key.replace("uncalibrated", "calibrated")
+                SHAP_INIT_ERRORS[cal_key] = str(e)
 
 @app.on_event("startup")
 async def startup_event():
