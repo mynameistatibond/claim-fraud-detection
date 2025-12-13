@@ -318,17 +318,48 @@ async def predict(
                                  'shap': sh_val
                              })
                          
+                         # 5. Filter and Sort
                          items_temp.sort(key=lambda x: abs(x['shap']), reverse=True)
-                         top_5 = items_temp[:5]
                          
-                         for item in top_5:
-                             direction, text = get_readable_explanation(item['feature'], item['shap'], FEATURE_METADATA)
+                         # Whitelist of features the user can actually control/see
+                         VISIBLE_ROOTS = {
+                             "total_claim_amount", "injury_share", "property_share", "incident_hour_of_the_day",
+                             "months_as_customer", "policy_annual_premium", "vehicle_age", "age",
+                             "capital-gains", "capital-loss", "umbrella_limit", "bodily_injuries",
+                             "number_of_vehicles_involved", "incident_severity", "collision_type",
+                             "authorities_contacted", "police_report_available"
+                         }
+                         
+                         count = 0
+                         for item in items_temp:
+                             if count >= 5: break
+                             
+                             # Resolve Root Feature Name
+                             feat_name = item['feature']
+                             meta = FEATURE_METADATA.get(feat_name) if FEATURE_METADATA else None
+                             root_feat = meta.get("raw_feature", feat_name) if meta else feat_name
+                             
+                             # Clean up potential "onehot__" prefix if metadata missing
+                             if "onehot__" in root_feat: root_feat = root_feat.split("__")[1].split("_")[0] # approximate
+                             
+                             # Specific heuristic for "incident_severity_Major Damage" -> "incident_severity"
+                             # Metadata should handle this, but be safe.
+                             for v in VISIBLE_ROOTS:
+                                 if feat_name.startswith(v):
+                                     root_feat = v
+                                     break
+
+                             if root_feat not in VISIBLE_ROOTS and root_feat not in FEATURE_MAP: 
+                                 continue
+                                 
+                             direction, text = get_readable_explanation(feat_name, item['shap'], FEATURE_METADATA)
                              explanation_items.append(ExplanationItem(
-                                 feature=FEATURE_MAP.get(item['feature'], item['feature']),
-                                 direction="UP" if item['shap'] > 0 else "DOWN", # UP = Higher Risk
+                                 feature=FEATURE_MAP.get(feat_name, feat_name),
+                                 direction="UP" if item['shap'] > 0 else "DOWN",
                                  text=text,
                                  importance=float(abs(item['shap']))
                              ))
+                             count += 1
                      else:
                           explanation_items.append(ExplanationItem(feature="System Error", direction="DOWN", text="Explanation preprocessor missing", importance=0))
                  except Exception as e:
