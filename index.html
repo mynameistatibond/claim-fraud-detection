@@ -411,11 +411,16 @@
                             id="val_tenure">200</span></div>
                     <input type="range" id="months_as_customer" min="0" max="500" step="12" value="200">
                 </div>
-
+                <!-- Policy Age Abstracted -->
                 <div class="control-group">
-                    <div class="slider-header"><label>Days Since Start</label><span class="slider-val"
-                            id="val_bind">4,680</span></div>
-                    <input type="range" id="days_since_bind" min="0" max="5000" step="90" value="4680">
+                    <label>When did the policy start?</label>
+                    <select id="days_since_bind">
+                        <option value="90">Less than 6 months ago</option>
+                        <option value="270">6–12 months ago</option>
+                        <option value="540">1–2 years ago</option>
+                        <option value="1500" selected>2–5 years ago</option>
+                        <option value="3000">More than 5 years ago</option>
+                    </select>
                 </div>
             </div>
         </div>
@@ -534,12 +539,11 @@
                 id === 'policy_annual_premium' ? 'premium' :
                     id === 'total_claim_amount' ? 'total_claim' :
                         id === 'months_as_customer' ? 'tenure' :
-                            id === 'days_since_bind' ? 'bind' :
-                                id === 'vehicle_age' ? 'veh_age' :
-                                    id === 'injury_share' ? 'injury_share' :
-                                        id === 'property_share' ? 'prop_share' :
-                                            id === 'capital_gains' ? 'cap_gain' :
-                                                id === 'capital_loss' ? 'cap_loss' : id));
+                            id === 'vehicle_age' ? 'veh_age' :
+                                id === 'injury_share' ? 'injury_share' :
+                                    id === 'property_share' ? 'prop_share' :
+                                        id === 'capital_gains' ? 'cap_gain' :
+                                            id === 'capital_loss' ? 'cap_loss' : id));
             if (!el || !display) return;
 
             el.addEventListener('input', () => {
@@ -570,7 +574,6 @@
         updateVal('vehicle_age', '', 'yrs');
         updateVal('age', '', 'yrs');
         updateVal('months_as_customer', '');
-        updateVal('days_since_bind', '');
         updateVal('incident_hour_of_the_day', '');
 
         // --- CAPITAL TOGGLE Logic ---
