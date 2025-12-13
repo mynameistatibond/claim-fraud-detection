@@ -594,7 +594,7 @@
 
             <!-- 3. DECISION RECOMMENDATION (Card Style) -->
             <div class="result-section"
-                style="margin-bottom: 30px; padding: 20px; border-radius: 6px; background: rgba(255,255,255,0.06);">
+                style="margin-bottom: 20px; padding: 20px; border-radius: 6px; background: rgba(255,255,255,0.06);">
                 <div
                     style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.6; margin-bottom: 12px;">
                     Recommended Action</div>
@@ -602,11 +602,30 @@
                 <div style="font-size: 14px; opacity: 0.8; margin-bottom: 5px;">Next steps:</div>
                 <div id="resActionSteps" style="font-size: 14px; line-height: 1.6; opacity: 0.9; padding-left: 5px;">--
                 </div>
+
+                <!-- SHAP TRIGGER -->
+                <button id="viewDriversBtn"
+                    style="margin-top: 20px; background: transparent; border: 1px solid var(--clr-divider); color: var(--clr-text); padding: 8px 16px; font-size: 12px; border-radius: 4px; cursor: pointer; opacity: 0.8;">👉
+                    View risk drivers</button>
+            </div>
+
+            <!-- RISK DRIVERS PANEL (Hidden) -->
+            <div id="driversPanel"
+                style="display:none; margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--clr-divider);">
+                <div style="font-size: 14px; font-weight: 600; margin-bottom: 15px;">Risk Drivers</div>
+                <div style="font-size: 12px; opacity: 0.6; margin-bottom: 15px;">Top factors influencing this risk
+                    score provided by SHAP analysis.</div>
+
+                <div id="driversList" style="display: list-item;"></div>
+
+                <div style="margin-top: 15px; font-size: 10px; opacity: 0.4; font-style: italic;">
+                    These factors indicate statistical associations, not proof of fraud.
+                </div>
             </div>
 
             <!-- 4. METADATA (Single Line, Quiet) -->
             <div id="metaFooter"
-                style="border-top: 1px solid var(--clr-divider); padding-top: 15px; font-size: 11px; opacity: 0.4; text-align: center;">
+                style="border-top: 1px solid var(--clr-divider); margin-top: 20px; padding-top: 15px; font-size: 11px; opacity: 0.4; text-align: center;">
                 --
             </div>
         </div>
@@ -706,13 +725,55 @@
             document.getElementById('scenario_desc').innerText = scenarioDesc[e.target.value];
         });
 
+        // Global state for explanation
+        let lastExplanation = [];
 
+        // Toggle Drivers
+        document.getElementById('viewDriversBtn').addEventListener('click', () => {
+            const panel = document.getElementById('driversPanel');
+            if (panel.style.display === 'none') {
+                panel.style.display = 'block';
+                // Render
+                const list = document.getElementById('driversList');
+                list.innerHTML = '';
+
+                if (!lastExplanation || lastExplanation.length === 0) {
+                    list.innerHTML = '<div style="opacity:0.5; font-size:12px;">No risk drivers available for this model/scenario.</div>';
+                    return;
+                }
+
+                lastExplanation.forEach(item => {
+                    const isUp = item.direction === 'UP';
+                    const icon = isUp ? '⬆' : '⬇';
+                    const color = isUp ? '#ffcccc' : '#ccffcc'; // Subtle tint? Actually user said "Arrow or +/- sign (subtle)"
+                    // User said: "Injury-related costs ... Increased risk ... Higher than typical"
+
+                    const row = document.createElement('div');
+                    row.style.marginBottom = "15px";
+                    row.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
+                    row.style.paddingBottom = "10px";
+
+                    row.innerHTML = `
+                        <div style="font-weight: 500; font-size: 14px; margin-bottom: 4px;">${item.feature}</div>
+                        <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; opacity: 0.9;">
+                             <span style="opacity: 0.7;">${icon} ${item.direction === 'UP' ? 'Increased risk' : 'Reduced risk'}</span>
+                             <span style="opacity: 0.4;">|</span>
+                             <span>${item.text}</span>
+                        </div>
+                     `;
+                    list.appendChild(row);
+                });
+            } else {
+                panel.style.display = 'none';
+            }
+        });
 
         // --- SUBMISSION ---
         document.getElementById('predictBtn').addEventListener('click', async () => {
             const btn = document.getElementById('predictBtn');
             const resBox = document.getElementById('resultBox');
             const errBox = document.getElementById('errorBox');
+            const driversPanel = document.getElementById('driversPanel');
 
             // Reset
             btn.disabled = true;
@@ -720,6 +781,7 @@
             btn.innerText = "Processing...";
             resBox.style.display = 'none';
             errBox.style.display = 'none';
+            driversPanel.style.display = 'none'; // Auto hide on new predict
 
             try {
                 // Construct Payload
@@ -747,7 +809,8 @@
                 const model = document.getElementById('model').value;
                 const scenario = document.getElementById('scenario').value;
 
-                const response = await fetch(`/predict?model=${model}&scenario=${scenario}`, {
+                // Request explanation by default now
+                const response = await fetch(`/predict?model=${model}&scenario=${scenario}&explain=true`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -806,6 +869,9 @@
                 const modeStatus = scenario === 'auto_flagger' ? "Auto-Flagger" : "Dashboard Review";
 
                 document.getElementById('metaFooter').innerText = `Model: ${txtModel} · Calibration: ${calibStatus} · Mode: ${modeStatus}`;
+
+                // 5. Store SHAP
+                lastExplanation = data.explanation || [];
 
                 resBox.style.display = 'block';
 
