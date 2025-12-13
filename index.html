@@ -159,10 +159,14 @@
             -webkit-appearance: none;
             appearance: none;
             width: 100%;
+            height: 30px;
+            /* Bigger hit area */
             background: transparent;
-            margin: 10px 0;
+            margin: 0;
+            /* Centered by height */
             cursor: pointer;
-            /* Clickable track */
+            position: relative;
+            z-index: 1;
         }
 
         input[type="range"]::-webkit-slider-runnable-track {
@@ -183,15 +187,18 @@
         /* Smaller, lighter thumb */
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            height: 14px;
-            width: 14px;
+            height: 12px;
+            /* Even smaller thumb */
+            width: 12px;
             border-radius: 50%;
             background: var(--clr-text);
             cursor: pointer;
-            margin-top: -7px;
-            /* keep centered */
+            margin-top: -6px;
+            /* Centered: half of 12px */
             box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
             transition: box-shadow 0.2s ease, transform 0.15s ease;
+            position: relative;
+            z-index: 2;
         }
 
         /* Better hover feedback */
@@ -1403,6 +1410,27 @@
                 btn.style.opacity = "1.0";
                 btn.disabled = false;
             }
+        });
+
+        // --- CLEAR RESULTS ON CHANGE ---
+        const clearResults = () => {
+            const resBox = document.getElementById('resultBox');
+            const errBox = document.getElementById('errorBox');
+            const driversPanel = document.getElementById('driversPanel');
+            const llmSummaryBox = document.getElementById('llmSummaryBox');
+
+            if (resBox && resBox.style.display !== 'none') {
+                resBox.style.display = 'none';
+                errBox.style.display = 'none';
+                driversPanel.style.display = 'none';
+                llmSummaryBox.style.display = 'none';
+            }
+        };
+
+        // Attach to all inputs
+        document.querySelectorAll('input, select').forEach(el => {
+            el.addEventListener('change', clearResults);
+            el.addEventListener('input', clearResults);
         });
 
         // --- SUBMISSION ---
