@@ -24,8 +24,8 @@ logger = logging.getLogger(__name__)
 app = FastAPI(title="Fraud Detection API", version="2.0.0")
 
 # --- CONFIG ---
-MODELS_DIR = "models"
-APP_VERSION = "1.3.1"
+MODELS_DIR = Path("models")
+APP_VERSION = "1.3.2"
 THRESHOLD_AUTO_FLAG = 0.53
 
 # Model registry
