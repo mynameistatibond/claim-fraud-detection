@@ -23,9 +23,9 @@ logger = logging.getLogger(__name__)
 # Initialize FastAPI app
 app = FastAPI(title="Fraud Detection API", version="2.0.0")
 
-# Model configuration
-MODELS_DIR = Path("models")
-APP_VERSION = "1.2.0"
+# --- CONFIG ---
+MODELS_DIR = "models"
+APP_VERSION = "1.3.0"
 THRESHOLD_AUTO_FLAG = 0.53
 
 # Model registry
@@ -383,15 +383,46 @@ async def predict(
     if scenario == "auto_flagger":
         threshold_flag = "AUTO_FLAG" if proba >= THRESHOLD_AUTO_FLAG else "AUTO_APPROVE"
     
+    # LLM Explanation Logic
+    llm_result = None
+    if llm_explain:
+        if not explain:
+             llm_result = {"error": "Explanation (SHAP) processing was disabled."}
+        elif not explanation_items:
+             llm_result = {"error": "No risk drivers found to explain. (SHAP returned empty)"}
+        elif not generate_llm_explanation:
+             llm_result = {"error": "LLM Module failed to load on server startup."}
+        else:
+            try:
+                # Determine readable model name for prompt
+                model_nice_name = model
+                if model == "xgb": model_nice_name = "XGBoost"
+                elif model == "voting": model_nice_name = "Voting Ensemble"
+                elif model == "rf": model_nice_name = "Random Forest"
+                elif model == "et": model_nice_name = "Extra Trees"
+
+                llm_result = generate_llm_explanation(
+                    selected_model_name=model_nice_name,
+                    reference_model_name="ExtraTrees (Reference)", # From EXPLANATION_SOURCE_MODEL
+                    risk_score=float(proba),
+                    explanation_items=explanation_items
+                )
+            except Exception as e:
+                logger.error(f"LLM generation failed in endpoint: {e}")
+                llm_result = {"error": f"Endpoint Error: {str(e)}"}
+
     return PredictionResponse(
         model=model_name,
         calibrated=("calibrated" in model_key),
         probability=float(proba),
         threshold_flag=threshold_flag,
         scenario=scenario,
-        explanation=explanation_items
+        explanation=explanation_items,
+        llm_explanation=llm_result,
+        app_version=APP_VERSION
     )
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+```
