@@ -283,7 +283,7 @@ def generate_smart_fallback(selected_model: str, risk_score: float, explanation_
     for item in explanation_items[:5]:
         if isinstance(item, dict):
             feat = item.get('feature', 'Unknown')
-            text = item.get('text', '')
+            text = item.get('text', '') # "Feature contributes to higher risk"
             direction = item.get('direction', '')
         else:
             feat = getattr(item, 'feature', 'Unknown')
@@ -292,13 +292,17 @@ def generate_smart_fallback(selected_model: str, risk_score: float, explanation_
         
         display_feat = feat.replace('_', ' ').title()
         
-        if 'increase' in direction.lower():
-            bullet = f"**{display_feat}**: {text} - This factor elevates risk as it aligns with patterns historically associated with problematic claims."
-        elif 'decrease' in direction.lower():
-            bullet = f"**{display_feat}**: {text} - This factor reduces risk as it matches characteristics of typical legitimate claims."
-        else:
-            bullet = f"**{display_feat}**: {text}"
+        # FIX: Avoid "Feature: Feature..." duplication.
+        # Use a fresh sentence based on direction.
         
+        if 'UP' in direction or 'increase' in direction.lower():
+            reason = "Aligns with patterns historically associated with higher risk claims."
+        elif 'DOWN' in direction or 'decrease' in direction.lower():
+            reason = "Matches characteristics often seen in legitimate (lower risk) claims."
+        else:
+            reason = "Identified as a key factor in the risk assessment."
+
+        bullet = f"**{display_feat}**: {reason}"
         bullets.append(bullet)
     
     return {
