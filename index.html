@@ -573,39 +573,41 @@
         </div>
 
         <!-- RESULT -->
-        <div id="resultBox" class="result-box" style="display:none; text-align: left; background: rgba(0,0,0,0.2);">
+        <div id="resultBox" class="result-box" style="display:none; text-align: left; padding-top: 20px;">
 
-            <!-- 1. PRIMARY RISK SCORE -->
-            <div class="result-section">
-                <div class="risk-score-display" style="display: flex; align-items: baseline; margin-bottom: 10px;">
-                    <span id="resScoreVal" style="font-size: 48px; font-weight: 700; margin-right: 15px;">--%</span>
-                    <span id="resScoreLabel" style="font-size: 18px; opacity: 0.8; font-weight: 500;">--</span>
-                </div>
+            <!-- 1. PRIMARY RISK SCORE (Vertical, Authoritative) -->
+            <div class="result-section" style="margin-bottom: 30px;">
+                <div id="resScoreVal" style="font-size: 56px; font-weight: 600; line-height: 1; margin-bottom: 10px;">
+                    --%</div>
+                <div id="resScoreLabel"
+                    style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.15em; font-weight: 500; opacity: 0.7;">
+                    --</div>
             </div>
 
             <!-- 2. RISK CONTEXT -->
-            <div class="result-section" style="margin-bottom: 25px;">
+            <div class="result-section" style="margin-bottom: 30px;">
                 <div
-                    style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.6; margin-bottom: 5px;">
+                    style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.5; margin-bottom: 5px;">
                     Risk Context</div>
-                <div id="resContextText" style="font-size: 15px; font-style: italic;">--</div>
+                <div id="resContextText" style="font-size: 15px; font-style: italic; opacity: 0.9;">--</div>
             </div>
 
-            <!-- 3. DECISION RECOMMENDATION -->
+            <!-- 3. DECISION RECOMMENDATION (Card Style) -->
             <div class="result-section"
-                style="margin-bottom: 25px; padding: 15px; border: 1px solid var(--clr-divider); border-radius: 4px; background: rgba(255,255,255,0.02);">
+                style="margin-bottom: 30px; padding: 20px; border-radius: 6px; background: rgba(255,255,255,0.06);">
                 <div
-                    style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.6; margin-bottom: 8px; color: var(--clr-highlight);">
+                    style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.6; margin-bottom: 12px;">
                     Recommended Action</div>
-                <div id="resActionText" style="font-size: 15px; line-height: 1.5;">--</div>
+                <div id="resActionHeader" style="font-size: 16px; font-weight: 600; margin-bottom: 15px;">--</div>
+                <div style="font-size: 14px; opacity: 0.8; margin-bottom: 5px;">Next steps:</div>
+                <div id="resActionSteps" style="font-size: 14px; line-height: 1.6; opacity: 0.9; padding-left: 5px;">--
+                </div>
             </div>
 
-            <!-- 4. METADATA -->
-            <div
-                style="border-top: 1px solid var(--clr-divider); padding-top: 15px; font-size: 12px; opacity: 0.5; display: flex; gap: 20px;">
-                <span id="metaModel">Model: --</span>
-                <span id="metaCalib">Calibration: --</span>
-                <span id="metaMode">Mode: --</span>
+            <!-- 4. METADATA (Single Line, Quiet) -->
+            <div id="metaFooter"
+                style="border-top: 1px solid var(--clr-divider); padding-top: 15px; font-size: 11px; opacity: 0.4; text-align: center;">
+                --
             </div>
         </div>
 
@@ -758,56 +760,52 @@
                 const prob = data.probability;
                 const pct = (prob * 100).toFixed(1) + "%";
 
-                // 1. Label Mapping
-                let label = "Low Risk";
-                if (prob >= 0.3) label = "Moderate Risk";
-                if (prob >= 0.5) label = "High Risk";
-                if (prob >= 0.7) label = "Very High Risk";
+                // 1. Label Mapping (ALL CAPS)
+                let label = "LOW RISK";
+                if (prob >= 0.3) label = "MODERATE RISK";
+                if (prob >= 0.5) label = "HIGH RISK";
+                if (prob >= 0.7) label = "VERY HIGH RISK";
 
                 document.getElementById('resScoreVal').innerText = pct;
-                document.getElementById('resScoreLabel').innerText = "Detailed Analysis: " + label;
+                document.getElementById('resScoreLabel').innerText = label;
 
-                // 2. Risk Context (Fallback for now)
-                let context = "Result is within the typical range for this category.";
-                if (prob >= 0.6) context = "Risk compared to typical claims: Elevated";
-                // If we had percentiles, we would map them here. Assuming fallback for robustness.
+                // 2. Risk Context
+                let context = "This claim falls within the typical risk range compared to similar claims.";
+                if (prob >= 0.6) context = "This claim falls within the elevated risk range compared to similar claims.";
                 document.getElementById('resContextText').innerText = context;
 
-                // 3. Recommendation
-                let recHtml = "";
-                const isHigh = prob >= 0.5; // operational threshold assumption
+                // 3. Recommendation Card
+                let header = "";
+                let steps = "";
+                const isHigh = prob >= 0.5; // operational threshold
 
                 if (scenario === 'auto_flagger') {
                     if (isHigh) {
-                        recHtml = `<strong>This claim exceeds the operational risk threshold.</strong><br><br>
-                                   Recommended next steps:<br>
-                                   • Automatically flag for further investigation<br>
-                                   • Route to fraud review queue<br>
-                                   • Do not approve without manual verification`;
+                        header = "⚠ Claim exceeds operational threshold";
+                        steps = "• Automatically flag for further investigation<br>• Route to fraud review queue<br>• Do not approve without manual verification";
                     } else {
-                        recHtml = `This claim does not exceed the auto-flag threshold.<br><br>
-                                   Recommended next steps:<br>
-                                   • Continue standard processing<br>
-                                   • No immediate fraud action required`;
+                        header = "✓ No immediate fraud action required";
+                        steps = "• Continue standard processing<br>• Monitor as part of routine checks";
                     }
                 } else { // dashboard
-                    recHtml = `This claim shows ${isHigh ? 'elevated' : 'standard'} fraud risk compared to similar cases.<br><br>
-                               Recommended next steps:<br>
-                               • Review supporting documentation<br>
-                               • Verify claim details and timelines<br>
-                               • Use the risk score as one input, not the sole decision factor`;
+                    if (isHigh) {
+                        header = "⚠ Elevated risk factors detected";
+                        steps = "• Review supporting documentation<br>• Verify claim details and timelines<br>• Use as decision support input";
+                    } else {
+                        header = "✓ Standard risk profile";
+                        steps = "• Proceed with standard review<br>• Verify basic documentation";
+                    }
                 }
-                document.getElementById('resActionText').innerHTML = recHtml;
 
-                // 4. Metadata
-                document.getElementById('metaModel').innerText = "Model Engine: " +
-                    (model === 'voting' ? "Voting Ensemble" : model.toUpperCase());
+                document.getElementById('resActionHeader').innerText = header;
+                document.getElementById('resActionSteps').innerHTML = steps;
 
-                document.getElementById('metaCalib').innerText = "Calibration: " +
-                    (scenario === 'dashboard' ? "Enabled" : "Disabled");
+                // 4. Metadata Footer
+                const txtModel = model === 'voting' ? "Voting Ensemble" : model.toUpperCase();
+                const calibStatus = scenario === 'dashboard' ? "Enabled" : "Disabled";
+                const modeStatus = scenario === 'auto_flagger' ? "Auto-Flagger" : "Dashboard Review";
 
-                document.getElementById('metaMode').innerText = "Decision Mode: " +
-                    (scenario === 'auto_flagger' ? "Auto-Flagger" : "Dashboard Review");
+                document.getElementById('metaFooter').innerText = `Model: ${txtModel} · Calibration: ${calibStatus} · Mode: ${modeStatus}`;
 
                 resBox.style.display = 'block';
 
