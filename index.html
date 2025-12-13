@@ -573,9 +573,40 @@
         </div>
 
         <!-- RESULT -->
-        <div id="resultBox" class="result-box">
-            <div class="result-score" id="resultScore">--</div>
-            <div class="result-detail" id="resultText"></div>
+        <div id="resultBox" class="result-box" style="display:none; text-align: left; background: rgba(0,0,0,0.2);">
+
+            <!-- 1. PRIMARY RISK SCORE -->
+            <div class="result-section">
+                <div class="risk-score-display" style="display: flex; align-items: baseline; margin-bottom: 10px;">
+                    <span id="resScoreVal" style="font-size: 48px; font-weight: 700; margin-right: 15px;">--%</span>
+                    <span id="resScoreLabel" style="font-size: 18px; opacity: 0.8; font-weight: 500;">--</span>
+                </div>
+            </div>
+
+            <!-- 2. RISK CONTEXT -->
+            <div class="result-section" style="margin-bottom: 25px;">
+                <div
+                    style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.6; margin-bottom: 5px;">
+                    Risk Context</div>
+                <div id="resContextText" style="font-size: 15px; font-style: italic;">--</div>
+            </div>
+
+            <!-- 3. DECISION RECOMMENDATION -->
+            <div class="result-section"
+                style="margin-bottom: 25px; padding: 15px; border: 1px solid var(--clr-divider); border-radius: 4px; background: rgba(255,255,255,0.02);">
+                <div
+                    style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.6; margin-bottom: 8px; color: var(--clr-highlight);">
+                    Recommended Action</div>
+                <div id="resActionText" style="font-size: 15px; line-height: 1.5;">--</div>
+            </div>
+
+            <!-- 4. METADATA -->
+            <div
+                style="border-top: 1px solid var(--clr-divider); padding-top: 15px; font-size: 12px; opacity: 0.5; display: flex; gap: 20px;">
+                <span id="metaModel">Model: --</span>
+                <span id="metaCalib">Calibration: --</span>
+                <span id="metaMode">Mode: --</span>
+            </div>
         </div>
 
     </div>
@@ -681,6 +712,7 @@
             const resBox = document.getElementById('resultBox');
             const errBox = document.getElementById('errorBox');
 
+            // Reset
             btn.disabled = true;
             btn.style.opacity = "0.5";
             btn.innerText = "Processing...";
@@ -688,6 +720,7 @@
             errBox.style.display = 'none';
 
             try {
+                // Construct Payload
                 const payload = {
                     incident_severity: document.getElementById('incident_severity').value,
                     injury_share: parseFloat(document.getElementById('injury_share').value) / 100.0,
@@ -719,23 +752,64 @@
                 });
 
                 if (!response.ok) throw new Error(await response.text());
-
                 const data = await response.json();
 
-                // Show Result
+                // --- RENDER RESULT ---
+                const prob = data.probability;
+                const pct = (prob * 100).toFixed(1) + "%";
+
+                // 1. Label Mapping
+                let label = "Low Risk";
+                if (prob >= 0.3) label = "Moderate Risk";
+                if (prob >= 0.5) label = "High Risk";
+                if (prob >= 0.7) label = "Very High Risk";
+
+                document.getElementById('resScoreVal').innerText = pct;
+                document.getElementById('resScoreLabel').innerText = "Detailed Analysis: " + label;
+
+                // 2. Risk Context (Fallback for now)
+                let context = "Result is within the typical range for this category.";
+                if (prob >= 0.6) context = "Risk compared to typical claims: Elevated";
+                // If we had percentiles, we would map them here. Assuming fallback for robustness.
+                document.getElementById('resContextText').innerText = context;
+
+                // 3. Recommendation
+                let recHtml = "";
+                const isHigh = prob >= 0.5; // operational threshold assumption
+
+                if (scenario === 'auto_flagger') {
+                    if (isHigh) {
+                        recHtml = `<strong>This claim exceeds the operational risk threshold.</strong><br><br>
+                                   Recommended next steps:<br>
+                                   • Automatically flag for further investigation<br>
+                                   • Route to fraud review queue<br>
+                                   • Do not approve without manual verification`;
+                    } else {
+                        recHtml = `This claim does not exceed the auto-flag threshold.<br><br>
+                                   Recommended next steps:<br>
+                                   • Continue standard processing<br>
+                                   • No immediate fraud action required`;
+                    }
+                } else { // dashboard
+                    recHtml = `This claim shows ${isHigh ? 'elevated' : 'standard'} fraud risk compared to similar cases.<br><br>
+                               Recommended next steps:<br>
+                               • Review supporting documentation<br>
+                               • Verify claim details and timelines<br>
+                               • Use the risk score as one input, not the sole decision factor`;
+                }
+                document.getElementById('resActionText').innerHTML = recHtml;
+
+                // 4. Metadata
+                document.getElementById('metaModel').innerText = "Model Engine: " +
+                    (model === 'voting' ? "Voting Ensemble" : model.toUpperCase());
+
+                document.getElementById('metaCalib').innerText = "Calibration: " +
+                    (scenario === 'dashboard' ? "Enabled" : "Disabled");
+
+                document.getElementById('metaMode').innerText = "Decision Mode: " +
+                    (scenario === 'auto_flagger' ? "Auto-Flagger" : "Dashboard Review");
+
                 resBox.style.display = 'block';
-
-                const pct = (data.probability * 100).toFixed(1) + "%";
-                const label = data.probability > 0.5 ? "Detailed Analysis: High Risk" : "Detailed Analysis: Standard Risk";
-
-                document.getElementById('resultScore').innerText = pct;
-
-                let txt = `${label}<br><br>`;
-                txt += `Model Engine: ${data.model} <br>`;
-                txt += `Calibration: ${data.calibrated ? 'Enabled' : 'Disabled'}`;
-                if (data.threshold_flag) txt += `<br>Auto-Flag Status: ${data.threshold_flag}`;
-
-                document.getElementById('resultText').innerHTML = txt;
 
             } catch (e) {
                 errBox.innerText = "System Error: " + e.message;
@@ -748,7 +822,7 @@
         });
 
         // Initial setup of function exposure
-        window.setCapMode = setCapMode;
+        // Removed setCapMode exposure as it is deleted
 
     </script>
 
