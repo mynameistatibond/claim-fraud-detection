@@ -159,14 +159,13 @@ def load_shap_resources():
                      else:
                          X_bg = BACKGROUND_DATA
                      
-                     # Attempt 1: TreeExplainer (Fast, Precise)
+                     # Attempt 1: TreeExplainer
                      try:
                          explainer = shap.TreeExplainer(estimator, X_bg)
                          logger.info(f"Initialized TreeExplainer for {key}")
                      except Exception as e_tree:
                          logger.warning(f"TreeExplainer failed for {key} ({e_tree}). Falling back to KernelExplainer.")
-                         # Attempt 2: KernelExplainer (Slow, Model-Agnostic)
-                         # Use k-means summary to speed it up (10 centroids)
+                         # Attempt 2: KernelExplainer
                          try:
                              if hasattr(estimator, 'predict_proba'):
                                  pred_fn = estimator.predict_proba
@@ -182,29 +181,108 @@ def load_shap_resources():
                              explainer = shap.KernelExplainer(pred_fn, X_bg_summary)
                              logger.info(f"Initialized KernelExplainer for {key}")
                          except Exception as e_kernel:
-                             logger.error(f"All SHAP inits failed for {key}: {e_kernel}")
+                             logger.error(f"KernelSHAP also failed for {key}: {e_kernel}")
                              explainer = None
 
                      if explainer:
                          SHAP_EXPLAINERS[key] = explainer
+                         # Map calibrated
                          cal_key = key.replace("uncalibrated", "calibrated")
                          SHAP_EXPLAINERS[cal_key] = explainer
 
             except Exception as e:
                 logger.warning(f"Could not init SHAP for {key}: {e}")
 
-# ... (startup)
+@app.on_event("startup")
+async def startup_event():
+    load_models()
+    load_shap_resources()
 
-# ...
+def get_readable_explanation(feature, val_raw, shap_val, mean_val):
+    """Generate human-friendly text based on feature value and SHAP direction"""
+    direction = "Increased risk" if shap_val > 0 else "Reduced risk"
+    fname = FEATURE_MAP.get(feature, feature.replace("_", " ").title())
+    
+    # Generic logic
+    reason = "factor"
+    if shap_val > 0:
+        if val_raw > mean_val: reason = f"Higher {fname} than typical"
+        else: reason = f"Specific {fname} configuration"
+    else:
+        if val_raw > mean_val and "tenure" in feature: reason = "Long-standing customer history"
+        elif val_raw < mean_val: reason = f"Lower {fname} than typical"
+        else: reason = f"Favorable {fname} profile"
 
-# ... inside predict ...
-        # SHAP
+    # Specific Overrides
+    if feature == "total_claim_amount":
+        if shap_val > 0: reason = "Larger-than-usual claim size"
+        else: reason = "Smaller-than-usual claim size"
+    elif feature == "incident_hour_of_the_day":
+        if shap_val > 0: reason = "Off-hours incident timing"
+        else: reason = "Daytime incident timing"
+    elif feature == "injury_share":
+        if shap_val > 0: reason = "High proportion of injury costs"
+        else: reason = "Low proportion of injury costs"
+    elif feature == "age":
+        if shap_val > 0: reason = "Insured age group associated with higher risk"
+        else: reason = "Insured age group associated with lower risk"
+    
+    return direction, reason
+
+@app.get("/")
+async def root():
+    return FileResponse("index.html")
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "models_loaded": len(MODELS)}
+
+@app.post("/predict", response_model=PredictionResponse)
+async def predict(
+    claim_data: ClaimInput,
+    model: Literal["rf", "et", "xgb", "voting"] = Query("rf"),
+    calibrated: bool = Query(True),
+    scenario: Literal["auto_flagger", "dashboard"] = Query("dashboard"),
+    explain: bool = Query(True)
+):
+    model_map = {"rf": "RandomForest", "et": "ExtraTrees", "xgb": "XGBoost", "voting": "VotingEnsemble"}
+    model_name = model_map[model]
+    
+    cal_type = "calibrated" if calibrated else "uncalibrated"
+    if scenario == "auto_flagger": cal_type = "uncalibrated"
+    elif scenario == "dashboard": cal_type = "calibrated"
+    
+    model_key = f"{model_name}_{cal_type}"
+    
+    if model_key not in MODELS:
+        # Fallback to uncalibrated if calibrated not found (common dev issue)
+        if cal_type == 'calibrated':
+             model_key = f"{model_name}_uncalibrated"
+        if model_key not in MODELS:
+             raise HTTPException(status_code=404, detail=f"Model {model_key} not found")
+    
+    loaded_model = MODELS[model_key]
+    
+    try:
+        # Convert Pydantic to Dict
+        input_dict = claim_data.dict(by_alias=True)
+        
+        # FULL PREPROCESSING
+        final_df = preprocess_input(input_dict)
+        
+        # Predict
+        if hasattr(loaded_model, "predict_proba"):
+             proba = loaded_model.predict_proba(final_df)[0, 1]
+        else:
+             start_pred = loaded_model.predict(final_df)
+             proba = float(start_pred[0])
+        
+        # SHAP EXPLANATION
         explanation_items = []
         if explain and "Voting" not in model_name and BACKGROUND_DATA is not None:
              try:
                  explainer = SHAP_EXPLAINERS.get(model_key)
                  if not explainer:
-                     # Fallback check for sibling if calibrated
                      if "calibrated" in model_key:
                          uncal_key = model_key.replace("calibrated", "uncalibrated")
                          explainer = SHAP_EXPLAINERS.get(uncal_key)
@@ -233,20 +311,18 @@ def load_shap_resources():
                      shap_values = explainer.shap_values(X_query)
                      
                      if isinstance(shap_values, list):
-                         vals = shap_values[1][0] # Positive class for Classifier
+                         vals = shap_values[1][0] 
                      elif len(shap_values.shape) > 1 and shap_values.shape[1] > 1:
-                         vals = shap_values[0][1] # KernelExplainer (nsamples, nclasses) -> (1, 2)
+                         vals = shap_values[0][1] 
                      else:
-                         vals = shap_values[0] # Regression or flat array
-                         # Handle KernelExplainer single sample output shape quirks
-                         if vals.shape == (2,): vals = vals[1]
-                         elif len(vals.shape) == 0: vals = float(vals) # scalar
+                         vals = shap_values[0] 
+                         if hasattr(vals, 'shape') and vals.shape == (2,): vals = vals[1]
+                         elif hasattr(vals, 'shape') and len(vals.shape) == 0: vals = float(vals)
                      
                      # Map Items
                      clean_feats = [f.split('__')[-1] if '__' in f else f for f in feature_names]
                      
                      items_temp = []
-                     # Handle if vals is not iterable
                      if isinstance(vals, (float, int)): vals = [vals]
                      
                      for i, feat_name in enumerate(clean_feats):
@@ -277,17 +353,15 @@ def load_shap_resources():
                              importance=float(abs(item['shap']))
                          ))
                  else:
-                     # Explicitly report initialization failure via UI
                      explanation_items.append(ExplanationItem(
                          feature="Initialization Failed",
                          direction="DOWN", 
-                         text="SHAP explainer could not be loaded on startup. Check logs.",
+                         text="SHAP explainer init failed. See logs.",
                          importance=0.0
                      ))
                          
              except Exception as e:
                  logger.warning(f"SHAP gen failed: {e}")
-                 # Debugging: Return error as explanation
                  explanation_items.append(ExplanationItem(
                      feature="System Error",
                      direction="DOWN", 
