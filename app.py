@@ -25,7 +25,7 @@ app = FastAPI(title="Fraud Detection API", version="2.0.0")
 
 # --- CONFIG ---
 MODELS_DIR = "models"
-APP_VERSION = "1.3.0"
+APP_VERSION = "1.3.1"
 THRESHOLD_AUTO_FLAG = 0.53
 
 # Model registry
@@ -425,4 +425,3 @@ async def predict(
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-```
