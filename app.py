@@ -15,6 +15,10 @@ import logging
 import pandas as pd
 import shap
 from preprocessing import preprocess_input
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -31,7 +35,7 @@ except ImportError as e:
 
 # --- CONFIG ---
 MODELS_DIR = Path("models")
-APP_VERSION = "1.3.10"
+APP_VERSION = "1.3.11"
 THRESHOLD_AUTO_FLAG = 0.53
 
 # Model registry
