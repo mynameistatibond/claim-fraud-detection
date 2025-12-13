@@ -6,297 +6,662 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fraud Detection API - Client</title>
     <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-hover: #4338CA;
+            --bg: #F3F4F6;
+            --card-bg: #FFFFFF;
+            --text-main: #111827;
+            --text-sub: #6B7280;
+            --border: #E5E7EB;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            font-family: 'Inter', -apple-system, sans-serif;
         }
 
         body {
-            font-family: 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--bg);
+            color: var(--text-main);
             min-height: 100vh;
-            padding: 20px;
             display: flex;
             justify-content: center;
+            padding: 40px 20px;
         }
 
         .container {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 900px;
+            background: var(--card-bg);
             width: 100%;
+            max-width: 800px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             padding: 40px;
-            margin-top: 20px;
+        }
+
+        /* Header */
+        header {
+            margin-bottom: 40px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 20px;
         }
 
         h1 {
-            color: #333;
-            margin-bottom: 20px;
-            font-size: 28px;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 8px;
         }
 
-        .config-section {
-            background: #f8f9fa;
-            padding: 20px;
+        .subtitle {
+            color: var(--text-sub);
+            font-size: 14px;
+        }
+
+        /* Configuration Top Bar */
+        .config-bar {
+            background: #F9FAFB;
+            border: 1px solid var(--border);
             border-radius: 8px;
-            margin-bottom: 30px;
-            border: 1px solid #e9ecef;
-        }
-
-        .config-grid {
+            padding: 20px;
+            margin-bottom: 40px;
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: 1fr 1fr;
             gap: 20px;
         }
 
-        .input-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
+        /* Tiers */
+        .tier-section {
+            margin-bottom: 40px;
         }
 
-        .form-group {
-            margin-bottom: 10px;
+        .tier-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--bg);
+        }
+
+        .tier-icon {
+            font-size: 20px;
+            margin-right: 12px;
+        }
+
+        .tier-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-main);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Form Grid */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .control-group {
+            margin-bottom: 5px;
         }
 
         label {
             display: block;
-            font-weight: 600;
-            margin-bottom: 5px;
-            color: #495057;
             font-size: 13px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 8px;
         }
 
-        input,
-        select {
+        /* Inputs */
+        select,
+        input[type="text"] {
             width: 100%;
-            padding: 10px;
-            border: 2px solid #e9ecef;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
             border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            transition: border-color 0.15s;
+        }
+
+        select:focus,
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        /* Sliders */
+        .slider-container {
+            margin-top: 5px;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .slider-val {
+            font-weight: 700;
+            color: var(--primary);
             font-size: 14px;
         }
 
-        input:focus,
-        select:focus {
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: #E5E7EB;
+            border-radius: 3px;
             outline: none;
-            border-color: #667eea;
+            -webkit-appearance: none;
         }
 
-        .predict-btn {
-            background: #667eea;
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+
+        .helper-text {
+            font-size: 12px;
+            color: var(--text-sub);
+            margin-top: 6px;
+        }
+
+        /* Action Bar */
+        .action-bar {
+            margin-top: 40px;
+            border-top: 1px solid var(--border);
+            padding-top: 30px;
+        }
+
+        button.primary-btn {
+            width: 100%;
+            background: var(--primary);
             color: white;
             border: none;
-            padding: 15px;
+            padding: 16px;
             border-radius: 8px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            width: 100%;
-            margin-top: 20px;
+            transition: background 0.2s;
         }
 
-        .predict-btn:hover {
-            background: #5a67d8;
+        button.primary-btn:hover {
+            background: var(--primary-hover);
         }
 
-        .result-section {
+        button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        /* Results */
+        .result-box {
             margin-top: 30px;
-            padding: 25px;
+            padding: 20px;
             border-radius: 8px;
-            display: none;
             text-align: center;
+            display: none;
         }
 
-        .result-section.show {
-            display: block;
+        .result-box.fraud {
+            background: #FEF2F2;
+            border: 1px solid #FECACA;
+            color: #991B1B;
         }
 
-        .result-section.fraud {
-            background: #fff5f5;
-            border: 2px solid #fc8181;
+        .result-box.legit {
+            background: #ECFDF5;
+            border: 1px solid #A7F3D0;
+            color: #065F46;
         }
 
-        .result-section.legit {
-            background: #f0fff4;
-            border: 2px solid #68d391;
+        .result-score {
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 5px;
+        }
+
+        /* Toggle */
+        .toggle-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .toggle-opt {
+            padding: 8px 16px;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            background: white;
+        }
+
+        .toggle-opt.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .hidden {
+            display: none;
         }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <h1>🛡️ Insurance Fraud Detection</h1>
 
-        <div class="config-section">
-            <div class="config-grid">
-                <div class="form-group">
-                    <label>Model Type</label>
-                    <select id="model">
-                        <option value="xgb" selected>XGBoost (Recommended)</option>
-                        <option value="rf">Random Forest</option>
-                        <option value="et">Extra Trees</option>
-                        <option value="voting">Voting Ensemble</option>
+    <div class="container">
+        <header>
+            <h1>🛡️ Fraud Guard AI</h1>
+            <div class="subtitle">Enter claim details below to assess risk probability.</div>
+        </header>
+
+        <!-- Configuration -->
+        <div class="config-bar">
+            <div class="control-group">
+                <label>Model Engine</label>
+                <select id="model">
+                    <option value="xgb" selected>XGBoost (Recommended)</option>
+                    <option value="voting">Voting Ensemble</option>
+                    <option value="rf">Random Forest</option>
+                    <option value="et">Extra Trees</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>Analysis Mode</label>
+                <select id="scenario">
+                    <option value="dashboard" selected>Dashboard (Calibrated)</option>
+                    <option value="auto_flagger">Auto-Flagger (Uncalibrated)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- TIER 1 -->
+        <div class="tier-section">
+            <div class="tier-header">
+                <span class="tier-icon">🥇</span>
+                <span class="tier-title">Incident & Injury</span>
+            </div>
+            <div class="form-grid">
+                <!-- Severity -->
+                <div class="control-group">
+                    <label>Incident Severity</label>
+                    <select id="incident_severity">
+                        <option value="Major Damage">Major damage</option>
+                        <option value="Minor Damage" selected>Minor damage</option>
+                        <option value="Total Loss">Total loss</option>
+                        <option value="Trivial Damage">Trivial damage</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>Scenario</label>
-                    <select id="scenario">
-                        <option value="dashboard" selected>Dashboard (Calibrated)</option>
-                        <option value="auto_flagger">Auto-Flagger (Uncalibrated)</option>
+
+                <!-- Injury Share -->
+                <div class="control-group">
+                    <div class="slider-header">
+                        <label>Injury Share (%)</label>
+                        <span class="slider-val" id="val_injury_share">10%</span>
+                    </div>
+                    <input type="range" id="injury_share" min="0" max="100" step="5" value="10">
+                    <div class="helper-text">Share of total claim attributed to injuries.</div>
+                </div>
+
+                <!-- Collision Type -->
+                <div class="control-group">
+                    <label>Collision Type</label>
+                    <select id="collision_type">
+                        <option value="Rear Collision" selected>Rear collision</option>
+                        <option value="Front Collision">Front collision</option>
+                        <option value="Side Collision">Side collision</option>
+                        <option value="?">Unknown / not reported</option>
+                    </select>
+                </div>
+
+                <!-- Bodily Injuries -->
+                <div class="control-group">
+                    <label>Number of Bodily Injuries</label>
+                    <select id="bodily_injuries">
+                        <option value="0">0</option>
+                        <option value="1" selected>1</option>
+                        <option value="2">2</option>
+                        <option value="3">3+</option>
                     </select>
                 </div>
             </div>
         </div>
 
-        <form id="claimForm" novalidate>
-            <div class="input-grid">
-                <!-- Numeric Fields -->
-                <div class="form-group"><label>Annual Premium ($)</label><input type="text" inputmode="decimal"
-                        id="policy_annual_premium" value="1200"></div>
-                <div class="form-group"><label>Claim Amount ($)</label><input type="text" inputmode="decimal"
-                        id="total_claim_amount" value="52000"></div>
-                <div class="form-group"><label>Vehicle Age (Years)</label><input type="text" inputmode="numeric"
-                        id="vehicle_age" value="12"></div>
-                <div class="form-group"><label>Days Since Bind</label><input type="text" inputmode="numeric"
-                        id="days_since_bind" value="300"></div>
-                <div class="form-group"><label>Months as Customer</label><input type="text" inputmode="numeric"
-                        id="months_as_customer" value="48"></div>
-
-                <div class="form-group"><label>Injury Share (0-1)</label><input type="text" inputmode="decimal"
-                        id="injury_share" value="0.1"></div>
-                <div class="form-group"><label>Property Share (0-1)</label><input type="text" inputmode="decimal"
-                        id="property_share" value="0.1"></div>
-                <div class="form-group"><label>Umbrella Limit</label><input type="text" inputmode="numeric"
-                        id="umbrella_limit" value="0">
+        <!-- TIER 2 -->
+        <div class="tier-section">
+            <div class="tier-header">
+                <span class="tier-icon">🥈</span>
+                <span class="tier-title">Claim Size & Timing</span>
+            </div>
+            <div class="form-grid">
+                <!-- Total Claim -->
+                <div class="control-group">
+                    <div class="slider-header">
+                        <label>Total Claim Amount ($)</label>
+                        <span class="slider-val" id="val_total_claim">58,000</span>
+                    </div>
+                    <input type="range" id="total_claim_amount" min="1000" max="100000" step="1000" value="58000">
                 </div>
-                <div class="form-group"><label>Incident Hour (0-23)</label><input type="text" inputmode="numeric"
-                        id="incident_hour_of_the_day" value="14"></div>
 
-                <div class="form-group"><label>Cap Gains</label><input type="text" inputmode="decimal"
-                        id="capital_gains" value="0"></div>
-                <div class="form-group"><label>Cap Loss</label><input type="text" inputmode="decimal" id="capital_loss"
-                        value="0"></div>
+                <!-- Incident Time -->
+                <div class="control-group">
+                    <div class="slider-header">
+                        <label>Incident Time (hour)</label>
+                        <span class="slider-val" id="val_hour">12:00</span>
+                    </div>
+                    <input type="range" id="incident_hour_of_the_day" min="0" max="23" step="1" value="12">
+                    <div class="helper-text" id="helper_hour">Afternoon</div>
+                </div>
 
-                <!-- New Categorical Fields -->
-                <div class="form-group">
-                    <label>Severity</label>
-                    <select id="incident_severity">
-                        <option value="Major Damage" selected>Major Damage</option>
-                        <option value="Minor Damage">Minor Damage</option>
-                        <option value="Total Loss">Total Loss</option>
-                        <option value="Trivial Damage">Trivial Damage</option>
+                <!-- Property Share -->
+                <div class="control-group">
+                    <div class="slider-header">
+                        <label>Property Damage Share (%)</label>
+                        <span class="slider-val" id="val_prop_share">10%</span>
+                    </div>
+                    <input type="range" id="property_share" min="0" max="100" step="5" value="10">
+                    <div class="helper-text">Portion related to property damage.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TIER 3 -->
+        <div class="tier-section">
+            <div class="tier-header">
+                <span class="tier-icon">🥉</span>
+                <span class="tier-title">Policy & Context</span>
+            </div>
+            <div class="form-grid">
+                <!-- Premium -->
+                <div class="control-group">
+                    <div class="slider-header">
+                        <label>Annual Policy Premium ($)</label>
+                        <span class="slider-val" id="val_premium">1,200</span>
+                    </div>
+                    <input type="range" id="policy_annual_premium" min="500" max="3000" step="100" value="1200">
+                </div>
+
+                <!-- Tenure -->
+                <div class="control-group">
+                    <div class="slider-header">
+                        <label>Months as Customer</label>
+                        <span class="slider-val" id="val_tenure">200</span>
+                    </div>
+                    <input type="range" id="months_as_customer" min="0" max="500" step="12" value="200">
+                </div>
+
+                <!-- Policy Age -->
+                <div class="control-group">
+                    <div class="slider-header">
+                        <label>Days Since Policy Start</label>
+                        <span class="slider-val" id="val_bind">4,680</span>
+                    </div>
+                    <input type="range" id="days_since_bind" min="0" max="5000" step="90" value="4680">
+                </div>
+            </div>
+        </div>
+
+        <!-- TIER 4 -->
+        <div class="tier-section">
+            <div class="tier-header">
+                <span class="tier-icon">🧩</span>
+                <span class="tier-title">Vehicle Context</span>
+            </div>
+            <div class="form-grid">
+                <!-- Vehicle Age -->
+                <div class="control-group">
+                    <div class="slider-header">
+                        <label>Vehicle Age (years)</label>
+                        <span class="slider-val" id="val_veh_age">10</span>
+                    </div>
+                    <input type="range" id="vehicle_age" min="0" max="30" step="1" value="10">
+                </div>
+
+                <!-- Vehicles Involved -->
+                <div class="control-group">
+                    <label>Vehicles Involved</label>
+                    <select id="number_of_vehicles_involved">
+                        <option value="1" selected>1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4+</option>
                     </select>
                 </div>
+            </div>
+        </div>
 
-                <div class="form-group">
-                    <label>Collision Type</label>
-                    <select id="collision_type">
-                        <option value="Rear Collision" selected>Rear Collision</option>
-                        <option value="Side Collision">Side Collision</option>
-                        <option value="Front Collision">Front Collision</option>
-                        <option value="?">Unknown (?)</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Police Report</label>
+        <!-- TIER 5 -->
+        <div class="tier-section">
+            <div class="tier-header">
+                <span class="tier-icon">🧾</span>
+                <span class="tier-title">Administrative</span>
+            </div>
+            <div class="form-grid">
+                <!-- Police Report -->
+                <div class="control-group">
+                    <label>Police Report Filed</label>
                     <select id="police_report_available">
-                        <option value="YES">YES</option>
-                        <option value="NO">NO</option>
-                        <option value="?">Unknown (?)</option>
+                        <option value="YES">Yes</option>
+                        <option value="NO">No</option>
+                        <option value="?">Unknown</option>
                     </select>
                 </div>
 
-                <div class="form-group">
-                    <label>Authorities</label>
+                <!-- Authorities -->
+                <div class="control-group">
+                    <label>Authorities Involved</label>
                     <select id="authorities_contacted">
-                        <option value="Police">Police</option>
-                        <option value="Fire">Fire</option>
+                        <option value="Police" selected>Police</option>
+                        <option value="Fire">Fire department</option>
                         <option value="Ambulance">Ambulance</option>
                         <option value="Other">Other</option>
                         <option value="None">None</option>
                     </select>
                 </div>
+            </div>
+        </div>
 
-                <div class="form-group"><label>Vehicles Involved</label><input type="text" inputmode="numeric"
-                        id="number_of_vehicles_involved" value="1"></div>
-                <div class="form-group"><label>Bodily Injuries</label><input type="text" inputmode="numeric"
-                        id="bodily_injuries" value="1"></div>
-                <div class="form-group"><label>Insured Age</label><input type="text" inputmode="numeric" id="age"
-                        value="38"></div>
+        <!-- TIER 6 -->
+        <div class="tier-section">
+            <div class="tier-header">
+                <span class="tier-icon">🧮</span>
+                <span class="tier-title">Edge Variables</span>
             </div>
 
-            <button type="button" class="predict-btn" id="predictBtn">🔍 Analyze Claim</button>
-        </form>
+            <div class="form-grid">
+                <!-- Umbrella -->
+                <div class="control-group">
+                    <label>Umbrella Coverage Limit</label>
+                    <select id="umbrella_limit">
+                        <option value="0" selected>None</option>
+                        <option value="1000000">$1M</option>
+                        <option value="5000000">$5M</option>
+                        <option value="10000000">$10M+</option>
+                    </select>
+                </div>
 
-        <div id="resultSection" class="result-section">
-            <h2 id="resultTitle">Result</h2>
-            <p id="resultText"></p>
+                <!-- Insured Age -->
+                <div class="control-group">
+                    <div class="slider-header">
+                        <label>Insured Age (years)</label>
+                        <span class="slider-val" id="val_age">38</span>
+                    </div>
+                    <input type="range" id="age" min="18" max="100" step="1" value="38">
+                </div>
+            </div>
+
+            <!-- Capital Impact -->
+            <div class="control-group" style="margin-top: 20px;">
+                <label style="margin-bottom: 15px;">Financial Capital Impact</label>
+                <div class="toggle-group">
+                    <div class="toggle-opt active" onclick="setCapMode('none')">No capital impact</div>
+                    <div class="toggle-opt" onclick="setCapMode('gain')">Capital gain</div>
+                    <div class="toggle-opt" onclick="setCapMode('loss')">Capital loss</div>
+                </div>
+
+                <!-- Conditional Sliders -->
+                <div id="cap_gain_box" class="hidden">
+                    <div class="slider-header">
+                        <label>Capital Gain ($)</label>
+                        <span class="slider-val" id="val_cap_gain">0</span>
+                    </div>
+                    <input type="range" id="capital_gains" min="0" max="100000" step="5000" value="0">
+                </div>
+
+                <div id="cap_loss_box" class="hidden">
+                    <div class="slider-header">
+                        <label>Capital Loss ($)</label>
+                        <span class="slider-val" id="val_cap_loss">0</span>
+                    </div>
+                    <input type="range" id="capital_loss" min="-100000" max="0" step="5000" value="0">
+                </div>
+            </div>
         </div>
-        <div id="errorBox"
-            style="color:red; margin-top:10px; display:none; padding:10px; background:#ffeeee; border:1px solid red; border-radius:4px;">
+
+        <!-- ACTION -->
+        <div class="action-bar">
+            <button class="primary-btn" id="predictBtn">Assess Fraud Risk</button>
+
+            <div id="resultBox" class="result-box">
+                <div class="result-score" id="resultScore">--</div>
+                <div id="resultText"></div>
+            </div>
+            <div id="errorBox" style="color:red; text-align:center; margin-top:20px; display:none;"></div>
         </div>
+
     </div>
 
     <script>
-        // Helper to parse localized numbers (handles comma vs dot)
-        function parseNum(id, isFloat = true) {
+        // --- LIVE UPDATES ---
+        const updateVal = (id, fmt) => {
             const el = document.getElementById(id);
-            if (!el) return 0;
+            const display = document.getElementById('val_' + (id === 'incident_hour_of_the_day' ? 'hour' :
+                id === 'policy_annual_premium' ? 'premium' :
+                    id === 'total_claim_amount' ? 'total_claim' :
+                        id === 'months_as_customer' ? 'tenure' :
+                            id === 'days_since_bind' ? 'bind' :
+                                id === 'vehicle_age' ? 'veh_age' :
+                                    id === 'injury_share' ? 'injury_share' :
+                                        id === 'property_share' ? 'prop_share' :
+                                            id === 'capital_gains' ? 'cap_gain' :
+                                                id === 'capital_loss' ? 'cap_loss' : id));
+            if (!el || !display) return;
 
-            // Replace comma with dot and remove non-numeric chars except . and -
-            let valStr = el.value.replace(',', '.').replace(/[^0-9.-]/g, '');
+            el.addEventListener('input', () => {
+                let val = el.value;
+                if (fmt === '$') val = parseInt(val).toLocaleString();
+                if (fmt === '%') val = val + '%';
+                if (id === 'incident_hour_of_the_day') {
+                    val = (val < 10 ? '0' + val : val) + ":00";
+                    // Update helper
+                    const h = parseInt(el.value);
+                    let period = "Night";
+                    if (h >= 6 && h < 12) period = "Morning";
+                    else if (h >= 12 && h < 18) period = "Afternoon";
+                    else if (h >= 18) period = "Evening";
+                    document.getElementById('helper_hour').innerText = period;
+                }
+                display.innerText = val;
+            });
+        };
 
-            if (valStr === '' || valStr === '.') return 0;
+        // Attach listeners
+        ['total_claim_amount', 'policy_annual_premium', 'capital_gains'].forEach(id => updateVal(id, '$'));
+        ['capital_loss'].forEach(id => updateVal(id, '$')); // Negative is fine
+        ['injury_share', 'property_share'].forEach(id => updateVal(id, '%'));
+        ['months_as_customer', 'days_since_bind', 'vehicle_age', 'age'].forEach(id => updateVal(id, ''));
+        updateVal('incident_hour_of_the_day', '');
 
-            const num = parseFloat(valStr);
-            return isNaN(num) ? 0 : (isFloat ? num : Math.round(num));
+        // --- CAPITAL TOGGLE Logic ---
+        function setCapMode(mode) {
+            // UI State
+            document.querySelectorAll('.toggle-opt').forEach(el => el.classList.remove('active'));
+            event.target.classList.add('active');
+
+            const gainBox = document.getElementById('cap_gain_box');
+            const lossBox = document.getElementById('cap_loss_box');
+            const gainIn = document.getElementById('capital_gains');
+            const lossIn = document.getElementById('capital_loss');
+
+            // Reset values
+            gainIn.value = 0; document.getElementById('val_cap_gain').innerText = "0";
+            lossIn.value = 0; document.getElementById('val_cap_loss').innerText = "0";
+
+            if (mode === 'none') {
+                gainBox.classList.add('hidden');
+                lossBox.classList.add('hidden');
+            } else if (mode === 'gain') {
+                gainBox.classList.remove('hidden');
+                lossBox.classList.add('hidden');
+            } else { // loss
+                gainBox.classList.add('hidden');
+                lossBox.classList.remove('hidden');
+            }
         }
 
-        document.getElementById('predictBtn').addEventListener('click', async (e) => {
-            // Prevent default just in case, though type="button" shouldn't submit
-            e.preventDefault();
-
+        // --- SUBMISSION ---
+        document.getElementById('predictBtn').addEventListener('click', async () => {
             const btn = document.getElementById('predictBtn');
-            const res = document.getElementById('resultSection');
-            const err = document.getElementById('errorBox');
-
-            console.log("Analyze button clicked -- v2.1");
+            const resBox = document.getElementById('resultBox');
+            const errBox = document.getElementById('errorBox');
 
             btn.disabled = true;
-            btn.innerText = "Analyzing Risk...";
-            res.style.display = 'none';
-            err.style.display = 'none';
+            btn.innerText = "Analyzing Pattern...";
+            resBox.style.display = 'none';
+            errBox.style.display = 'none';
 
             try {
-                // Construct payload using robust parser
-                const formData = {
-                    // Numeric
-                    policy_annual_premium: parseNum('policy_annual_premium'),
-                    total_claim_amount: parseNum('total_claim_amount'),
-                    vehicle_age: parseNum('vehicle_age', false),
-                    days_since_bind: parseNum('days_since_bind', false),
-                    months_as_customer: parseNum('months_as_customer', false),
-                    "capital-gains": parseNum('capital_gains'),
-                    "capital-loss": parseNum('capital_loss'),
-                    injury_share: parseNum('injury_share'),
-                    property_share: parseNum('property_share'),
-                    umbrella_limit: parseNum('umbrella_limit', false),
-                    incident_hour_of_the_day: parseNum('incident_hour_of_the_day', false),
-
-                    // Categorical (Direct values)
+                // Build Payload
+                const payload = {
+                    // Tier 1
                     incident_severity: document.getElementById('incident_severity').value,
+                    injury_share: parseFloat(document.getElementById('injury_share').value) / 100.0, // Convert % to 0-1
                     collision_type: document.getElementById('collision_type').value,
+                    bodily_injuries: parseInt(document.getElementById('bodily_injuries').value),
+
+                    // Tier 2
+                    total_claim_amount: parseFloat(document.getElementById('total_claim_amount').value),
+                    incident_hour_of_the_day: parseInt(document.getElementById('incident_hour_of_the_day').value),
+                    property_share: parseFloat(document.getElementById('property_share').value) / 100.0, // Convert % to 0-1
+
+                    // Tier 3
+                    policy_annual_premium: parseFloat(document.getElementById('policy_annual_premium').value),
+                    months_as_customer: parseInt(document.getElementById('months_as_customer').value),
+                    days_since_bind: parseInt(document.getElementById('days_since_bind').value),
+
+                    // Tier 4
+                    vehicle_age: parseInt(document.getElementById('vehicle_age').value),
+                    number_of_vehicles_involved: parseInt(document.getElementById('number_of_vehicles_involved').value),
+
+                    // Tier 5
                     police_report_available: document.getElementById('police_report_available').value,
                     authorities_contacted: document.getElementById('authorities_contacted').value,
-                    number_of_vehicles_involved: parseNum('number_of_vehicles_involved', false),
-                    bodily_injuries: parseNum('bodily_injuries', false),
-                    age: parseNum('age', false)
-                };
 
-                console.log("Sending payload:", formData);
+                    // Tier 6
+                    umbrella_limit: parseInt(document.getElementById('umbrella_limit').value),
+                    "capital-gains": parseFloat(document.getElementById('capital_gains').value),
+                    "capital-loss": parseFloat(document.getElementById('capital_loss').value),
+                    age: parseInt(document.getElementById('age').value)
+                };
 
                 const model = document.getElementById('model').value;
                 const scenario = document.getElementById('scenario').value;
@@ -304,54 +669,34 @@
                 const response = await fetch(`/predict?model=${model}&scenario=${scenario}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formData)
+                    body: JSON.stringify(payload)
                 });
 
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error("Server Error raw:", errorText);
-                    let errorMsg = "Server Error";
-                    try {
-                        const errJson = JSON.parse(errorText);
-                        errorMsg = errJson.detail || errorText;
-                    } catch (e) {
-                        errorMsg = errorText;
-                    }
-                    throw new Error(errorMsg);
-                }
+                if (!response.ok) throw new Error(await response.text());
 
                 const data = await response.json();
 
-                // Display
-                res.classList.remove('fraud', 'legit');
-                res.style.display = 'block'; // Explicitly override the 'none' set earlier
-                res.classList.add('show');
+                // Show Result
+                resBox.style.display = 'block';
+                resBox.className = 'result-box ' + (data.probability > 0.5 ? 'fraud' : 'legit');
 
-                const probPct = (data.probability * 100).toFixed(1);
+                const pct = (data.probability * 100).toFixed(1) + "%";
+                document.getElementById('resultScore').innerText = pct + " Risk";
 
-                if (data.probability > 0.5) {
-                    res.classList.add('fraud');
-                    document.getElementById('resultTitle').innerText = `⚠️ HIGH RISK: ${probPct}%`;
-                } else {
-                    res.classList.add('legit');
-                    document.getElementById('resultTitle').innerText = `✅ LOW RISK: ${probPct}%`;
-                }
+                let txt = `Model: ${data.model} (${data.calibrated ? 'Calibrated' : 'Uncalibrated'})`;
+                if (data.threshold_flag) txt += `<br>Decision: <strong>${data.threshold_flag}</strong>`;
+                document.getElementById('resultText').innerHTML = txt;
 
-                let detail = `Model: ${data.model} (${data.calibrated ? 'Calibrated' : 'Uncalibrated'})`;
-                if (data.threshold_flag) detail += `<br><strong>Decision: ${data.threshold_flag}</strong>`;
-
-                document.getElementById('resultText').innerHTML = detail;
-
-            } catch (error) {
-                console.error("Frontend Error:", error);
-                err.innerText = "Error: " + error.message;
-                err.style.display = 'block';
+            } catch (e) {
+                errBox.innerText = "Error: " + e.message;
+                errBox.style.display = 'block';
             } finally {
                 btn.disabled = false;
-                btn.innerText = "🔍 Analyze Claim";
+                btn.innerText = "Assess Fraud Risk";
             }
         });
     </script>
+
 </body>
 
 </html>
