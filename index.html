@@ -794,6 +794,94 @@
             }
         });
 
+        // Explain Why Logic
+        document.getElementById('explainWhyBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('explainWhyBtn');
+            const panel = document.getElementById('llmSummaryBox');
+
+            // UI Loading State
+            btn.innerText = "Analyzing...";
+            btn.style.opacity = "0.7";
+            btn.disabled = true;
+            panel.style.display = 'none';
+
+            try {
+                // Re-gather payload (reuse logic or grab from inputs)
+                // PRO TIP: Ideally we'd separate gatherPayload() but for now we duplicate efficiently
+                const payload = {
+                    incident_severity: document.getElementById('incident_severity').value,
+                    injury_share: parseFloat(document.getElementById('injury_share').value) / 100.0,
+                    collision_type: document.getElementById('collision_type').value,
+                    bodily_injuries: parseInt(document.getElementById('bodily_injuries').value),
+                    total_claim_amount: parseFloat(document.getElementById('total_claim_amount').value),
+                    incident_hour_of_the_day: parseInt(document.getElementById('incident_hour_of_the_day').value),
+                    property_share: parseFloat(document.getElementById('property_share').value) / 100.0,
+                    policy_annual_premium: parseFloat(document.getElementById('policy_annual_premium').value),
+                    months_as_customer: parseInt(document.getElementById('months_as_customer').value),
+                    days_since_bind: parseInt(document.getElementById('days_since_bind').value),
+                    vehicle_age: parseInt(document.getElementById('vehicle_age').value),
+                    number_of_vehicles_involved: parseInt(document.getElementById('number_of_vehicles_involved').value),
+                    police_report_available: document.getElementById('police_report_available').value,
+                    authorities_contacted: document.getElementById('authorities_contacted').value,
+                    umbrella_limit: parseInt(document.getElementById('umbrella_limit').value),
+                    "capital-gains": parseFloat(document.getElementById('capital_gains').value),
+                    "capital-loss": -1 * parseFloat(document.getElementById('capital_loss').value),
+                    age: parseInt(document.getElementById('age').value)
+                };
+
+                const model = document.getElementById('model').value;
+                const scenario = document.getElementById('scenario').value;
+
+                // Request with llm_explain=true
+                const response = await fetch(`/predict?model=${model}&scenario=${scenario}&explain=true&llm_explain=true`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error(await response.text());
+                const data = await response.json();
+
+                // Render LLM Result
+                const llm = data.llm_explanation;
+                panel.style.display = 'block';
+
+                if (llm) {
+                    document.getElementById('llmSummaryText').innerText = llm.summary || "Summary unavailable.";
+
+                    const bulletsUl = document.getElementById('llmBullets');
+                    bulletsUl.innerHTML = '';
+                    if (llm.bullets && Array.isArray(llm.bullets)) {
+                        llm.bullets.forEach(b => {
+                            const li = document.createElement('li');
+                            li.style.marginBottom = "6px";
+                            li.innerText = b;
+                            bulletsUl.appendChild(li);
+                        });
+                    }
+
+                    document.getElementById('llmDisclaimer').innerText = llm.disclaimer || "Disclaimer: These are statistical associations, not proof of fraud.";
+                } else {
+                    document.getElementById('llmSummaryText').innerText = "AI explanation unavailable at this time. Please rely on the Risk Drivers list below.";
+                    document.getElementById('llmBullets').innerHTML = '';
+                    document.getElementById('llmDisclaimer').innerText = "";
+                }
+
+                // Scroll to explain box
+                setTimeout(() => {
+                    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+
+            } catch (e) {
+                console.error(e);
+                alert("Explanation failed: " + e.message);
+            } finally {
+                btn.innerText = "Explain Why ✨";
+                btn.style.opacity = "1.0";
+                btn.disabled = false;
+            }
+        });
+
         // --- SUBMISSION ---
         document.getElementById('predictBtn').addEventListener('click', async () => {
             const btn = document.getElementById('predictBtn');
@@ -808,6 +896,7 @@
             resBox.style.display = 'none';
             errBox.style.display = 'none';
             driversPanel.style.display = 'none'; // Auto hide on new predict
+            document.getElementById('llmSummaryBox').style.display = 'none'; // Auto hide LLM
 
             try {
                 // Construct Payload
