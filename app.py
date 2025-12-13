@@ -23,9 +23,15 @@ logger = logging.getLogger(__name__)
 # Initialize FastAPI app
 app = FastAPI(title="Fraud Detection API", version="2.0.0")
 
+try:
+    from llm_explainer import generate_llm_explanation
+except ImportError as e:
+    logging.warning(f"LLM Explainer module failed to import: {e}")
+    generate_llm_explanation = None
+
 # --- CONFIG ---
 MODELS_DIR = Path("models")
-APP_VERSION = "1.3.4"
+APP_VERSION = "1.3.5"
 THRESHOLD_AUTO_FLAG = 0.53
 
 # Model registry
