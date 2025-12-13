@@ -65,7 +65,7 @@ class PredictionResponse(BaseModel):
 
 def load_models():
     """Load all available models on startup"""
-    model_types = ["RandomForest", "ExtraTrees", "XGBoost"]
+    model_types = ["RandomForest", "ExtraTrees", "XGBoost", "VotingEnsemble"]
     calibration_types = ["calibrated", "uncalibrated"]
     
     for model_type in model_types:
@@ -100,11 +100,11 @@ async def health_check():
 @app.post("/predict", response_model=PredictionResponse)
 async def predict(
     claim_data: ClaimInput,
-    model: Literal["rf", "et", "xgb"] = Query("rf"),
+    model: Literal["rf", "et", "xgb", "voting"] = Query("rf"),
     calibrated: bool = Query(True),
     scenario: Literal["auto_flagger", "dashboard"] = Query("dashboard")
 ):
-    model_map = {"rf": "RandomForest", "et": "ExtraTrees", "xgb": "XGBoost"}
+    model_map = {"rf": "RandomForest", "et": "ExtraTrees", "xgb": "XGBoost", "voting": "VotingEnsemble"}
     model_name = model_map[model]
     
     cal_type = "calibrated" if calibrated else "uncalibrated"

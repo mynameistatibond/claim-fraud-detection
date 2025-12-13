@@ -19,7 +19,7 @@
 ### 2. Initialize Git Repository
 
 ```bash
-cd fraud_api
+cd fraud-detector
 git init
 git add .
 git commit -m "Initial commit: Fraud Detection API"

@@ -18,11 +18,9 @@ Production-ready inference API for insurance fraud detection using pre-trained M
 
 ### Local Development
 
-1. **Copy your trained models:**
-   ```bash
-   cp ../models/best_tree_models_calibrated.joblib models/
-   cp ../models/best_tree_models_uncalibrated.joblib models/
-   ```
+1. **Verify models exist:**
+   Ensure `best_tree_models_calibrated.joblib` and `best_tree_models_uncalibrated.joblib` are in the `models/` directory.
+   (They should have been moved there during setup)
 
 2. **Install dependencies:**
    ```bash
@@ -168,7 +166,7 @@ git push -u origin main
 ## 📁 Project Structure
 
 ```
-fraud_api/
+fraud-detector/
 ├── app.py              # FastAPI backend
 ├── index.html          # Web UI
 ├── requirements.txt    # Python dependencies
