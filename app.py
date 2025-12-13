@@ -144,12 +144,12 @@ def load_shap_resources():
     else:
         logger.warning("SHAP background (npy) not found.")
 
-    # 2. Load Feature Names corresponding to the matrix columns
+    # 2. Load Feature Names
     if FEATURE_NAMES_PATH.exists():
         SHAP_FEATURE_NAMES = joblib.load(FEATURE_NAMES_PATH)
         logger.info(f"Loaded {len(SHAP_FEATURE_NAMES)} feature names.")
     
-    # 3. Load Feature Metadata (Origin)
+    # 3. Load Metadata
     if METADATA_PATH.exists():
         try:
             FEATURE_METADATA = joblib.load(METADATA_PATH)
@@ -157,34 +157,33 @@ def load_shap_resources():
         except Exception as e:
             logger.warning(f"Failed to load metadata: {e}")
 
-    # 4. Initialize TreeExplainers only (Sane Architecture)
-    for key, model in MODELS.items():
-        if "Voting" in key: continue
-        
-        # Only init on uncalibrated models to get clean trees
-        if "uncalibrated" in key:
-            try:
-                 if BACKGROUND_DATA is None:
-                     raise ValueError("Background data not loaded")
-                     
-                 _, estimator = get_pipeline_components(model)
-                 
-                 # Direct initialization: Estimator + Pre-Processed Data
-                 # No transforms here. The contract is: estimator takes what BACKGROUND_DATA is.
-                 explainer = shap.TreeExplainer(estimator, BACKGROUND_DATA)
-                 SHAP_EXPLAINERS[key] = explainer
-                 
-                 # Map calibrated version to this explainer
-                 cal_key = key.replace("uncalibrated", "calibrated")
-                 SHAP_EXPLAINERS[cal_key] = explainer
-                 logger.info(f"Initialized SHAP for {key}")
-                 
-            except Exception as e:
-                logger.warning(f"Failed to init SHAP for {key}: {e}")
-                SHAP_INIT_ERRORS[key] = str(e)
-                # Map error to calibrated too so we see it
-                cal_key = key.replace("uncalibrated", "calibrated")
-                SHAP_INIT_ERRORS[cal_key] = str(e)
+    # 4. Initialize TreeExplainers (ONLY for the Source Model)
+    # We explicitly skip XGBoost to avoid version crashes, and Voting.
+    # We only really need the EXPLANATION_SOURCE_MODEL.
+    
+    target_models = [EXPLANATION_SOURCE_MODEL]
+    
+    for key in target_models:
+        if key not in MODELS:
+            logger.warning(f"Explanation source {key} not loaded in MODELS.")
+            continue
+            
+        if BACKGROUND_DATA is None:
+            SHAP_INIT_ERRORS[key] = "Background data missing"
+            continue
+
+        try:
+             model = MODELS[key]
+             _, estimator = get_pipeline_components(model)
+             
+             # Direct initialization
+             explainer = shap.TreeExplainer(estimator, BACKGROUND_DATA)
+             SHAP_EXPLAINERS[key] = explainer
+             logger.info(f"Initialized SHAP for {key} (Canonical Explanation Source)")
+             
+        except Exception as e:
+            logger.error(f"Failed to init SHAP for {key}: {e}")
+            SHAP_INIT_ERRORS[key] = str(e)
 
 @app.on_event("startup")
 async def startup_event():
@@ -267,52 +266,43 @@ async def predict(
              start_pred = loaded_model.predict(final_df)
              proba = float(start_pred[0])
         
-        # SHAP (Sane Architecture)
+        # SHAP EXPLANATION (Canonical Source)
         explanation_items = []
-        if explain and "Voting" not in model_name and BACKGROUND_DATA is not None:
-             try:
-                 # Check Explainer
-                 explainer = SHAP_EXPLAINERS.get(model_key)
-                 if not explainer and "calibrated" in model_key:
-                     # Try fallback to uncalibrated key
-                     explainer = SHAP_EXPLAINERS.get(model_key.replace("calibrated", "uncalibrated"))
-                 
-                 if explainer:
-                     # 1. Transform Query
-                     # We need the PREPROCESSOR specific to the model being explained.
-                     # If we are explaining User's Model, we use User's Model Prep.
-                     prep, _ = get_pipeline_components(loaded_model)
-                     if not prep and "calibrated" in model_key:
-                          uncal_key = model_key.replace("calibrated", "uncalibrated")
-                          if uncal_key in MODELS:
-                              prep, _ = get_pipeline_components(MODELS[uncal_key])
+        if explain:
+             # ALWAYS use the canonical source for explanations
+             source_key = EXPLANATION_SOURCE_MODEL
+             explainer = SHAP_EXPLAINERS.get(source_key)
+             
+             if explainer and source_key in MODELS:
+                 try:
+                     # Use the PREPROCESSOR form the SOURCE model to ensure alignment
+                     source_model = MODELS[source_key]
+                     prep, _ = get_pipeline_components(source_model)
                      
                      if prep:
-                         # Transform to match Training Space
+                         # Transform Query to match Explanation Space
                          X_query = prep.transform(final_df)
                          if hasattr(X_query, 'toarray'): X_query = X_query.toarray()
                          
-                         # 2. Calculate SHAP
+                         # Calculate SHAP
                          shap_values = explainer.shap_values(X_query)
                          
                          # Handle output shape
                          if isinstance(shap_values, list):
                              vals = shap_values[1][0]
                          elif len(shap_values.shape) > 1 and shap_values.shape[1] > 1:
-                             vals = shap_values[0][1] # Should not happen for TreeExplainer on binary usually?
+                             vals = shap_values[0][1] 
                          else:
-                             vals = shap_values[0] # XGBoost output is raw margin or log-odds
+                             vals = shap_values[0]
                          
-                         # 3. Map to Names
+                         # Map to Names
                          feature_names = SHAP_FEATURE_NAMES if SHAP_FEATURE_NAMES is not None else []
                          
                          items_temp = []
-                         # Ensure vals is iterable
                          if isinstance(vals, (float, int)): vals = [vals]
                          
                          for i, sh_val in enumerate(vals):
                              if abs(sh_val) < 1e-4: continue
-                             
                              fname = feature_names[i] if i < len(feature_names) else f"feature_{i}"
                              
                              items_temp.append({
@@ -320,34 +310,28 @@ async def predict(
                                  'shap': sh_val
                              })
                          
-                         # 4. Sort and Extract Top
                          items_temp.sort(key=lambda x: abs(x['shap']), reverse=True)
                          top_5 = items_temp[:5]
                          
                          for item in top_5:
                              direction, text = get_readable_explanation(item['feature'], item['shap'], FEATURE_METADATA)
                              explanation_items.append(ExplanationItem(
-                                 feature=FEATURE_MAP.get(item['feature'], item['feature']), # Fallback to tech name if no mapping
-                                 direction="UP" if item['shap'] > 0 else "DOWN",
+                                 feature=FEATURE_MAP.get(item['feature'], item['feature']),
+                                 direction="UP" if item['shap'] > 0 else "DOWN", # UP = Higher Risk
                                  text=text,
                                  importance=float(abs(item['shap']))
                              ))
                      else:
-                         # No preprocessor found
-                         pass
-                 else:
-                     # Check for specific init error
-                     init_error = SHAP_INIT_ERRORS.get(model_key, "Unknown initialization failure")
-                     
-                     explanation_items.append(ExplanationItem(
-                         feature="Init Failed",
-                         direction="DOWN", 
-                         text=f"Error: {init_error}",
-                         importance=0.0
-                     ))
-             except Exception as e:
-                 logger.warning(f"SHAP Error: {e}")
-                 explanation_items.append(ExplanationItem(feature="Error", direction="DOWN", text=str(e), importance=0))
+                          explanation_items.append(ExplanationItem(feature="System Error", direction="DOWN", text="Explanation preprocessor missing", importance=0))
+                 except Exception as e:
+                     logger.error(f"Explanation generation failed: {e}")
+                     explanation_items.append(ExplanationItem(feature="System Error", direction="DOWN", text="Explanation error", importance=0))
+             else:
+                 # Check for init error on the source
+                 err = SHAP_INIT_ERRORS.get(source_key, "Use of unsupported model for explanation")
+                 explanation_items.append(ExplanationItem(
+                     feature="Init Failed", direction="DOWN", text=f"Explainer Error: {err}", importance=0
+                 ))
         
     except Exception as e:
         import traceback
