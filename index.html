@@ -540,24 +540,28 @@
             </div>
 
             <!-- CAPITAL IMPACT -->
-            <div class="control-group" style="margin-top: 40px;">
-                <label>Financial Capital Impact</label>
-                <div class="toggle-group">
-                    <div class="toggle-opt active" onclick="setCapMode('none')">No capital impact</div>
-                    <div class="toggle-opt" onclick="setCapMode('gain')">Capital gain</div>
-                    <div class="toggle-opt" onclick="setCapMode('loss')">Capital loss</div>
-                </div>
+            <!-- FINANCIAL CAPITAL ACTIVITY -->
+            <div class="control-group"
+                style="margin-top: 40px; border-top: 1px solid var(--clr-divider); padding-top: 25px;">
+                <div style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 5px;">
+                    Financial Capital Activity (Optional)</div>
+                <div style="font-size: 13px; opacity: 0.6; margin-bottom: 25px; font-style: italic;">Summary of observed
+                    capital inflows and outflows around the incident period.</div>
 
-                <div id="cap_gain_box" class="hidden" style="margin-top: 20px;">
-                    <div class="slider-header"><label>Capital Gain</label><span class="slider-val"
-                            id="val_cap_gain">$0</span></div>
-                    <input type="range" id="capital_gains" min="0" max="100000" step="5000" value="0">
-                </div>
+                <div class="form-grid">
+                    <!-- Gains -->
+                    <div class="control-group">
+                        <div class="slider-header"><label>Capital Gains</label><span class="slider-val"
+                                id="val_cap_gain">$0</span></div>
+                        <input type="range" id="capital_gains" min="0" max="100000" step="5000" value="0">
+                    </div>
 
-                <div id="cap_loss_box" class="hidden" style="margin-top: 20px;">
-                    <div class="slider-header"><label>Capital Loss</label><span class="slider-val"
-                            id="val_cap_loss">$0</span></div>
-                    <input type="range" id="capital_loss" min="-100000" max="0" step="5000" value="0">
+                    <!-- Losses -->
+                    <div class="control-group">
+                        <div class="slider-header"><label>Capital Losses</label><span class="slider-val"
+                                id="val_cap_loss">$0</span></div>
+                        <input type="range" id="capital_loss" min="0" max="100000" step="5000" value="0">
+                    </div>
                 </div>
             </div>
         </div>
@@ -669,31 +673,7 @@
             document.getElementById('scenario_desc').innerText = scenarioDesc[e.target.value];
         });
 
-        // --- CAPITAL TOGGLE Logic ---
-        function setCapMode(mode) {
-            document.querySelectorAll('.toggle-opt').forEach(el => el.classList.remove('active'));
-            event.target.classList.add('active');
 
-            const gainBox = document.getElementById('cap_gain_box');
-            const lossBox = document.getElementById('cap_loss_box');
-            const gainIn = document.getElementById('capital_gains');
-            const lossIn = document.getElementById('capital_loss');
-
-            // Reset
-            gainIn.value = 0; document.getElementById('val_cap_gain').innerText = "$0";
-            lossIn.value = 0; document.getElementById('val_cap_loss').innerText = "$0";
-
-            if (mode === 'none') {
-                gainBox.classList.add('hidden');
-                lossBox.classList.add('hidden');
-            } else if (mode === 'gain') {
-                gainBox.classList.remove('hidden');
-                lossBox.classList.add('hidden');
-            } else { // loss
-                gainBox.classList.add('hidden');
-                lossBox.classList.remove('hidden');
-            }
-        }
 
         // --- SUBMISSION ---
         document.getElementById('predictBtn').addEventListener('click', async () => {
@@ -725,7 +705,7 @@
                     authorities_contacted: document.getElementById('authorities_contacted').value,
                     umbrella_limit: parseInt(document.getElementById('umbrella_limit').value),
                     "capital-gains": parseFloat(document.getElementById('capital_gains').value),
-                    "capital-loss": parseFloat(document.getElementById('capital_loss').value),
+                    "capital-loss": -1 * parseFloat(document.getElementById('capital_loss').value),
                     age: parseInt(document.getElementById('age').value)
                 };
 
