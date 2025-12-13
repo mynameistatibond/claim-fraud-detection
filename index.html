@@ -874,11 +874,35 @@
                 panel.style.display = 'block';
 
                 if (llm && !llm.error) {
-                    document.getElementById('llmSummaryText').innerText = llm.summary || "Summary unavailable.";
+                    // Summary (+ Guidance if available)
+                    let summaryHtml = llm.summary || "Summary unavailable.";
+                    if (llm.guidance) {
+                        summaryHtml += `<br><br><em style="opacity: 0.9; border-left: 2px solid #666; padding-left: 8px; display:block;">Guidance: ${llm.guidance}</em>`;
+                    }
+                    document.getElementById('llmSummaryText').innerHTML = summaryHtml;
 
                     const bulletsUl = document.getElementById('llmBullets');
                     bulletsUl.innerHTML = '';
-                    if (llm.bullets && Array.isArray(llm.bullets)) {
+
+                    // NEW SCHEMA: Drivers list
+                    if (llm.drivers && Array.isArray(llm.drivers)) {
+                        llm.drivers.forEach(d => {
+                            const li = document.createElement('li');
+                            li.style.marginBottom = "8px";
+                            li.style.lineHeight = "1.4";
+
+                            // Color/Arrow for effect
+                            let effectColor = "#ccc";
+                            let arrow = "•";
+                            if (d.effect && d.effect.toLowerCase().includes("up")) { arrow = "↑"; effectColor = "#ff9999"; }
+                            if (d.effect && d.effect.toLowerCase().includes("down")) { arrow = "↓"; effectColor = "#99ff99"; }
+
+                            li.innerHTML = `<span style="color:${effectColor}; font-weight:bold; margin-right:4px;">${arrow}</span> <strong>${d.name}</strong>: ${d.explanation}`;
+                            bulletsUl.appendChild(li);
+                        });
+                    }
+                    // FALLBACK: Old bullets list
+                    else if (llm.bullets && Array.isArray(llm.bullets)) {
                         llm.bullets.forEach(b => {
                             const li = document.createElement('li');
                             li.style.marginBottom = "6px";
@@ -887,7 +911,7 @@
                         });
                     }
 
-                    document.getElementById('llmDisclaimer').innerText = llm.disclaimer || "Disclaimer: These are statistical associations, not proof of fraud.";
+                    document.getElementById('llmDisclaimer').innerText = llm.disclaimer || "Disclaimer: These are statistical patterns, not proof.";
                 } else {
                     const errorMsg = (llm && llm.error) ? llm.error : "AI explanation unavailable at this time.";
                     document.getElementById('llmSummaryText').innerHTML = `<span style="color: #ff9999;">⚠ ${errorMsg}</span>`;

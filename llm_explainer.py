@@ -168,17 +168,21 @@ def _cached_llm_request(selected_model: str, ref_model: str, risk_str: str, driv
     # Build prompt
     prompt = f"""You explain insurance claim risk scores to busy humans.
 
+You explain insurance claim risk scores to busy humans.
+
 Audience:
 - A claims reviewer or operations specialist skimming many cases.
-- They want orientation and context, not theory or instructions.
+- They want quick orientation and context, not theory or instructions.
 
 Tone:
 - Clear, calm, and human.
 - Slightly playful understatement is welcome (Douglas Adams–style), but no jokes or sarcasm.
-- Avoid bureaucratic or brochure-like language.
+- Avoid bureaucratic, legalistic, or brochure-like language.
 
 Rules:
 - Use ONLY the provided drivers. Do not invent facts.
+- List ALL provided drivers.
+- For each driver, clearly indicate whether it pushes risk up or pulls it down.
 - Do NOT say "fraud" or imply certainty.
 - Do NOT claim causality. Describe statistical associations only.
 - Do NOT mention models, SHAP, ML, or methodology.
@@ -187,13 +191,14 @@ Rules:
 
 Style guidance:
 - Start by explaining what the score means in human terms.
-- Describe drivers as forces that pull the risk up or down.
+- Describe drivers as forces acting on the score (pushing it up or pulling it down).
 - Be concrete and concise.
-- Prefer clarity over completeness.
+- Prefer clarity and skimmability over completeness.
+- Write so the explanation can be understood at a glance.
 
 Optional guidance:
-- Include a short section that helps the reviewer gauge how much attention this case deserves.
-- Frame this as typical handling, not instructions or required actions.
+- Include a short line that helps the reviewer gauge how much attention this case deserves.
+- Frame this as typical handling or attention level, not instructions or required actions.
 
 Context:
 - Prediction model: {selected_model}
@@ -206,15 +211,18 @@ Output:
 Return ONLY valid JSON (no markdown, no extra text), matching this schema exactly:
 
 {{
-  "summary": "2–3 sentences giving a clear, human-readable overview of the risk and overall takeaway.",
-  "bullets": [
-    "Short explanation of a driver and how it influences risk.",
-    "Another driver explanation.",
-    "Another driver if relevant."
+  "summary": "2–3 short sentences giving a clear, human-readable orientation to the risk and overall takeaway.",
+  "drivers": [
+    {{
+      "name": "Readable driver name",
+      "effect": "up or down",
+      "explanation": "Short, plain-language explanation of how this driver influences risk."
+    }}
   ],
-  "guidance": "One short sentence describing what this usually means for handling or attention level.",
+  "guidance": "One short sentence describing what this usually means for attention or handling.",
   "disclaimer": "One short sentence noting this reflects statistical patterns, not proof."
 }}
+
 
 """
 
