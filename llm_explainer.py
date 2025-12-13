@@ -205,7 +205,7 @@ Context:
 Output:
 Return ONLY valid JSON (no markdown, no extra text), matching this schema exactly:
 
-{
+{{
   "summary": "2–3 sentences giving a clear, human-readable overview of the risk and overall takeaway.",
   "bullets": [
     "Short explanation of a driver and how it influences risk.",
@@ -214,7 +214,7 @@ Return ONLY valid JSON (no markdown, no extra text), matching this schema exactl
   ],
   "guidance": "One short sentence describing what this usually means for handling or attention level.",
   "disclaimer": "One short sentence noting this reflects statistical patterns, not proof."
-}
+}}
 
 """
 
