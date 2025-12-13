@@ -1010,8 +1010,9 @@
                 const txtModel = model === 'voting' ? "Voting Ensemble" : model.toUpperCase();
                 const calibStatus = scenario === 'dashboard' ? "Enabled" : "Disabled";
                 const modeStatus = scenario === 'auto_flagger' ? "Auto-Flagger" : "Dashboard Review";
+                const ver = data.app_version ? `v${data.app_version}` : "v1.0?";
 
-                document.getElementById('metaFooter').innerText = `Model: ${txtModel} · Calibration: ${calibStatus} · Mode: ${modeStatus}`;
+                document.getElementById('metaFooter').innerText = `Model: ${txtModel} · Calibration: ${calibStatus} · Mode: ${modeStatus} · ${ver}`;
 
                 // 5. Store SHAP
                 lastExplanation = data.explanation || [];
