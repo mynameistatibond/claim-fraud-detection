@@ -213,6 +213,11 @@
             background-position: right 0 top 50%;
             background-size: 10px auto;
             padding-right: 20px;
+            /* Force transparency on Mac */
+            background-color: transparent !important;
+            -moz-appearance: none;
+            -webkit-appearance: none;
+            appearance: none;
         }
 
         select:focus,
@@ -292,6 +297,25 @@
             box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
             border-color: rgba(255, 255, 255, 0.8);
             /* Removed text-shadow per requested polish */
+        }
+
+        button.secondary-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            color: var(--clr-text);
+            padding: 8px 16px;
+            font-size: 13px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-family: inherit;
+            flex: 1;
+            transition: all 0.2s ease;
+        }
+
+        button.secondary-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.7);
         }
 
         button:disabled {
@@ -644,11 +668,9 @@
 
                 <!-- SHAP TRIGGER -->
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    <button id="viewDriversBtn" class="shine-hover"
-                        style="background: transparent; border: 1px solid rgba(255,255,255,0.4); color: var(--clr-text); padding: 8px 16px; font-size: 13px; border-radius: 4px; cursor: pointer; opacity: 0.9; font-weight: 400; font-family: inherit; flex: 1;">
+                    <button id="viewDriversBtn" class="secondary-btn shine-hover">
                         View risk drivers</button>
-                    <button id="explainWhyBtn" class="shine-hover"
-                        style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.4); color: var(--clr-text); padding: 8px 16px; font-size: 13px; border-radius: 4px; cursor: pointer; opacity: 1.0; font-weight: 400; font-family: inherit; flex: 1;">
+                    <button id="explainWhyBtn" class="secondary-btn shine-hover">
                         Explain Why ✨</button>
                 </div>
             </div>
