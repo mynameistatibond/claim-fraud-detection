@@ -434,140 +434,140 @@
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- TIER 3 -->
-    <div class="tier-section">
-        <div class="tier-header"><span class="tier-title">03 / Policy & Tenure</span></div>
-        <div class="form-grid">
-            <div class="control-group">
-                <div class="slider-header"><label>Annual Premium</label><span class="slider-val"
-                        id="val_premium">$1,200</span></div>
-                <input type="range" id="policy_annual_premium" min="500" max="3000" step="100" value="1200">
-            </div>
 
-            <div class="control-group">
-                <div class="slider-header"><label>Months as Customer</label><span class="slider-val"
-                        id="val_tenure">200</span></div>
-                <input type="range" id="months_as_customer" min="0" max="500" step="12" value="200">
-            </div>
-            <!-- Policy Age Abstracted -->
-            <div class="control-group">
-                <label>When did the policy start?</label>
-                <select id="days_since_bind">
-                    <option value="90">Less than 6 months ago</option>
-                    <option value="270">6–12 months ago</option>
-                    <option value="540">1–2 years ago</option>
-                    <option value="1500" selected>2–5 years ago</option>
-                    <option value="3000">More than 5 years ago</option>
-                </select>
-            </div>
-        </div>
-    </div>
+        <!-- TIER 3 -->
+        <div class="tier-section">
+            <div class="tier-header"><span class="tier-title">03 / Policy & Tenure</span></div>
+            <div class="form-grid">
+                <div class="control-group">
+                    <div class="slider-header"><label>Annual Premium</label><span class="slider-val"
+                            id="val_premium">$1,200</span></div>
+                    <input type="range" id="policy_annual_premium" min="500" max="3000" step="100" value="1200">
+                </div>
 
-    <!-- TIER 4 -->
-    <div class="tier-section">
-        <div class="tier-header"><span class="tier-title">04 / Vehicle Context</span></div>
-        <div class="form-grid">
-            <div class="control-group">
-                <div class="slider-header"><label>Vehicle Age</label><span class="slider-val" id="val_veh_age">10
-                        yrs</span></div>
-                <input type="range" id="vehicle_age" min="0" max="30" step="1" value="10">
-            </div>
-
-            <div class="control-group">
-                <label>Vehicles Involved</label>
-                <select id="number_of_vehicles_involved">
-                    <option value="1" selected>1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4+</option>
-                </select>
-            </div>
-        </div>
-    </div>
-
-    <!-- TIER 5 -->
-    <div class="tier-section">
-        <div class="tier-header"><span class="tier-title">05 / Administrative</span></div>
-        <div class="form-grid">
-            <div class="control-group">
-                <label>Police Report Filed</label>
-                <select id="police_report_available">
-                    <option value="YES">Yes</option>
-                    <option value="NO">No</option>
-                    <option value="?">Unknown</option>
-                </select>
-            </div>
-
-            <div class="control-group">
-                <label>Authorities Involved</label>
-                <select id="authorities_contacted">
-                    <option value="Police" selected>Police</option>
-                    <option value="Fire">Fire department</option>
-                    <option value="Ambulance">Ambulance</option>
-                    <option value="Other">Other</option>
-                    <option value="None">None</option>
-                </select>
-            </div>
-        </div>
-    </div>
-
-    <!-- TIER 6 -->
-    <div class="tier-section" style="border-bottom: none;">
-        <div class="tier-header"><span class="tier-title">06 / Edge Variables</span></div>
-        <div class="form-grid">
-            <div class="control-group">
-                <label>Umbrella Limit</label>
-                <select id="umbrella_limit">
-                    <option value="0" selected>None</option>
-                    <option value="1000000">$1M</option>
-                    <option value="5000000">$5M</option>
-                    <option value="10000000">$10M+</option>
-                </select>
-            </div>
-
-            <div class="control-group">
-                <div class="slider-header"><label>Insured Age</label><span class="slider-val" id="val_age">38
-                        yrs</span></div>
-                <input type="range" id="age" min="18" max="100" step="1" value="38">
+                <div class="control-group">
+                    <div class="slider-header"><label>Months as Customer</label><span class="slider-val"
+                            id="val_tenure">200</span></div>
+                    <input type="range" id="months_as_customer" min="0" max="500" step="12" value="200">
+                </div>
+                <!-- Policy Age Abstracted -->
+                <div class="control-group">
+                    <label>When did the policy start?</label>
+                    <select id="days_since_bind">
+                        <option value="90">Less than 6 months ago</option>
+                        <option value="270">6–12 months ago</option>
+                        <option value="540">1–2 years ago</option>
+                        <option value="1500" selected>2–5 years ago</option>
+                        <option value="3000">More than 5 years ago</option>
+                    </select>
+                </div>
             </div>
         </div>
 
-        <!-- CAPITAL IMPACT -->
-        <div class="control-group" style="margin-top: 40px;">
-            <label>Financial Capital Impact</label>
-            <div class="toggle-group">
-                <div class="toggle-opt active" onclick="setCapMode('none')">No capital impact</div>
-                <div class="toggle-opt" onclick="setCapMode('gain')">Capital gain</div>
-                <div class="toggle-opt" onclick="setCapMode('loss')">Capital loss</div>
-            </div>
+        <!-- TIER 4 -->
+        <div class="tier-section">
+            <div class="tier-header"><span class="tier-title">04 / Vehicle Context</span></div>
+            <div class="form-grid">
+                <div class="control-group">
+                    <div class="slider-header"><label>Vehicle Age</label><span class="slider-val" id="val_veh_age">10
+                            yrs</span></div>
+                    <input type="range" id="vehicle_age" min="0" max="30" step="1" value="10">
+                </div>
 
-            <div id="cap_gain_box" class="hidden" style="margin-top: 20px;">
-                <div class="slider-header"><label>Capital Gain</label><span class="slider-val"
-                        id="val_cap_gain">$0</span></div>
-                <input type="range" id="capital_gains" min="0" max="100000" step="5000" value="0">
-            </div>
-
-            <div id="cap_loss_box" class="hidden" style="margin-top: 20px;">
-                <div class="slider-header"><label>Capital Loss</label><span class="slider-val"
-                        id="val_cap_loss">$0</span></div>
-                <input type="range" id="capital_loss" min="-100000" max="0" step="5000" value="0">
+                <div class="control-group">
+                    <label>Vehicles Involved</label>
+                    <select id="number_of_vehicles_involved">
+                        <option value="1" selected>1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4+</option>
+                    </select>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- ACTION -->
-    <div class="action-bar">
-        <button class="primary-btn" id="predictBtn">Analyze Claim</button>
-        <div id="errorBox" style="color: #ffcccc; margin-top: 20px; display: none; font-size: 14px;"></div>
-    </div>
+        <!-- TIER 5 -->
+        <div class="tier-section">
+            <div class="tier-header"><span class="tier-title">05 / Administrative</span></div>
+            <div class="form-grid">
+                <div class="control-group">
+                    <label>Police Report Filed</label>
+                    <select id="police_report_available">
+                        <option value="YES">Yes</option>
+                        <option value="NO">No</option>
+                        <option value="?">Unknown</option>
+                    </select>
+                </div>
 
-    <!-- RESULT -->
-    <div id="resultBox" class="result-box">
-        <div class="result-score" id="resultScore">--</div>
-        <div class="result-detail" id="resultText"></div>
-    </div>
+                <div class="control-group">
+                    <label>Authorities Involved</label>
+                    <select id="authorities_contacted">
+                        <option value="Police" selected>Police</option>
+                        <option value="Fire">Fire department</option>
+                        <option value="Ambulance">Ambulance</option>
+                        <option value="Other">Other</option>
+                        <option value="None">None</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- TIER 6 -->
+        <div class="tier-section" style="border-bottom: none;">
+            <div class="tier-header"><span class="tier-title">06 / Edge Variables</span></div>
+            <div class="form-grid">
+                <div class="control-group">
+                    <label>Umbrella Limit</label>
+                    <select id="umbrella_limit">
+                        <option value="0" selected>None</option>
+                        <option value="1000000">$1M</option>
+                        <option value="5000000">$5M</option>
+                        <option value="10000000">$10M+</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <div class="slider-header"><label>Insured Age</label><span class="slider-val" id="val_age">38
+                            yrs</span></div>
+                    <input type="range" id="age" min="18" max="100" step="1" value="38">
+                </div>
+            </div>
+
+            <!-- CAPITAL IMPACT -->
+            <div class="control-group" style="margin-top: 40px;">
+                <label>Financial Capital Impact</label>
+                <div class="toggle-group">
+                    <div class="toggle-opt active" onclick="setCapMode('none')">No capital impact</div>
+                    <div class="toggle-opt" onclick="setCapMode('gain')">Capital gain</div>
+                    <div class="toggle-opt" onclick="setCapMode('loss')">Capital loss</div>
+                </div>
+
+                <div id="cap_gain_box" class="hidden" style="margin-top: 20px;">
+                    <div class="slider-header"><label>Capital Gain</label><span class="slider-val"
+                            id="val_cap_gain">$0</span></div>
+                    <input type="range" id="capital_gains" min="0" max="100000" step="5000" value="0">
+                </div>
+
+                <div id="cap_loss_box" class="hidden" style="margin-top: 20px;">
+                    <div class="slider-header"><label>Capital Loss</label><span class="slider-val"
+                            id="val_cap_loss">$0</span></div>
+                    <input type="range" id="capital_loss" min="-100000" max="0" step="5000" value="0">
+                </div>
+            </div>
+        </div>
+
+        <!-- ACTION -->
+        <div class="action-bar">
+            <button class="primary-btn" id="predictBtn">Analyze Claim</button>
+            <div id="errorBox" style="color: #ffcccc; margin-top: 20px; display: none; font-size: 14px;"></div>
+        </div>
+
+        <!-- RESULT -->
+        <div id="resultBox" class="result-box">
+            <div class="result-score" id="resultScore">--</div>
+            <div class="result-detail" id="resultText"></div>
+        </div>
 
     </div>
 
