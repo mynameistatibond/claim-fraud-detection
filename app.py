@@ -35,7 +35,7 @@ except ImportError as e:
 
 # --- CONFIG ---
 MODELS_DIR = Path("models")
-APP_VERSION = "1.4.8"
+APP_VERSION = "1.4.9"
 THRESHOLD_AUTO_FLAG = 0.53
 
 # Model registry
@@ -332,77 +332,77 @@ async def predict(
                                  'shap': sh_val
                              })
                          
-                          # 5. Filter and Sort
-                          items_temp.sort(key=lambda x: abs(x['shap']), reverse=True)
-                          
-                          # Whitelist of features the user can actually control/see
-                          VISIBLE_ROOTS = {
-                              "total_claim_amount", "injury_share", "property_share", "incident_hour_of_the_day",
-                              "months_as_customer", "policy_annual_premium", "vehicle_age", "age",
-                              "capital-gains", "capital-loss", "umbrella_limit", "bodily_injuries",
-                              "number_of_vehicles_involved", "incident_severity", "collision_type",
-                              "authorities_contacted", "police_report_available"
-                          }
-                          
-                          count = 0
-                          
-                          # Fix: Get actual input vector to check feature presence
-                          input_vector = X_query[0] if len(X_query.shape) == 2 else X_query
+                         # 5. Filter and Sort
+                         items_temp.sort(key=lambda x: abs(x['shap']), reverse=True)
+                         
+                         # Whitelist of features the user can actually control/see
+                         VISIBLE_ROOTS = {
+                             "total_claim_amount", "injury_share", "property_share", "incident_hour_of_the_day",
+                             "months_as_customer", "policy_annual_premium", "vehicle_age", "age",
+                             "capital-gains", "capital-loss", "umbrella_limit", "bodily_injuries",
+                             "number_of_vehicles_involved", "incident_severity", "collision_type",
+                             "authorities_contacted", "police_report_available"
+                         }
+                         
+                         count = 0
+                         
+                         # Fix: Get actual input vector to check feature presence
+                         input_vector = X_query[0] if len(X_query.shape) == 2 else X_query
 
-                          for idx_item, item in enumerate(items_temp):
-                              if count >= 5: break
-                              
-                              feat_name = item['feature']
-                              
-                              # Filter: If one-hot feature (has underscore) and value is 0, SKIP it
-                              # This prevents "Minor Damage" showing up when "Major Damage" is active.
-                              # We find the index of this feature in feature_names to get its value
-                              try:
-                                  f_index = list(feature_names).index(feat_name)
-                                  f_val = input_vector[f_index]
-                                  # If it looks like a one-hot category and is NOT present (0), skip
-                                  if "_" in feat_name and abs(f_val) < 1e-4:
-                                      continue
-                              except ValueError:
-                                  pass # Feature not found in columns, safe to proceed or skip? Proceed.
+                         for idx_item, item in enumerate(items_temp):
+                             if count >= 5: break
+                             
+                             feat_name = item['feature']
+                             
+                             # Filter: If one-hot feature (has underscore) and value is 0, SKIP it
+                             # This prevents "Minor Damage" showing up when "Major Damage" is active.
+                             # We find the index of this feature in feature_names to get its value
+                             try:
+                                 f_index = list(feature_names).index(feat_name)
+                                 f_val = input_vector[f_index]
+                                 # If it looks like a one-hot category and is NOT present (0), skip
+                                 if "_" in feat_name and abs(f_val) < 1e-4:
+                                     continue
+                             except ValueError:
+                                 pass # Feature not found in columns, safe to proceed or skip? Proceed.
 
-                              # Resolve Root Feature Name
-                              meta = FEATURE_METADATA.get(feat_name) if FEATURE_METADATA else None
-                              root_feat = meta.get("raw_feature", feat_name) if meta else feat_name
-                              
-                              # Clean up potential "onehot__" prefix if metadata missing
-                              if "onehot__" in root_feat: root_feat = root_feat.split("__")[1].split("_")[0] 
-                              
-                              # Heuristic for roots
-                              for v in VISIBLE_ROOTS:
-                                  if feat_name.startswith(v):
-                                      root_feat = v
-                                      break
+                             # Resolve Root Feature Name
+                             meta = FEATURE_METADATA.get(feat_name) if FEATURE_METADATA else None
+                             root_feat = meta.get("raw_feature", feat_name) if meta else feat_name
+                             
+                             # Clean up potential "onehot__" prefix if metadata missing
+                             if "onehot__" in root_feat: root_feat = root_feat.split("__")[1].split("_")[0] 
+                             
+                             # Heuristic for roots
+                             for v in VISIBLE_ROOTS:
+                                 if feat_name.startswith(v):
+                                     root_feat = v
+                                     break
 
-                              if root_feat not in VISIBLE_ROOTS and root_feat not in FEATURE_MAP: 
-                                  continue
-                                  
-                              direction, text = get_readable_explanation(feat_name, item['shap'], FEATURE_METADATA)
-                              
-                              # Clean display name: Remove underscores, Title Case
-                              # e.g. "incident_severity_Major Damage" -> "Major Damage Severity"
-                              clean_name = feat_name
-                              if "_" in clean_name:
-                                  parts = clean_name.split('_')
-                                  # Heuristic: if last part is the category ("Major Damage"), put it first?
-                                  # Or just replace underscores.
-                                  # User wanted "Major Damage Severity"
-                                  if len(parts) >= 2:
-                                       # Generic clean: "Incident Severity Minor Damage"
-                                       clean_name = clean_name.replace("_", " ").title()
-                              
-                              explanation_items.append(ExplanationItem(
-                                  feature=FEATURE_MAP.get(feat_name, clean_name), # Use cleaned name as fallback
-                                  direction="UP" if item['shap'] > 0 else "DOWN",
-                                  text=text,
-                                  importance=float(abs(item['shap']))
-                              ))
-                              count += 1
+                             if root_feat not in VISIBLE_ROOTS and root_feat not in FEATURE_MAP: 
+                                 continue
+                                 
+                             direction, text = get_readable_explanation(feat_name, item['shap'], FEATURE_METADATA)
+                             
+                             # Clean display name: Remove underscores, Title Case
+                             # e.g. "incident_severity_Major Damage" -> "Major Damage Severity"
+                             clean_name = feat_name
+                             if "_" in clean_name:
+                                 parts = clean_name.split('_')
+                                 # Heuristic: if last part is the category ("Major Damage"), put it first?
+                                 # Or just replace underscores.
+                                 # User wanted "Major Damage Severity"
+                                 if len(parts) >= 2:
+                                      # Generic clean: "Incident Severity Minor Damage"
+                                      clean_name = clean_name.replace("_", " ").title()
+                             
+                             explanation_items.append(ExplanationItem(
+                                 feature=FEATURE_MAP.get(feat_name, clean_name), # Use cleaned name as fallback
+                                 direction="UP" if item['shap'] > 0 else "DOWN",
+                                 text=text,
+                                 importance=float(abs(item['shap']))
+                             ))
+                             count += 1
                      else:
                           explanation_items.append(ExplanationItem(feature="System Error", direction="DOWN", text="Explanation preprocessor missing", importance=0))
                  except Exception as e:
