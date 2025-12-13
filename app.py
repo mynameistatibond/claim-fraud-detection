@@ -25,6 +25,7 @@ app = FastAPI(title="Fraud Detection API", version="2.0.0")
 
 # Model configuration
 MODELS_DIR = Path("models")
+APP_VERSION = "1.2.0"
 THRESHOLD_AUTO_FLAG = 0.53
 
 # Model registry
