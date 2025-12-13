@@ -10,8 +10,8 @@ logger = logging.getLogger(__name__)
 
 # Constants
 # Constants
-HF_API_URL = "https://router.huggingface.co/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.3"
-# NOTE: We use the router endpoint with /hf-inference/ path as required by the new infrastructure.
+HF_API_URL = "https://router.huggingface.co/hf-inference/models/HuggingFaceH4/zephyr-7b-beta"
+# NOTE: Switched to Zephyr (Ungated) to avoid "Not Found" / Gating issues with Mistral v0.3
 
 def build_driver_lines(explanation_items: list, max_items: int = 5) -> str:
     """
