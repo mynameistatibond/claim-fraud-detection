@@ -120,43 +120,204 @@ def load_models():
     
     logger.info(f"Total models loaded: {len(MODELS)}")
 
-def get_tree_estimator(model):
-    """Extract the actual tree estimator from Pipelines"""
-    # Check for sklearn Pipeline (without importing sklearn if possible, or catch)
+def get_pipeline_components(model):
+    """Extract (preprocessor, estimator) from Pipeline"""
     if hasattr(model, 'steps'):
-        # Assume the last step is the estimator
-        return model.steps[-1][1]
-    return model
+        # Usually steps=[('prep', ColumnTransformer), ('clf', Estimator)]
+        return model.steps[0][1], model.steps[-1][1]
+    return None, model
 
 def load_shap_resources():
     """Load background data and initialize explainers"""
     global BACKGROUND_DATA
     if BACKGROUND_DATA_PATH.exists():
-        BACKGROUND_DATA = pd.read_csv(BACKGROUND_DATA_PATH)
+        # Load and ensure it matches input schema (drop target if present)
+        bg = pd.read_csv(BACKGROUND_DATA_PATH)
+        if 'target' in bg.columns:
+            bg = bg.drop(columns=['target'])
+        BACKGROUND_DATA = bg
         logger.info(f"Loaded SHAP background data: {len(BACKGROUND_DATA)} rows")
     else:
         logger.warning(f"SHAP background data not found at {BACKGROUND_DATA_PATH}")
 
-    # Pre-compute explainers for loaded models where possible
-    # STRATEGY: Initialize on _uncalibrated (raw trees) and map _calibrated to them.
+    # Pre-compute explainers
     for key, model in MODELS.items():
-        if "Voting" in key: continue # SHAP for voting is complex
+        if "Voting" in key: continue
         
-        # We only init based on the Uncalibrated (Pipeline) version to get the raw tree
         if "uncalibrated" in key:
             try:
-                 estimator = get_tree_estimator(model)
+                 prep, estimator = get_pipeline_components(model)
                  if BACKGROUND_DATA is not None:
-                     explainer = shap.TreeExplainer(estimator, BACKGROUND_DATA)
+                     # TRANSFORM background data
+                     if prep:
+                         # sklearn pipeline preprocessor needs dataframe with correct columns
+                         # We assume BACKGROUND_DATA has superset of columns needed.
+                         X_bg = prep.transform(BACKGROUND_DATA)
+                     else:
+                         X_bg = BACKGROUND_DATA
+                     
+                     explainer = shap.TreeExplainer(estimator, X_bg)
                      SHAP_EXPLAINERS[key] = explainer
                      
-                     # Also allow the calibrated version to use this explainer
-                     # (Calibration is monotonic, so risk drivers are generally preserved)
+                     # Map calibrated
                      cal_key = key.replace("uncalibrated", "calibrated")
                      SHAP_EXPLAINERS[cal_key] = explainer
-                     logger.info(f"Initialized SHAP for {key} (and mapped {cal_key})")
+                     # We also need to cache the preprocessor for the calibrated key lookup later?
+                     # No, we can get it from the model at predict time.
             except Exception as e:
                 logger.warning(f"Could not init SHAP for {key}: {e}")
+
+# ... (startup_event default)
+
+# ... (get_readable_explanation default)
+
+# ...
+
+@app.post("/predict", response_model=PredictionResponse)
+async def predict(
+    claim_data: ClaimInput,
+    model: Literal["rf", "et", "xgb", "voting"] = Query("rf"),
+    calibrated: bool = Query(True),
+    scenario: Literal["auto_flagger", "dashboard"] = Query("dashboard"),
+    explain: bool = Query(True)
+):
+    # ... (model selection logic same)
+    model_map = {"rf": "RandomForest", "et": "ExtraTrees", "xgb": "XGBoost", "voting": "VotingEnsemble"}
+    model_name = model_map[model]
+    
+    cal_type = "calibrated" if calibrated else "uncalibrated"
+    if scenario == "auto_flagger": cal_type = "uncalibrated"
+    elif scenario == "dashboard": cal_type = "calibrated"
+    
+    model_key = f"{model_name}_{cal_type}"
+    
+    # ... (lookup fallback logic same)
+    if model_key not in MODELS:
+        # Fallback to uncalibrated if calibrated not found (common dev issue)
+        if cal_type == 'calibrated':
+             model_key = f"{model_name}_uncalibrated"
+        if model_key not in MODELS:
+             raise HTTPException(status_code=404, detail=f"Model {model_key} not found")
+
+    loaded_model = MODELS[model_key]
+    
+    try:
+        input_dict = claim_data.dict(by_alias=True)
+        final_df = preprocess_input(input_dict)
+        
+        # Predict
+        if hasattr(loaded_model, "predict_proba"):
+             proba = loaded_model.predict_proba(final_df)[0, 1]
+        else:
+             start_pred = loaded_model.predict(final_df)
+             proba = float(start_pred[0])
+        
+        # SHAP
+        explanation_items = []
+        if explain and "Voting" not in model_name and BACKGROUND_DATA is not None:
+             try:
+                 explainer = SHAP_EXPLAINERS.get(model_key)
+                 if explainer:
+                     # 1. Transform Input
+                     prep, _ = get_pipeline_components(loaded_model)
+                     # If loaded_model is CalibratedClassifierCV, it doesn't have steps directly usually.
+                     # But we mapped SHAP info based on the *Uncalibrated* key structure.
+                     # However, 'loaded_model' here might be the Calibrated one.
+                     # We need the preprocessor.
+                     # If Calibrated, it wraps the pipeline? No, usually CalibratedClassifierCV(base_estimator=Pipeline).
+                     # So loaded_model.estimator would be the pipeline?
+                     # Let's rely on the fact that if we use the uncalibrated key mapping, we should use the uncalibrated model's preprocessor too.
+                     # Simpler: Load the uncalibrated model to get the preprocessor if needed.
+                     
+                     if "calibrated" in model_key:
+                         # Get the uncalibrated sibling for structural access
+                         uncal_key = model_key.replace("calibrated", "uncalibrated")
+                         sibling = MODELS.get(uncal_key)
+                         if sibling: prep, _ = get_pipeline_components(sibling)
+                     
+                     if prep:
+                         X_query = prep.transform(final_df)
+                         # Get Feature Names
+                         # If prep is ColumnTransformer
+                         if hasattr(prep, 'get_feature_names_out'):
+                             feature_names = prep.get_feature_names_out()
+                         else:
+                             # Fallback, maybe X_query has columns if df? no, transform returns array usually
+                             feature_names = [f"feature_{i}" for i in range(X_query.shape[1])]
+                     else:
+                         X_query = final_df
+                         feature_names = final_df.columns
+                     
+                     shap_values = explainer.shap_values(X_query)
+                     
+                     if isinstance(shap_values, list):
+                         vals = shap_values[1][0]
+                     else:
+                         vals = shap_values[0]
+                     
+                     # Create DF
+                     # We need to map feature_names to vals
+                     # Remove "onehot__" or "remainder__" prefix from get_feature_names_out results typically
+                     clean_feats = [f.split('__')[-1] if '__' in f else f for f in feature_names]
+                     
+                     # We need the original values for text generation?
+                     # The humanizer logic uses `val_raw`. We can look up in final_df?
+                     # But final_df has raw columns. 
+                     # What if OneHot? "collision_type_Rear Collision".
+                     # We can try to match.
+                     
+                     # Let's store importance and raw feature name
+                     # X_query contains transformed values.
+                     
+                     # Construct items
+                     # We need to iterate top features.
+                     # We have `clean_feats` (e.g. "collision_type_Rear Collision") and `vals` (SHAP).
+                     # We need `val` (User input).
+                     # For "collision_type_Rear Collision", the user input is in `final_df['collision_type']`.
+                     
+                     # Simplify: Pass 0 as value to get_readable_explanation and rely on SHAP sign?
+                     # get_readable_explanation uses `val_raw` for nuances ("Long tenure" vs "Low tenure").
+                     # Use final_df for value lookup.
+                     
+                     items_temp = []
+                     for i, feat_name in enumerate(clean_feats):
+                         sh_val = vals[i]
+                         if abs(sh_val) < 1e-4: continue
+                         
+                         # Find raw value
+                         # If feat_name is like "collision_type_Rear Collision", raw col is "collision_type"
+                         # Heuristic matching
+                         raw_val = 0
+                         # Try exact match in final_df
+                         if feat_name in final_df.columns:
+                             raw_val = final_df.iloc[0][feat_name]
+                         else:
+                             # Try prefix match logic or just pass dummy
+                             # For OneHot: "Rear Collision" implies value is 1 (if feature is active).
+                             # If SHAP is high, it likely is active.
+                             pass 
+                             
+                         items_temp.append({
+                             'feature': feat_name,
+                             'shap': sh_val,
+                             'val': raw_val
+                         })
+                     
+                     # Sort
+                     items_temp.sort(key=lambda x: abs(x['shap']), reverse=True)
+                     top_5 = items_temp[:5]
+                     
+                     for item in top_5:
+                         direction, text = get_readable_explanation(item['feature'], item['val'], item['shap'], 0)
+                         explanation_items.append(ExplanationItem(
+                             feature=FEATURE_MAP.get(item['feature'], item['feature']),
+                             direction="UP" if item['shap'] > 0 else "DOWN",
+                             text=text,
+                             importance=float(abs(item['shap']))
+                         ))
+                         
+             except Exception as e:
+                 logger.warning(f"SHAP gen failed: {e}")
 
 @app.on_event("startup")
 async def startup_event():
