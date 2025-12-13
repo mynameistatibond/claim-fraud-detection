@@ -8,11 +8,27 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from typing import Optional, Literal
-import shap
+import joblib
+import numpy as np
+from pathlib import Path
+import logging
 import pandas as pd
+import shap
+from preprocessing import preprocess_input
 
-# ... (Previous imports kept implicitly by replace_tool context if not ensuring full file view. 
-# Waiting, I should replace blocks. I will do a big replace to ensure imports are there.)
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Initialize FastAPI app
+app = FastAPI(title="Fraud Detection API", version="2.0.0")
+
+# Model configuration
+MODELS_DIR = Path("models")
+THRESHOLD_AUTO_FLAG = 0.53
+
+# Model registry
+MODELS = {}
 
 # SHAP Configuration
 BACKGROUND_DATA_PATH = MODELS_DIR / "shap_background.csv"
@@ -40,29 +56,32 @@ FEATURE_MAP = {
     "authorities_contacted_Police": "Police Contacted"
 }
 
-def load_shap_resources():
-    """Load background data and initialize explainers"""
-    global BACKGROUND_DATA
-    if BACKGROUND_DATA_PATH.exists():
-        BACKGROUND_DATA = pd.read_csv(BACKGROUND_DATA_PATH)
-        # Ensure dummy columns match model expectation if needed, but preprocessed_for_trees should be good.
-        logger.info(f"Loaded SHAP background data: {len(BACKGROUND_DATA)} rows")
-    else:
-        logger.warning(f"SHAP background data not found at {BACKGROUND_DATA_PATH}")
-
-    # Pre-compute explainers for loaded models where possible
-    # Note: TreeExplainer is fast, but better to cache.
-    for key, model in MODELS.items():
-        if "Voting" in key: continue # SHAP for voting is complex, we might skip or approx
-        try:
-             # Just cache the explainer if we have data
-             if BACKGROUND_DATA is not None:
-                 # Check if model has direct estimator or via pipeline steps? 
-                 # Assuming loaded models are pipelines or naked estimators.
-                 # The 'best_tree_models' are usually estimators.
-                 SHAP_EXPLAINERS[key] = shap.TreeExplainer(model, BACKGROUND_DATA)
-        except Exception as e:
-            logger.warning(f"Could not init SHAP for {key}: {e}")
+class ClaimInput(BaseModel):
+    """Input schema accepting Raw + New Categorical Features"""
+    # Numeric
+    policy_annual_premium: float = Field(..., description="Annual policy premium")
+    total_claim_amount: float = Field(..., description="Total claim amount")
+    vehicle_age: int = Field(..., description="Age of vehicle in years")
+    days_since_bind: int = Field(..., description="Days since policy binding")
+    months_as_customer: int = Field(..., description="Months as customer")
+    capital_gains: float = Field(0.0, alias="capital-gains")
+    capital_loss: float = Field(0.0, alias="capital-loss")
+    injury_share: float = Field(..., description="Share of injury damage")
+    property_share: float = Field(..., description="Share of property damage")
+    age: int = Field(38, description="Insured Age")
+    umbrella_limit: int = Field(..., description="Umbrella policy limit")
+    incident_hour_of_the_day: int = Field(..., ge=0, le=23)
+    
+    # New Categorical Fields
+    collision_type: Optional[str] = Field(None, description="Front Collision, Side Collision, Rear Collision, or ?")
+    incident_severity: Optional[str] = Field(None, description="Major Damage, Minor Damage, Total Loss, Trivial Damage")
+    authorities_contacted: Optional[str] = Field(None, description="Police, Fire, Ambulance, Other, None")
+    number_of_vehicles_involved: Optional[int] = Field(1, description="Number of vehicles")
+    bodily_injuries: Optional[int] = Field(0, description="Number of injuries")
+    police_report_available: Optional[str] = Field(None, description="YES, NO, ?")
+    
+    class Config:
+        populate_by_name = True
 
 class ExplanationItem(BaseModel):
     feature: str
@@ -78,6 +97,47 @@ class PredictionResponse(BaseModel):
     threshold_flag: Optional[str] = None
     scenario: str
     explanation: Optional[list[ExplanationItem]] = None
+
+def load_models():
+    """Load all available models on startup"""
+    model_types = ["RandomForest", "ExtraTrees", "XGBoost", "VotingEnsemble"]
+    calibration_types = ["calibrated", "uncalibrated"]
+    
+    for model_type in model_types:
+        for cal_type in calibration_types:
+            filename = f"best_tree_models_{cal_type}.joblib"
+            filepath = MODELS_DIR / filename
+            
+            if filepath.exists():
+                try:
+                    models_dict = joblib.load(filepath)
+                    if 'Trees' in models_dict and model_type in models_dict['Trees']:
+                        key = f"{model_type}_{cal_type}"
+                        MODELS[key] = models_dict['Trees'][model_type]
+                        logger.info(f"Loaded model: {key}")
+                except Exception as e:
+                    logger.error(f"Error loading {filepath}: {e}")
+    
+    logger.info(f"Total models loaded: {len(MODELS)}")
+
+def load_shap_resources():
+    """Load background data and initialize explainers"""
+    global BACKGROUND_DATA
+    if BACKGROUND_DATA_PATH.exists():
+        BACKGROUND_DATA = pd.read_csv(BACKGROUND_DATA_PATH)
+        logger.info(f"Loaded SHAP background data: {len(BACKGROUND_DATA)} rows")
+    else:
+        logger.warning(f"SHAP background data not found at {BACKGROUND_DATA_PATH}")
+
+    # Pre-compute explainers for loaded models where possible
+    for key, model in MODELS.items():
+        if "Voting" in key: continue # SHAP for voting is complex
+        try:
+             # Just cache the explainer if we have data
+             if BACKGROUND_DATA is not None:
+                 SHAP_EXPLAINERS[key] = shap.TreeExplainer(model, BACKGROUND_DATA)
+        except Exception as e:
+            logger.warning(f"Could not init SHAP for {key}: {e}")
 
 @app.on_event("startup")
 async def startup_event():
@@ -114,6 +174,14 @@ def get_readable_explanation(feature, val_raw, shap_val, mean_val):
         else: reason = "Insured age group associated with lower risk"
     
     return direction, reason
+
+@app.get("/")
+async def root():
+    return FileResponse("index.html")
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "models_loaded": len(MODELS)}
 
 @app.post("/predict", response_model=PredictionResponse)
 async def predict(
@@ -156,7 +224,6 @@ async def predict(
              # Basic fallback
              start_pred = loaded_model.predict(final_df)
              proba = float(start_pred[0])
-
         
         # SHAP EXPLANATION
         explanation_items = []
@@ -214,4 +281,4 @@ async def predict(
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=7860)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
