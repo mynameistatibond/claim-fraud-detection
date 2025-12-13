@@ -9,43 +9,17 @@ from functools import lru_cache
 logger = logging.getLogger(__name__)
 
 # Constants
-# Constants
-HF_API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1"
-# NOTE: Switched to Mistral v0.1 (Free Tier) on api-inference as per user request.
-
-def build_driver_lines(explanation_items: list, max_items: int = 5) -> str:
-    """
-    Convert ExplanationItem list into newline string lines:
-    - {feature} | {direction} | {text}
-    """
-    lines = []
-    # Sort by importance just in case, though usually already sorted
-    # Items might be dicts or objects depending on where they come from. 
-    # In app.py they are ExplanationItem objects (tuples/dataclasses) or dicts.
-    # The prompt implies they are structured items.
-    
-    # Assuming standard sorting is done by caller, but we limit to max_items
-    for item in explanation_items[:max_items]:
-        # Handle if item is dict or object
-        if isinstance(item, dict):
-            feat = item.get('feature', 'Unknown')
-            direction = item.get('direction', 'N/A')
-            text = item.get('text', '')
-        else:
-            feat = getattr(item, 'feature', 'Unknown')
-            direction = getattr(item, 'direction', 'N/A')
-            text = getattr(item, 'text', '')
-            
-        lines.append(f"- {feat} | {direction} | {text}")
-    
-    return "\n".join(lines)
+# Candidate Models (Tried in order)
+HF_CANDIDATE_URLS = [
+    "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1",
+    "https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta",
+    "https://api-inference.huggingface.co/models/microsoft/Phi-3-mini-4k-instruct"
+]
 
 @lru_cache(maxsize=256)
 def _cached_llm_request(selected_model: str, ref_model: str, risk_str: str, drivers_tuple: tuple) -> dict | None:
     """
     Internal cached function. Arguments must be hashable.
-    risk_str: "45.2" (formatted risk score)
-    drivers_tuple: tuple of strings (lines)
     """
     api_token = os.environ.get("HF_TOKEN")
     if not api_token:
@@ -59,7 +33,7 @@ def _cached_llm_request(selected_model: str, ref_model: str, risk_str: str, driv
 
     drivers_text = "\n".join(drivers_tuple)
     
-    # Prompt Template
+    # Prompt Template (Generic enough for all instruction models)
     prompt = f"""You generate user-facing explanations for an insurance claim risk score.
 
 Rules:
@@ -86,94 +60,101 @@ Return JSON:
 """
 
     payload = {
-        "inputs": prompt, # Plain text (Instruct format removed as per diagnostics)
+        "inputs": prompt,
         "parameters": {
-            "temperature": 0.01, # Almost deterministic
+            "temperature": 0.01,
             "max_new_tokens": 350,
             "return_full_text": False
         }
     }
 
-    # Retry logic for model loading (503)
-    max_retries = 2
-    for attempt in range(max_retries + 1):
-        try:
-            # DEBUG: Log the exact URL being hit
-            logger.error(f"HF REQUEST URL: {HF_API_URL}")
+    last_error = "No models attempted."
 
-            response = requests.post(
-                HF_API_URL, 
-                headers=headers, 
-                json=payload, 
-                timeout=(5.0, 20.0) # Increased timeout (connect, read)
-            )
-            
-            if response.status_code == 503:
-                if attempt < max_retries:
-                    time.sleep(5) # Increased wait for cold starts
-                    continue
+    # Iterate through candidates
+    for model_url in HF_CANDIDATE_URLS:
+        logger.info(f"Attempting LLM request to: {model_url}")
+        
+        # Retry logic per model (for 503 loading states)
+        max_retries = 2
+        model_success = False
+        
+        for attempt in range(max_retries + 1):
+            try:
+                # DEBUG: Log exact URL
+                logger.info(f"HF REQUEST URL: {model_url} (Attempt {attempt+1})")
+
+                response = requests.post(
+                    model_url, 
+                    headers=headers, 
+                    json=payload, 
+                    timeout=(5.0, 20.0)
+                )
+                
+                # Handling status codes
+                if response.status_code == 503:
+                    if attempt < max_retries:
+                        time.sleep(3) # Wait for load
+                        continue
+                    else:
+                        last_error = f"{model_url} timeout (503)"
+                        break # Try next model
+                
+                if response.status_code == 429:
+                    last_error = "Rate limit (429)"
+                    break # Try next model immediately
+                
+                if response.status_code == 404 or response.status_code == 410:
+                    last_error = f"{model_url} Not Found/Gone ({response.status_code})"
+                    break # Definitely try next model
+                
+                if response.status_code != 200:
+                    last_error = f"HF Error {response.status_code}: {response.text[:50]}"
+                    break # Try next model
+                    
+                # Success parsing
+                result = response.json()
+                if isinstance(result, list) and len(result) > 0:
+                    generated_text = result[0].get('generated_text', '')
+                elif isinstance(result, dict):
+                    generated_text = result.get('generated_text', '')
                 else:
-                    return {"error": "Model is loading (503). Try again in a moment."}
-            
-            if response.status_code == 429:
-                return {"error": "Rate limit reached (429)."}
-            
-            if response.status_code == 401:
-                return {"error": "Invalid HF_TOKEN (401). Check permissions."}
-
-            if response.status_code != 200:
-                logger.error(f"HF API Error: {response.text}")
-                return {"error": f"HF API Error {response.status_code}: {response.text[:50]}"}
+                    generated_text = ''
                 
-            # Parse Response
-            result = response.json()
-            if isinstance(result, list) and len(result) > 0:
-                generated_text = result[0].get('generated_text', '')
-            elif isinstance(result, dict):
-                generated_text = result.get('generated_text', '')
-            else:
-                generated_text = ''
-            
-            # RAW LOGGING for Debugging
-            logger.info(f"RAW LLM RESPONSE: {generated_text[:500]}")
+                if not generated_text:
+                    last_error = "Empty response from model"
+                    break # Try next model
 
-            # Robust JSON Extraction (Primary Method, not fallback)
-            clean_text = generated_text.strip()
-            
-            # 1. Attempt to find JSON object bounds
-            start = clean_text.find('{')
-            end = clean_text.rfind('}')
-            
-            if start != -1 and end != -1:
-                json_str = clean_text[start:end+1]
-                try:
-                    data = json.loads(json_str)
-                except json.JSONDecodeError:
-                    return {"error": "Failed to parse JSON (syntax error)."}
-            else:
-                return {"error": "No JSON object found in response."}
-            
-            # Relaxed Schema Validation
-            if "summary" not in data:
-                return {"error": "LLM response missing 'summary'."}
-            
-            # Defaults
-            data.setdefault("bullets", [])
-            data.setdefault("disclaimer", "This explanation reflects statistical patterns, not proof.")
-            
-            # Ensure bullets is a list
-            if not isinstance(data["bullets"], list):
-                data["bullets"] = [str(data["bullets"])] # Force list if single string
+                # --- JSON Parsing Logic ---
+                clean_text = generated_text.strip()
+                start = clean_text.find('{')
+                end = clean_text.rfind('}')
                 
-            return data
-
-        except requests.exceptions.Timeout:
-            return {"error": "HF API Request Timed Out (Cold model?)."}
-        except Exception as e:
-            logger.error(f"LLM Explainer Exception: {e}")
-            return {"error": f"Internal Error: {str(e)}"}
-            
-    return {"error": "Unknown error."}
+                if start != -1 and end != -1:
+                    json_str = clean_text[start:end+1]
+                    try:
+                        data = json.loads(json_str)
+                        # Minimal validation
+                        if "summary" in data:
+                            data.setdefault("bullets", [])
+                            data.setdefault("disclaimer", "Automated explanation.")
+                            if not isinstance(data["bullets"], list):
+                                data["bullets"] = [str(data["bullets"])]
+                            return data # <--- SUCCESS RETURN
+                    except json.JSONDecodeError:
+                        last_error = "JSON parse failed"
+                        # Don't break immediately, maybe retry? No, deterministic failure.
+                        break
+                else:
+                    last_error = "No JSON found"
+                    break
+                    
+            except Exception as e:
+                logger.error(f"Error calling {model_url}: {e}")
+                last_error = str(e)
+                # Try next attempt or model
+    
+    # If we get here, all models failed
+    return {"error": f"All models failed. Last error: {last_error}"}
 
 def generate_llm_explanation(
     selected_model_name: str,
