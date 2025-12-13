@@ -320,14 +320,14 @@
                     <option value="et">Extra Trees</option>
                     <option value="rf">Random Forest (Explanation Model)</option>
                 </select>
-                <div class="helper-text" style="line-height: 1.4; margin-top: 8px; font-size: 13px; opacity: 0.8;">
-                    Risk drivers are generated using a <b>ExtraTrees uncalibrated reference model</b> for consistency
+                <!-- Updated Style: Removed font-size 13px and opacity 0.8 for cleaner look, added font-weight:600 to reference model -->
+                <div class="helper-text" style="line-height: 1.4; margin-top: 8px;">
+                    Risk drivers are generated using a <span style="font-weight: 600;">ExtraTrees uncalibrated reference
+                        model</span> for consistency
                     and interpretability.
                     <br>Prediction scores are produced by the selected model above.
-                    <div id="modelHint" style="margin-top: 6px; font-style: italic; opacity: 0.8; display: none;">
-                        ℹ️ Risk drivers are based on a reference model, not the selected prediction model.
-                    </div>
                 </div>
+                <!-- Removed modelHint div -->
             </div>
 
             <!-- Analysis Mode -->
@@ -736,19 +736,7 @@
             document.getElementById('scenario_desc').innerText = scenarioDesc[e.target.value];
         });
 
-        // Show/Hide Model Hint
-        document.getElementById('model').addEventListener('change', (e) => {
-            const val = e.target.value;
-            const hint = document.getElementById('modelHint');
-            if (['xgb', 'voting', 'rf'].includes(val)) {
-                hint.style.display = 'block';
-            } else {
-                hint.style.display = 'none';
-            }
-        });
-
-        // Trigger initial model hint check
-        document.getElementById('model').dispatchEvent(new Event('change'));
+        // Removed Model Hint Logic
 
         // Global state for explanation
         let lastExplanation = [];
