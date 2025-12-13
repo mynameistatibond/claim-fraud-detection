@@ -4,264 +4,299 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fraud Detection API - Client</title>
+    <title>Fraud Detection Analysis</title>
+    <!-- Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+
     <style>
         :root {
-            --primary: #4F46E5;
-            --primary-hover: #4338CA;
-            --bg: #F3F4F6;
-            --card-bg: #FFFFFF;
-            --text-main: #111827;
-            --text-sub: #6B7280;
-            --border: #E5E7EB;
+            /* Core Colors */
+            --clr-bg: #0800ff;
+            /* Cobalt Blue */
+            --clr-text: #ffffff;
+            --clr-divider: rgba(255, 255, 255, 0.2);
+
+            /* Accents */
+            --clr-accent: #5076ff;
+            /* Bright Blue */
+            --clr-highlight: #82acff;
+            /* Mid Blue */
+
+            /* Spacing */
+            --space-unit: 20px;
+            --tiers-gap: 60px;
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Inter', -apple-system, sans-serif;
         }
 
         body {
-            background: var(--bg);
-            color: var(--text-main);
+            background-color: var(--clr-bg);
+            color: var(--clr-text);
+            font-family: 'Shippori Mincho B1', serif;
             min-height: 100vh;
             display: flex;
             justify-content: center;
-            padding: 40px 20px;
+            padding: 60px 20px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
         }
 
         .container {
-            background: var(--card-bg);
             width: 100%;
-            max-width: 800px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            padding: 40px;
+            max-width: 720px;
+            /* Editorial width */
         }
 
-        /* Header */
+        /* HEADER */
         header {
-            margin-bottom: 40px;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 20px;
+            margin-bottom: 80px;
+            text-align: center;
         }
 
         h1 {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--text-main);
-            margin-bottom: 8px;
+            font-size: 32px;
+            font-weight: 400;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
         }
 
         .subtitle {
-            color: var(--text-sub);
             font-size: 14px;
+            opacity: 0.8;
+            font-weight: 400;
+            letter-spacing: 0.02em;
         }
 
-        /* Configuration Top Bar */
+        /* CONFIG BAR */
         .config-bar {
-            background: #F9FAFB;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 40px;
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 40px;
+            margin-bottom: 60px;
+            padding-bottom: 40px;
+            border-bottom: 1px solid var(--clr-divider);
         }
 
-        /* Tiers */
+        /* TIERS */
         .tier-section {
-            margin-bottom: 40px;
+            margin-bottom: var(--tiers-gap);
+            border-bottom: 1px solid var(--clr-divider);
+            padding-bottom: 40px;
         }
 
         .tier-header {
+            margin-bottom: 30px;
             display: flex;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid var(--bg);
-        }
-
-        .tier-icon {
-            font-size: 20px;
-            margin-right: 12px;
+            align-items: baseline;
         }
 
         .tier-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--text-main);
+            font-size: 14px;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.1em;
+            opacity: 0.8;
         }
 
-        /* Form Grid */
+        /* GRID */
         .form-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 24px;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px 30px;
+            /* Row Gap, Column Gap */
         }
 
+        /* CONTROLS */
         .control-group {
-            margin-bottom: 5px;
+            margin-bottom: 0;
+            position: relative;
         }
 
         label {
             display: block;
             font-size: 13px;
-            font-weight: 600;
-            color: var(--text-main);
+            margin-bottom: 12px;
+            opacity: 0.9;
+        }
+
+        /* SLIDERS - Custom Minimal */
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
             margin-bottom: 8px;
         }
 
-        /* Inputs */
+        .slider-val {
+            font-size: 16px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+            margin: 10px 0;
+        }
+
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.4);
+            border: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: var(--clr-text);
+            cursor: pointer;
+            margin-top: -8px;
+            /* vertically center */
+            box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+            transition: box-shadow 0.2s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.2);
+        }
+
+        input[type="range"]:focus {
+            outline: none;
+        }
+
+        /* DROPDOWNS & INPUTS */
         select,
         input[type="text"] {
             width: 100%;
-            padding: 10px 12px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            font-size: 14px;
-            background: white;
-            transition: border-color 0.15s;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+            color: var(--clr-text);
+            font-family: inherit;
+            font-size: 16px;
+            padding: 8px 0;
+            border-radius: 0;
+            cursor: pointer;
+            transition: border-color 0.2s;
         }
 
         select:focus,
         input:focus {
             outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+            border-bottom-color: var(--clr-text);
         }
 
-        /* Sliders */
-        .slider-container {
-            margin-top: 5px;
+        select option {
+            background: #0000aa;
+            /* Dark fallback for options */
+            color: white;
         }
 
-        .slider-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-        }
-
-        .slider-val {
-            font-weight: 700;
-            color: var(--primary);
-            font-size: 14px;
-        }
-
-        input[type="range"] {
-            width: 100%;
-            height: 6px;
-            background: #E5E7EB;
-            border-radius: 3px;
-            outline: none;
-            -webkit-appearance: none;
-        }
-
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 18px;
-            height: 18px;
-            background: var(--primary);
-            border-radius: 50%;
-            cursor: pointer;
-            transition: transform 0.1s;
-        }
-
-        input[type="range"]::-webkit-slider-thumb:hover {
-            transform: scale(1.1);
-        }
-
+        /* Helper text context */
         .helper-text {
             font-size: 12px;
-            color: var(--text-sub);
-            margin-top: 6px;
+            opacity: 0.6;
+            margin-top: 8px;
+            font-style: italic;
         }
 
-        /* Action Bar */
-        .action-bar {
-            margin-top: 40px;
-            border-top: 1px solid var(--border);
-            padding-top: 30px;
-        }
-
-        button.primary-btn {
-            width: 100%;
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 16px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        button.primary-btn:hover {
-            background: var(--primary-hover);
-        }
-
-        button:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-
-        /* Results */
-        .result-box {
-            margin-top: 30px;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            display: none;
-        }
-
-        .result-box.fraud {
-            background: #FEF2F2;
-            border: 1px solid #FECACA;
-            color: #991B1B;
-        }
-
-        .result-box.legit {
-            background: #ECFDF5;
-            border: 1px solid #A7F3D0;
-            color: #065F46;
-        }
-
-        .result-score {
-            font-size: 28px;
-            font-weight: 800;
-            margin-bottom: 5px;
-        }
-
-        /* Toggle */
+        /* TOGGLE BUTTONS */
         .toggle-group {
             display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
+            gap: 20px;
+            margin-top: 20px;
         }
 
         .toggle-opt {
-            padding: 8px 16px;
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            font-size: 13px;
             cursor: pointer;
-            background: white;
+            font-size: 14px;
+            opacity: 0.5;
+            padding-bottom: 4px;
+            border-bottom: 1px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .toggle-opt:hover {
+            opacity: 0.8;
         }
 
         .toggle-opt.active {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
+            opacity: 1;
+            border-bottom-color: var(--clr-text);
         }
 
         .hidden {
             display: none;
+        }
+
+        /* ACTION AREA */
+        .action-bar {
+            margin-top: 60px;
+            text-align: center;
+        }
+
+        button.primary-btn {
+            background: transparent;
+            color: var(--clr-text);
+            border: 1px solid var(--clr-text);
+            padding: 18px 40px;
+            font-size: 16px;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 0.05em;
+        }
+
+        button.primary-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: default;
+        }
+
+        /* RESULTS */
+        .result-box {
+            margin-top: 60px;
+            padding-top: 40px;
+            border-top: 1px solid var(--clr-divider);
+            display: none;
+            animation: fadeUp 0.8s ease forwards;
+        }
+
+        .result-score {
+            font-size: 48px;
+            font-weight: 400;
+            margin-bottom: 10px;
+            letter-spacing: -0.02em;
+        }
+
+        .result-detail {
+            font-size: 16px;
+            opacity: 0.8;
+            line-height: 1.6;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     </style>
 </head>
@@ -270,25 +305,25 @@
 
     <div class="container">
         <header>
-            <h1>🛡️ Fraud Guard AI</h1>
-            <div class="subtitle">Enter claim details below to assess risk probability.</div>
+            <h1>Fraud Detection System</h1>
+            <div class="subtitle">Predictive analysis of claim irregularities</div>
         </header>
 
-        <!-- Configuration -->
+        <!-- CONFIG -->
         <div class="config-bar">
             <div class="control-group">
                 <label>Model Engine</label>
                 <select id="model">
-                    <option value="xgb" selected>XGBoost (Recommended)</option>
+                    <option value="xgb" selected>XGBoost (Standard)</option>
                     <option value="voting">Voting Ensemble</option>
                     <option value="rf">Random Forest</option>
                     <option value="et">Extra Trees</option>
                 </select>
             </div>
             <div class="control-group">
-                <label>Analysis Mode</label>
+                <label>Analysis Context</label>
                 <select id="scenario">
-                    <option value="dashboard" selected>Dashboard (Calibrated)</option>
+                    <option value="dashboard" selected>Dashboard Review (Calibrated)</option>
                     <option value="auto_flagger">Auto-Flagger (Uncalibrated)</option>
                 </select>
             </div>
@@ -296,12 +331,8 @@
 
         <!-- TIER 1 -->
         <div class="tier-section">
-            <div class="tier-header">
-                <span class="tier-icon">🥇</span>
-                <span class="tier-title">Incident & Injury</span>
-            </div>
+            <div class="tier-header"><span class="tier-title">01 / Incident & Injury</span></div>
             <div class="form-grid">
-                <!-- Severity -->
                 <div class="control-group">
                     <label>Incident Severity</label>
                     <select id="incident_severity">
@@ -312,30 +343,24 @@
                     </select>
                 </div>
 
-                <!-- Injury Share -->
                 <div class="control-group">
-                    <div class="slider-header">
-                        <label>Injury Share (%)</label>
-                        <span class="slider-val" id="val_injury_share">10%</span>
-                    </div>
+                    <div class="slider-header"><label>Injury Share</label><span class="slider-val"
+                            id="val_injury_share">10%</span></div>
                     <input type="range" id="injury_share" min="0" max="100" step="5" value="10">
-                    <div class="helper-text">Share of total claim attributed to injuries.</div>
                 </div>
 
-                <!-- Collision Type -->
                 <div class="control-group">
                     <label>Collision Type</label>
                     <select id="collision_type">
                         <option value="Rear Collision" selected>Rear collision</option>
                         <option value="Front Collision">Front collision</option>
                         <option value="Side Collision">Side collision</option>
-                        <option value="?">Unknown / not reported</option>
+                        <option value="?">Unknown / Not Reported</option>
                     </select>
                 </div>
 
-                <!-- Bodily Injuries -->
                 <div class="control-group">
-                    <label>Number of Bodily Injuries</label>
+                    <label>Bodily Injuries</label>
                     <select id="bodily_injuries">
                         <option value="0">0</option>
                         <option value="1" selected>1</option>
@@ -348,73 +373,48 @@
 
         <!-- TIER 2 -->
         <div class="tier-section">
-            <div class="tier-header">
-                <span class="tier-icon">🥈</span>
-                <span class="tier-title">Claim Size & Timing</span>
-            </div>
+            <div class="tier-header"><span class="tier-title">02 / Claim Size & Timing</span></div>
             <div class="form-grid">
-                <!-- Total Claim -->
                 <div class="control-group">
-                    <div class="slider-header">
-                        <label>Total Claim Amount ($)</label>
-                        <span class="slider-val" id="val_total_claim">58,000</span>
-                    </div>
+                    <div class="slider-header"><label>Total Claim</label><span class="slider-val"
+                            id="val_total_claim">$58,000</span></div>
                     <input type="range" id="total_claim_amount" min="1000" max="100000" step="1000" value="58000">
                 </div>
 
-                <!-- Incident Time -->
                 <div class="control-group">
-                    <div class="slider-header">
-                        <label>Incident Time (hour)</label>
-                        <span class="slider-val" id="val_hour">12:00</span>
-                    </div>
+                    <div class="slider-header"><label>Incident Time</label><span class="slider-val"
+                            id="val_hour">12:00</span></div>
                     <input type="range" id="incident_hour_of_the_day" min="0" max="23" step="1" value="12">
                     <div class="helper-text" id="helper_hour">Afternoon</div>
                 </div>
 
-                <!-- Property Share -->
                 <div class="control-group">
-                    <div class="slider-header">
-                        <label>Property Damage Share (%)</label>
-                        <span class="slider-val" id="val_prop_share">10%</span>
-                    </div>
+                    <div class="slider-header"><label>Property Share</label><span class="slider-val"
+                            id="val_prop_share">10%</span></div>
                     <input type="range" id="property_share" min="0" max="100" step="5" value="10">
-                    <div class="helper-text">Portion related to property damage.</div>
                 </div>
             </div>
         </div>
 
         <!-- TIER 3 -->
         <div class="tier-section">
-            <div class="tier-header">
-                <span class="tier-icon">🥉</span>
-                <span class="tier-title">Policy & Context</span>
-            </div>
+            <div class="tier-header"><span class="tier-title">03 / Policy & Tenure</span></div>
             <div class="form-grid">
-                <!-- Premium -->
                 <div class="control-group">
-                    <div class="slider-header">
-                        <label>Annual Policy Premium ($)</label>
-                        <span class="slider-val" id="val_premium">1,200</span>
-                    </div>
+                    <div class="slider-header"><label>Annual Premium</label><span class="slider-val"
+                            id="val_premium">$1,200</span></div>
                     <input type="range" id="policy_annual_premium" min="500" max="3000" step="100" value="1200">
                 </div>
 
-                <!-- Tenure -->
                 <div class="control-group">
-                    <div class="slider-header">
-                        <label>Months as Customer</label>
-                        <span class="slider-val" id="val_tenure">200</span>
-                    </div>
+                    <div class="slider-header"><label>Months as Customer</label><span class="slider-val"
+                            id="val_tenure">200</span></div>
                     <input type="range" id="months_as_customer" min="0" max="500" step="12" value="200">
                 </div>
 
-                <!-- Policy Age -->
                 <div class="control-group">
-                    <div class="slider-header">
-                        <label>Days Since Policy Start</label>
-                        <span class="slider-val" id="val_bind">4,680</span>
-                    </div>
+                    <div class="slider-header"><label>Days Since Start</label><span class="slider-val"
+                            id="val_bind">4,680</span></div>
                     <input type="range" id="days_since_bind" min="0" max="5000" step="90" value="4680">
                 </div>
             </div>
@@ -422,21 +422,14 @@
 
         <!-- TIER 4 -->
         <div class="tier-section">
-            <div class="tier-header">
-                <span class="tier-icon">🧩</span>
-                <span class="tier-title">Vehicle Context</span>
-            </div>
+            <div class="tier-header"><span class="tier-title">04 / Vehicle Context</span></div>
             <div class="form-grid">
-                <!-- Vehicle Age -->
                 <div class="control-group">
-                    <div class="slider-header">
-                        <label>Vehicle Age (years)</label>
-                        <span class="slider-val" id="val_veh_age">10</span>
-                    </div>
+                    <div class="slider-header"><label>Vehicle Age</label><span class="slider-val" id="val_veh_age">10
+                            yrs</span></div>
                     <input type="range" id="vehicle_age" min="0" max="30" step="1" value="10">
                 </div>
 
-                <!-- Vehicles Involved -->
                 <div class="control-group">
                     <label>Vehicles Involved</label>
                     <select id="number_of_vehicles_involved">
@@ -451,12 +444,8 @@
 
         <!-- TIER 5 -->
         <div class="tier-section">
-            <div class="tier-header">
-                <span class="tier-icon">🧾</span>
-                <span class="tier-title">Administrative</span>
-            </div>
+            <div class="tier-header"><span class="tier-title">05 / Administrative</span></div>
             <div class="form-grid">
-                <!-- Police Report -->
                 <div class="control-group">
                     <label>Police Report Filed</label>
                     <select id="police_report_available">
@@ -466,7 +455,6 @@
                     </select>
                 </div>
 
-                <!-- Authorities -->
                 <div class="control-group">
                     <label>Authorities Involved</label>
                     <select id="authorities_contacted">
@@ -481,16 +469,11 @@
         </div>
 
         <!-- TIER 6 -->
-        <div class="tier-section">
-            <div class="tier-header">
-                <span class="tier-icon">🧮</span>
-                <span class="tier-title">Edge Variables</span>
-            </div>
-
+        <div class="tier-section" style="border-bottom: none;">
+            <div class="tier-header"><span class="tier-title">06 / Edge Variables</span></div>
             <div class="form-grid">
-                <!-- Umbrella -->
                 <div class="control-group">
-                    <label>Umbrella Coverage Limit</label>
+                    <label>Umbrella Limit</label>
                     <select id="umbrella_limit">
                         <option value="0" selected>None</option>
                         <option value="1000000">$1M</option>
@@ -499,39 +482,31 @@
                     </select>
                 </div>
 
-                <!-- Insured Age -->
                 <div class="control-group">
-                    <div class="slider-header">
-                        <label>Insured Age (years)</label>
-                        <span class="slider-val" id="val_age">38</span>
-                    </div>
+                    <div class="slider-header"><label>Insured Age</label><span class="slider-val" id="val_age">38
+                            yrs</span></div>
                     <input type="range" id="age" min="18" max="100" step="1" value="38">
                 </div>
             </div>
 
-            <!-- Capital Impact -->
-            <div class="control-group" style="margin-top: 20px;">
-                <label style="margin-bottom: 15px;">Financial Capital Impact</label>
+            <!-- CAPITAL IMPACT -->
+            <div class="control-group" style="margin-top: 40px;">
+                <label>Financial Capital Impact</label>
                 <div class="toggle-group">
                     <div class="toggle-opt active" onclick="setCapMode('none')">No capital impact</div>
                     <div class="toggle-opt" onclick="setCapMode('gain')">Capital gain</div>
                     <div class="toggle-opt" onclick="setCapMode('loss')">Capital loss</div>
                 </div>
 
-                <!-- Conditional Sliders -->
-                <div id="cap_gain_box" class="hidden">
-                    <div class="slider-header">
-                        <label>Capital Gain ($)</label>
-                        <span class="slider-val" id="val_cap_gain">0</span>
-                    </div>
+                <div id="cap_gain_box" class="hidden" style="margin-top: 20px;">
+                    <div class="slider-header"><label>Capital Gain</label><span class="slider-val"
+                            id="val_cap_gain">$0</span></div>
                     <input type="range" id="capital_gains" min="0" max="100000" step="5000" value="0">
                 </div>
 
-                <div id="cap_loss_box" class="hidden">
-                    <div class="slider-header">
-                        <label>Capital Loss ($)</label>
-                        <span class="slider-val" id="val_cap_loss">0</span>
-                    </div>
+                <div id="cap_loss_box" class="hidden" style="margin-top: 20px;">
+                    <div class="slider-header"><label>Capital Loss</label><span class="slider-val"
+                            id="val_cap_loss">$0</span></div>
                     <input type="range" id="capital_loss" min="-100000" max="0" step="5000" value="0">
                 </div>
             </div>
@@ -539,20 +514,21 @@
 
         <!-- ACTION -->
         <div class="action-bar">
-            <button class="primary-btn" id="predictBtn">Assess Fraud Risk</button>
+            <button class="primary-btn" id="predictBtn">Analyze Claim</button>
+            <div id="errorBox" style="color: #ffcccc; margin-top: 20px; display: none; font-size: 14px;"></div>
+        </div>
 
-            <div id="resultBox" class="result-box">
-                <div class="result-score" id="resultScore">--</div>
-                <div id="resultText"></div>
-            </div>
-            <div id="errorBox" style="color:red; text-align:center; margin-top:20px; display:none;"></div>
+        <!-- RESULT -->
+        <div id="resultBox" class="result-box">
+            <div class="result-score" id="resultScore">--</div>
+            <div class="result-detail" id="resultText"></div>
         </div>
 
     </div>
 
     <script>
         // --- LIVE UPDATES ---
-        const updateVal = (id, fmt) => {
+        const updateVal = (id, fmt, suffix = '') => {
             const el = document.getElementById(id);
             const display = document.getElementById('val_' + (id === 'incident_hour_of_the_day' ? 'hour' :
                 id === 'policy_annual_premium' ? 'premium' :
@@ -568,11 +544,12 @@
 
             el.addEventListener('input', () => {
                 let val = el.value;
-                if (fmt === '$') val = parseInt(val).toLocaleString();
+                if (fmt === '$') val = '$' + parseInt(val).toLocaleString();
                 if (fmt === '%') val = val + '%';
+                if (suffix) val = val + ' ' + suffix;
+
                 if (id === 'incident_hour_of_the_day') {
                     val = (val < 10 ? '0' + val : val) + ":00";
-                    // Update helper
                     const h = parseInt(el.value);
                     let period = "Night";
                     if (h >= 6 && h < 12) period = "Morning";
@@ -584,16 +561,20 @@
             });
         };
 
-        // Attach listeners
-        ['total_claim_amount', 'policy_annual_premium', 'capital_gains'].forEach(id => updateVal(id, '$'));
-        ['capital_loss'].forEach(id => updateVal(id, '$')); // Negative is fine
-        ['injury_share', 'property_share'].forEach(id => updateVal(id, '%'));
-        ['months_as_customer', 'days_since_bind', 'vehicle_age', 'age'].forEach(id => updateVal(id, ''));
+        updateVal('total_claim_amount', '$');
+        updateVal('policy_annual_premium', '$');
+        updateVal('capital_gains', '$');
+        updateVal('capital_loss', '$'); // just shows raw number with $ prefix
+        updateVal('injury_share', '%');
+        updateVal('property_share', '%');
+        updateVal('vehicle_age', '', 'yrs');
+        updateVal('age', '', 'yrs');
+        updateVal('months_as_customer', '');
+        updateVal('days_since_bind', '');
         updateVal('incident_hour_of_the_day', '');
 
         // --- CAPITAL TOGGLE Logic ---
         function setCapMode(mode) {
-            // UI State
             document.querySelectorAll('.toggle-opt').forEach(el => el.classList.remove('active'));
             event.target.classList.add('active');
 
@@ -602,9 +583,9 @@
             const gainIn = document.getElementById('capital_gains');
             const lossIn = document.getElementById('capital_loss');
 
-            // Reset values
-            gainIn.value = 0; document.getElementById('val_cap_gain').innerText = "0";
-            lossIn.value = 0; document.getElementById('val_cap_loss').innerText = "0";
+            // Reset
+            gainIn.value = 0; document.getElementById('val_cap_gain').innerText = "$0";
+            lossIn.value = 0; document.getElementById('val_cap_loss').innerText = "$0";
 
             if (mode === 'none') {
                 gainBox.classList.add('hidden');
@@ -625,38 +606,27 @@
             const errBox = document.getElementById('errorBox');
 
             btn.disabled = true;
-            btn.innerText = "Analyzing Pattern...";
+            btn.style.opacity = "0.5";
+            btn.innerText = "Processing...";
             resBox.style.display = 'none';
             errBox.style.display = 'none';
 
             try {
-                // Build Payload
                 const payload = {
-                    // Tier 1
                     incident_severity: document.getElementById('incident_severity').value,
-                    injury_share: parseFloat(document.getElementById('injury_share').value) / 100.0, // Convert % to 0-1
+                    injury_share: parseFloat(document.getElementById('injury_share').value) / 100.0,
                     collision_type: document.getElementById('collision_type').value,
                     bodily_injuries: parseInt(document.getElementById('bodily_injuries').value),
-
-                    // Tier 2
                     total_claim_amount: parseFloat(document.getElementById('total_claim_amount').value),
                     incident_hour_of_the_day: parseInt(document.getElementById('incident_hour_of_the_day').value),
-                    property_share: parseFloat(document.getElementById('property_share').value) / 100.0, // Convert % to 0-1
-
-                    // Tier 3
+                    property_share: parseFloat(document.getElementById('property_share').value) / 100.0,
                     policy_annual_premium: parseFloat(document.getElementById('policy_annual_premium').value),
                     months_as_customer: parseInt(document.getElementById('months_as_customer').value),
                     days_since_bind: parseInt(document.getElementById('days_since_bind').value),
-
-                    // Tier 4
                     vehicle_age: parseInt(document.getElementById('vehicle_age').value),
                     number_of_vehicles_involved: parseInt(document.getElementById('number_of_vehicles_involved').value),
-
-                    // Tier 5
                     police_report_available: document.getElementById('police_report_available').value,
                     authorities_contacted: document.getElementById('authorities_contacted').value,
-
-                    // Tier 6
                     umbrella_limit: parseInt(document.getElementById('umbrella_limit').value),
                     "capital-gains": parseFloat(document.getElementById('capital_gains').value),
                     "capital-loss": parseFloat(document.getElementById('capital_loss').value),
@@ -678,23 +648,32 @@
 
                 // Show Result
                 resBox.style.display = 'block';
-                resBox.className = 'result-box ' + (data.probability > 0.5 ? 'fraud' : 'legit');
 
                 const pct = (data.probability * 100).toFixed(1) + "%";
-                document.getElementById('resultScore').innerText = pct + " Risk";
+                const label = data.probability > 0.5 ? "Detailed Analysis: High Risk" : "Detailed Analysis: Standard Risk";
 
-                let txt = `Model: ${data.model} (${data.calibrated ? 'Calibrated' : 'Uncalibrated'})`;
-                if (data.threshold_flag) txt += `<br>Decision: <strong>${data.threshold_flag}</strong>`;
+                document.getElementById('resultScore').innerText = pct;
+
+                let txt = `${label}<br><br>`;
+                txt += `Model Engine: ${data.model} <br>`;
+                txt += `Calibration: ${data.calibrated ? 'Enabled' : 'Disabled'}`;
+                if (data.threshold_flag) txt += `<br>Auto-Flag Status: ${data.threshold_flag}`;
+
                 document.getElementById('resultText').innerHTML = txt;
 
             } catch (e) {
-                errBox.innerText = "Error: " + e.message;
+                errBox.innerText = "System Error: " + e.message;
                 errBox.style.display = 'block';
             } finally {
                 btn.disabled = false;
-                btn.innerText = "Assess Fraud Risk";
+                btn.style.opacity = "1";
+                btn.innerText = "Analyze Claim";
             }
         });
+
+        // Initial setup of function exposure
+        window.setCapMode = setCapMode;
+
     </script>
 
 </body>
