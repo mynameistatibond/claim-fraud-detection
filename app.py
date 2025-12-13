@@ -36,9 +36,11 @@ FEATURE_NAMES_PATH = MODELS_DIR / "shap_feature_names.joblib"
 METADATA_PATH = MODELS_DIR / "feature_metadata.joblib"
 
 SHAP_EXPLAINERS = {}
+SHAP_INIT_ERRORS = {}
 BACKGROUND_DATA = None
 SHAP_FEATURE_NAMES = None
 FEATURE_METADATA = None
+EXPLANATION_SOURCE_MODEL = "ExtraTrees_uncalibrated"
 
 # Feature Name Mapping (Technical -> User)
 # We keep this for the final display Mapping
