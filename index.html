@@ -315,14 +315,14 @@
             <div class="control-group">
                 <label>Prediction Model</label>
                 <select id="model">
-                    <option value="voting" selected>Voting Ensemble (Recommended)</option>
-                    <option value="xgb">XGBoost</option>
+                    <option value="xgb" selected>XGBoost (Fastest + SHAP)</option>
+                    <option value="voting">Voting Ensemble (Most Robust)</option>
                     <option value="et">Extra Trees</option>
                     <option value="rf">Random Forest</option>
                 </select>
                 <div class="helper-text" style="line-height: 1.4; margin-top: 8px;">
-                    The Voting Ensemble combines multiple models and provides the most stable and accurate results.
-                    Other models are available for comparison.
+                    <b>XGBoost</b> provides fast, explainable results with Risk Drivers.
+                    <br><i>Note: Risk Drivers (SHAP) are not available for the Voting Ensemble.</i>
                 </div>
             </div>
 
