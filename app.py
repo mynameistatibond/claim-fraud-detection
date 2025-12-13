@@ -31,11 +31,17 @@ THRESHOLD_AUTO_FLAG = 0.53
 MODELS = {}
 
 # SHAP Configuration
-BACKGROUND_DATA_PATH = MODELS_DIR / "shap_background.csv"
+BACKGROUND_DATA_PATH = MODELS_DIR / "shap_background.npy"
+FEATURE_NAMES_PATH = MODELS_DIR / "shap_feature_names.joblib"
+METADATA_PATH = MODELS_DIR / "feature_metadata.joblib"
+
 SHAP_EXPLAINERS = {}
 BACKGROUND_DATA = None
+SHAP_FEATURE_NAMES = None
+FEATURE_METADATA = None
 
 # Feature Name Mapping (Technical -> User)
+# We keep this for the final display Mapping
 FEATURE_MAP = {
     "total_claim_amount": "Claim Value",
     "injury_share": "Injury Cost Portion",
@@ -128,105 +134,84 @@ def get_pipeline_components(model):
     return None, model
 
 def load_shap_resources():
-    """Load background data and initialize explainers"""
-    global BACKGROUND_DATA
+    """Load pre-calculated SHAP artifacts and initialize explainers"""
+    global BACKGROUND_DATA, SHAP_FEATURE_NAMES, FEATURE_METADATA
+    
+    # 1. Load Pre-Processed Background Data
     if BACKGROUND_DATA_PATH.exists():
-        # Load and ensure it matches input schema (drop target if present)
-        bg = pd.read_csv(BACKGROUND_DATA_PATH)
-        if 'target' in bg.columns:
-            bg = bg.drop(columns=['target'])
-        BACKGROUND_DATA = bg
-        logger.info(f"Loaded SHAP background data: {len(BACKGROUND_DATA)} rows")
+        BACKGROUND_DATA = np.load(BACKGROUND_DATA_PATH)
+        logger.info(f"Loaded processed SHAP background: {BACKGROUND_DATA.shape}")
     else:
-        logger.warning(f"SHAP background data not found at {BACKGROUND_DATA_PATH}")
+        logger.warning("SHAP background (npy) not found.")
 
-    # Pre-compute explainers
+    # 2. Load Feature Names corresponding to the matrix columns
+    if FEATURE_NAMES_PATH.exists():
+        SHAP_FEATURE_NAMES = joblib.load(FEATURE_NAMES_PATH)
+        logger.info(f"Loaded {len(SHAP_FEATURE_NAMES)} feature names.")
+    
+    # 3. Load Feature Metadata (Origin)
+    if METADATA_PATH.exists():
+        FEATURE_METADATA = joblib.load(METADATA_PATH)
+        logger.info("Loaded feature metadata.")
+
+    # 4. Initialize TreeExplainers only (Sane Architecture)
     for key, model in MODELS.items():
         if "Voting" in key: continue
         
-        if "uncalibrated" in key:
+        # Only init on uncalibrated models to get clean trees
+        if "uncalibrated" in key and BACKGROUND_DATA is not None:
             try:
-                 prep, estimator = get_pipeline_components(model)
-                 if BACKGROUND_DATA is not None:
-                     # TRANSFORM background data
-                     if prep:
-                         try:
-                             X_bg = prep.transform(BACKGROUND_DATA)
-                             if hasattr(X_bg, 'toarray'): X_bg = X_bg.toarray()
-                         except Exception as e:
-                             logger.warning(f"Background transform failed for {key}: {e}")
-                             X_bg = BACKGROUND_DATA 
-                     else:
-                         X_bg = BACKGROUND_DATA
-                     
-                     # Attempt 1: TreeExplainer
-                     try:
-                         explainer = shap.TreeExplainer(estimator, X_bg)
-                         logger.info(f"Initialized TreeExplainer for {key}")
-                     except Exception as e_tree:
-                         logger.warning(f"TreeExplainer failed for {key} ({e_tree}). Falling back to KernelExplainer.")
-                         # Attempt 2: KernelExplainer
-                         try:
-                             if hasattr(estimator, 'predict_proba'):
-                                 pred_fn = estimator.predict_proba
-                             else:
-                                 pred_fn = estimator.predict
-                             
-                             # Summary background for Speed
-                             try:
-                                 X_bg_summary = shap.kmeans(X_bg, 10)
-                             except:
-                                 X_bg_summary = X_bg[0:10] # Fallback subsample
-                                 
-                             explainer = shap.KernelExplainer(pred_fn, X_bg_summary)
-                             logger.info(f"Initialized KernelExplainer for {key}")
-                         except Exception as e_kernel:
-                             logger.error(f"KernelSHAP also failed for {key}: {e_kernel}")
-                             explainer = None
-
-                     if explainer:
-                         SHAP_EXPLAINERS[key] = explainer
-                         # Map calibrated
-                         cal_key = key.replace("uncalibrated", "calibrated")
-                         SHAP_EXPLAINERS[cal_key] = explainer
-
+                 _, estimator = get_pipeline_components(model)
+                 
+                 # Direct initialization: Estimator + Pre-Processed Data
+                 # No transforms here. The contract is: estimator takes what BACKGROUND_DATA is.
+                 explainer = shap.TreeExplainer(estimator, BACKGROUND_DATA)
+                 SHAP_EXPLAINERS[key] = explainer
+                 
+                 # Map calibrated version to this explainer
+                 cal_key = key.replace("uncalibrated", "calibrated")
+                 SHAP_EXPLAINERS[cal_key] = explainer
+                 logger.info(f"Initialized SHAP for {key}")
+                 
             except Exception as e:
-                logger.warning(f"Could not init SHAP for {key}: {e}")
+                logger.warning(f"Failed to init SHAP for {key}: {e}")
 
 @app.on_event("startup")
 async def startup_event():
     load_models()
     load_shap_resources()
 
-def get_readable_explanation(feature, val_raw, shap_val, mean_val):
-    """Generate human-friendly text based on feature value and SHAP direction"""
+def get_readable_explanation(feature_name, shap_val, metadata=None):
+    """
+    Generate explanation based on SHAP direction and Feature Meaning.
+    Does NOT use raw values or thresholds, only direction and presence.
+    """
     direction = "Increased risk" if shap_val > 0 else "Reduced risk"
-    fname = FEATURE_MAP.get(feature, feature.replace("_", " ").title())
     
-    # Generic logic
-    reason = "factor"
+    # Resolve human name
+    # 1. Try Metadata Origin
+    raw_feat = feature_name
+    meta = metadata.get(feature_name) if metadata else None
+    
+    if meta:
+        raw_feat = meta.get("raw_feature", feature_name)
+    
+    # 2. Map raw feature to user label
+    user_label = FEATURE_MAP.get(raw_feat, raw_feat.replace("_", " ").title())
+    
+    # 3. Generate Reason
+    reason = f"{user_label} factor"
+    
+    # categorical logic (if it looks like OneHot)
+    # If feature is "collision_type_Rear Collision", logic:
+    # "Rear Collision Type detected" (if positive shap)
+    # We rely on direction for now.
+    
     if shap_val > 0:
-        if val_raw > mean_val: reason = f"Higher {fname} than typical"
-        else: reason = f"Specific {fname} configuration"
+        reason = f"{user_label} contributes to higher risk"
     else:
-        if val_raw > mean_val and "tenure" in feature: reason = "Long-standing customer history"
-        elif val_raw < mean_val: reason = f"Lower {fname} than typical"
-        else: reason = f"Favorable {fname} profile"
-
-    # Specific Overrides
-    if feature == "total_claim_amount":
-        if shap_val > 0: reason = "Larger-than-usual claim size"
-        else: reason = "Smaller-than-usual claim size"
-    elif feature == "incident_hour_of_the_day":
-        if shap_val > 0: reason = "Off-hours incident timing"
-        else: reason = "Daytime incident timing"
-    elif feature == "injury_share":
-        if shap_val > 0: reason = "High proportion of injury costs"
-        else: reason = "Low proportion of injury costs"
-    elif feature == "age":
-        if shap_val > 0: reason = "Insured age group associated with higher risk"
-        else: reason = "Insured age group associated with lower risk"
-    
+        reason = f"{user_label} reduces risk estimate"
+        
     return direction, reason
 
 @app.get("/")
@@ -255,19 +240,14 @@ async def predict(
     model_key = f"{model_name}_{cal_type}"
     
     if model_key not in MODELS:
-        # Fallback to uncalibrated if calibrated not found (common dev issue)
-        if cal_type == 'calibrated':
-             model_key = f"{model_name}_uncalibrated"
+        if cal_type == 'calibrated': model_key = f"{model_name}_uncalibrated"
         if model_key not in MODELS:
              raise HTTPException(status_code=404, detail=f"Model {model_key} not found")
     
     loaded_model = MODELS[model_key]
     
     try:
-        # Convert Pydantic to Dict
         input_dict = claim_data.dict(by_alias=True)
-        
-        # FULL PREPROCESSING
         final_df = preprocess_input(input_dict)
         
         # Predict
@@ -277,101 +257,85 @@ async def predict(
              start_pred = loaded_model.predict(final_df)
              proba = float(start_pred[0])
         
-        # SHAP EXPLANATION
+        # SHAP (Sane Architecture)
         explanation_items = []
         if explain and "Voting" not in model_name and BACKGROUND_DATA is not None:
              try:
+                 # Check Explainer
                  explainer = SHAP_EXPLAINERS.get(model_key)
-                 if not explainer:
-                     if "calibrated" in model_key:
-                         uncal_key = model_key.replace("calibrated", "uncalibrated")
-                         explainer = SHAP_EXPLAINERS.get(uncal_key)
-
+                 if not explainer and "calibrated" in model_key:
+                     # Try fallback to uncalibrated key
+                     explainer = SHAP_EXPLAINERS.get(model_key.replace("calibrated", "uncalibrated"))
+                 
                  if explainer:
-                     # 1. Transform Input
+                     # 1. Transform Query
+                     # We need the PREPROCESSOR specific to the model being explained.
+                     # If we are explaining User's Model, we use User's Model Prep.
                      prep, _ = get_pipeline_components(loaded_model)
-                     
                      if not prep and "calibrated" in model_key:
-                         uncal_key = model_key.replace("calibrated", "uncalibrated")
-                         sibling = MODELS.get(uncal_key)
-                         if sibling: prep, _ = get_pipeline_components(sibling)
+                          uncal_key = model_key.replace("calibrated", "uncalibrated")
+                          if uncal_key in MODELS:
+                              prep, _ = get_pipeline_components(MODELS[uncal_key])
                      
                      if prep:
+                         # Transform to match Training Space
                          X_query = prep.transform(final_df)
                          if hasattr(X_query, 'toarray'): X_query = X_query.toarray()
                          
-                         if hasattr(prep, 'get_feature_names_out'):
-                             feature_names = prep.get_feature_names_out()
-                         else:
-                             feature_names = [f"feature_{i}" for i in range(X_query.shape[1])]
-                     else:
-                         X_query = final_df
-                         feature_names = final_df.columns
-                     
-                     shap_values = explainer.shap_values(X_query)
-                     
-                     if isinstance(shap_values, list):
-                         vals = shap_values[1][0] 
-                     elif len(shap_values.shape) > 1 and shap_values.shape[1] > 1:
-                         vals = shap_values[0][1] 
-                     else:
-                         vals = shap_values[0] 
-                         if hasattr(vals, 'shape') and vals.shape == (2,): vals = vals[1]
-                         elif hasattr(vals, 'shape') and len(vals.shape) == 0: vals = float(vals)
-                     
-                     # Map Items
-                     clean_feats = [f.split('__')[-1] if '__' in f else f for f in feature_names]
-                     
-                     items_temp = []
-                     if isinstance(vals, (float, int)): vals = [vals]
-                     
-                     for i, feat_name in enumerate(clean_feats):
-                         if i >= len(vals): break
-                         sh_val = vals[i]
-                         if abs(sh_val) < 1e-4: continue
+                         # 2. Calculate SHAP
+                         shap_values = explainer.shap_values(X_query)
                          
-                         raw_val = 0
-                         if feat_name in final_df.columns:
-                             raw_val = final_df.iloc[0][feat_name]
+                         # Handle output shape
+                         if isinstance(shap_values, list):
+                             vals = shap_values[1][0]
+                         elif len(shap_values.shape) > 1 and shap_values.shape[1] > 1:
+                             vals = shap_values[0][1] # Should not happen for TreeExplainer on binary usually?
+                         else:
+                             vals = shap_values[0] # XGBoost output is raw margin or log-odds
+                         
+                         # 3. Map to Names
+                         feature_names = SHAP_FEATURE_NAMES if SHAP_FEATURE_NAMES is not None else []
+                         
+                         items_temp = []
+                         # Ensure vals is iterable
+                         if isinstance(vals, (float, int)): vals = [vals]
+                         
+                         for i, sh_val in enumerate(vals):
+                             if abs(sh_val) < 1e-4: continue
                              
-                         items_temp.append({
-                             'feature': feat_name,
-                             'shap': sh_val,
-                             'val': raw_val
-                         })
-                     
-                     # Sort
-                     items_temp.sort(key=lambda x: abs(x['shap']), reverse=True)
-                     top_5 = items_temp[:5]
-                     
-                     for item in top_5:
-                         direction, text = get_readable_explanation(item['feature'], item['val'], item['shap'], 0)
-                         explanation_items.append(ExplanationItem(
-                             feature=FEATURE_MAP.get(item['feature'], item['feature']),
-                             direction="UP" if item['shap'] > 0 else "DOWN",
-                             text=text,
-                             importance=float(abs(item['shap']))
-                         ))
+                             fname = feature_names[i] if i < len(feature_names) else f"feature_{i}"
+                             
+                             items_temp.append({
+                                 'feature': fname,
+                                 'shap': sh_val
+                             })
+                         
+                         # 4. Sort and Extract Top
+                         items_temp.sort(key=lambda x: abs(x['shap']), reverse=True)
+                         top_5 = items_temp[:5]
+                         
+                         for item in top_5:
+                             direction, text = get_readable_explanation(item['feature'], item['shap'], FEATURE_METADATA)
+                             explanation_items.append(ExplanationItem(
+                                 feature=FEATURE_MAP.get(item['feature'], item['feature']), # Fallback to tech name if no mapping
+                                 direction="UP" if item['shap'] > 0 else "DOWN",
+                                 text=text,
+                                 importance=float(abs(item['shap']))
+                             ))
+                     else:
+                         # No preprocessor found
+                         pass
                  else:
                      explanation_items.append(ExplanationItem(
-                         feature="Initialization Failed",
-                         direction="DOWN", 
-                         text="SHAP explainer init failed. See logs.",
-                         importance=0.0
+                         feature="Init Failed", direction="DOWN", text="Explainer not initialized.", importance=0
                      ))
-                         
              except Exception as e:
-                 logger.warning(f"SHAP gen failed: {e}")
-                 explanation_items.append(ExplanationItem(
-                     feature="System Error",
-                     direction="DOWN", 
-                     text=f"SHAP Error: {str(e)}",
-                     importance=0.0
-                 ))
+                 logger.warning(f"SHAP Error: {e}")
+                 explanation_items.append(ExplanationItem(feature="Error", direction="DOWN", text=str(e), importance=0))
         
     except Exception as e:
         import traceback
-        error_msg = f"{str(e)}\n\nTraceback:\n{traceback.format_exc()}"
+        error_msg = f"{str(e)}"
         logger.error(f"Prediction error: {error_msg}")
         raise HTTPException(status_code=500, detail=error_msg)
     
