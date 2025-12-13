@@ -794,6 +794,12 @@
                      `;
                     list.appendChild(row);
                 });
+
+                // Scroll to panel
+                setTimeout(() => {
+                    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+
             } else {
                 panel.style.display = 'none';
             }
@@ -905,6 +911,11 @@
                 lastExplanation = data.explanation || [];
 
                 resBox.style.display = 'block';
+
+                // Scroll to Results
+                setTimeout(() => {
+                    resBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
 
             } catch (e) {
                 errBox.innerText = "System Error: " + e.message;
