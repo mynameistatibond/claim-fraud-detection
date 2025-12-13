@@ -207,6 +207,7 @@
             /* Force custom look */
             -webkit-appearance: none;
             appearance: none;
+            color-scheme: dark;
         }
 
         /* Custom Arrow for Dropdowns */
@@ -230,9 +231,8 @@
         }
 
         select option {
-            background: #0700d6;
-            /* Slightly darker than bg */
-            color: white;
+            background-color: #0700d6;
+            color: #ffffff;
             padding: 12px 16px;
         }
 
@@ -343,6 +343,7 @@
             letter-spacing: -0.02em;
         }
 
+
         .result-detail {
             font-size: 16px;
             opacity: 0.8;
@@ -359,6 +360,142 @@
                 opacity: 1;
                 transform: translateY(0);
             }
+        }
+
+        /* ========================================
+           CUSTOM DROPDOWN STYLES
+           ======================================== */
+
+        /* Hide native select elements */
+        select {
+            display: none;
+        }
+
+        /* Custom Select Container */
+        .custom-select {
+            position: relative;
+            width: 100%;
+        }
+
+        /* Trigger (the clickable field) */
+        .select-trigger {
+            width: 100%;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+            color: var(--clr-text);
+            font-family: inherit;
+            font-size: 15px;
+            padding: 10px 20px 10px 0;
+            cursor: pointer;
+            transition: border-color 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+
+        .select-trigger:hover {
+            border-bottom-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .custom-select.open .select-trigger {
+            border-bottom-color: var(--clr-text);
+        }
+
+        .select-value {
+            flex: 1;
+        }
+
+        .select-arrow {
+            font-size: 10px;
+            transition: transform 0.2s;
+            opacity: 0.8;
+        }
+
+        .custom-select.open .select-arrow {
+            transform: rotate(180deg);
+        }
+
+        /* Options Panel */
+        .select-options {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--clr-bg);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            margin-top: 8px;
+            max-height: 280px;
+            overflow-y: auto;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .custom-select.open .select-options {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        /* Individual Option */
+        .select-option {
+            padding: 12px 16px;
+            color: var(--clr-text);
+            cursor: pointer;
+            transition: background-color 0.15s;
+            font-size: 15px;
+        }
+
+        .select-option:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .select-option.selected {
+            background: rgba(255, 255, 255, 0.08);
+            font-weight: 500;
+        }
+
+        .select-option.selected::after {
+            content: ' ✓';
+            float: right;
+            opacity: 0.7;
+        }
+
+        /* Keyboard Navigation Highlight */
+        .select-option.keyboard-focus {
+            background: rgba(255, 255, 255, 0.15);
+            outline: 1px solid rgba(255, 255, 255, 0.4);
+            outline-offset: -1px;
+        }
+
+        /* Custom Scrollbar for Options */
+        .select-options::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .select-options::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .select-options::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        .select-options::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Accessibility: Focus State */
+        .custom-select:focus-within .select-trigger {
+            border-bottom-color: var(--clr-text);
+            outline: none;
         }
     </style>
 </head>
@@ -731,6 +868,222 @@
     </div>
 
     <script>
+        // ========================================
+        // CUSTOM DROPDOWN IMPLEMENTATION
+        // ========================================
+
+        class CustomDropdown {
+            constructor(selectElement) {
+                this.selectEl = selectElement;
+                this.id = selectElement.id;
+                this.options = Array.from(selectElement.options).map(opt => ({
+                    value: opt.value,
+                    text: opt.textContent,
+                    selected: opt.selected
+                }));
+
+                this.currentIndex = this.options.findIndex(opt => opt.selected);
+                if (this.currentIndex === -1) this.currentIndex = 0;
+
+                this.keyboardIndex = this.currentIndex;
+                this.isOpen = false;
+
+                this.render();
+                this.bindEvents();
+            }
+
+            render() {
+                // Create custom dropdown HTML
+                const customSelect = document.createElement('div');
+                customSelect.className = 'custom-select';
+                customSelect.setAttribute('data-select-id', this.id);
+                customSelect.setAttribute('role', 'combobox');
+                customSelect.setAttribute('aria-expanded', 'false');
+                customSelect.setAttribute('aria-labelledby', this.id + '-label');
+                customSelect.setAttribute('tabindex', '0');
+
+                // Trigger
+                const trigger = document.createElement('div');
+                trigger.className = 'select-trigger';
+                trigger.innerHTML = `
+                    <span class="select-value">${this.options[this.currentIndex].text}</span>
+                    <span class="select-arrow">▼</span>
+                `;
+
+                // Options panel
+                const optionsPanel = document.createElement('div');
+                optionsPanel.className = 'select-options';
+                optionsPanel.setAttribute('role', 'listbox');
+
+                this.options.forEach((option, index) => {
+                    const optionEl = document.createElement('div');
+                    optionEl.className = 'select-option';
+                    if (index === this.currentIndex) optionEl.classList.add('selected');
+                    optionEl.setAttribute('data-value', option.value);
+                    optionEl.setAttribute('data-index', index);
+                    optionEl.setAttribute('role', 'option');
+                    optionEl.setAttribute('aria-selected', index === this.currentIndex);
+                    optionEl.textContent = option.text;
+                    optionsPanel.appendChild(optionEl);
+                });
+
+                customSelect.appendChild(trigger);
+                customSelect.appendChild(optionsPanel);
+
+                // Replace original select (hide it)
+                this.selectEl.style.display = 'none';
+                this.selectEl.parentNode.insertBefore(customSelect, this.selectEl);
+
+                // Store references
+                this.customSelectEl = customSelect;
+                this.triggerEl = trigger;
+                this.optionsPanelEl = optionsPanel;
+                this.optionEls = Array.from(optionsPanel.querySelectorAll('.select-option'));
+            }
+
+            bindEvents() {
+                // Click on trigger
+                this.triggerEl.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.toggle();
+                });
+
+                // Click on options
+                this.optionEls.forEach((optionEl, index) => {
+                    optionEl.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.selectOption(index);
+                        this.close();
+                    });
+                });
+
+                // Keyboard navigation
+                this.customSelectEl.addEventListener('keydown', (e) => this.handleKeyboard(e));
+
+                // Close on outside click
+                document.addEventListener('click', (e) => {
+                    if (!this.customSelectEl.contains(e.target)) {
+                        this.close();
+                    }
+                });
+            }
+
+            toggle() {
+                this.isOpen ? this.close() : this.open();
+            }
+
+            open() {
+                this.isOpen = true;
+                this.customSelectEl.classList.add('open');
+                this.customSelectEl.setAttribute('aria-expanded', 'true');
+                this.keyboardIndex = this.currentIndex;
+                this.updateKeyboardFocus();
+            }
+
+            close() {
+                this.isOpen = false;
+                this.customSelectEl.classList.remove('open');
+                this.customSelectEl.setAttribute('aria-expanded', 'false');
+                this.clearKeyboardFocus();
+            }
+
+            selectOption(index) {
+                this.currentIndex = index;
+
+                // Update UI
+                this.optionEls.forEach((el, i) => {
+                    el.classList.toggle('selected', i === index);
+                    el.setAttribute('aria-selected', i === index);
+                });
+
+                const valueEl = this.triggerEl.querySelector('.select-value');
+                valueEl.textContent = this.options[index].text;
+
+                // Update original select element (maintains form compatibility)
+                this.selectEl.value = this.options[index].value;
+
+                // Trigger change event on original select (for existing JS)
+                const event = new Event('change', { bubbles: true });
+                this.selectEl.dispatchEvent(event);
+            }
+
+            handleKeyboard(e) {
+                if (!this.isOpen && (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown')) {
+                    e.preventDefault();
+                    this.open();
+                    return;
+                }
+
+                if (!this.isOpen) return;
+
+                switch (e.key) {
+                    case 'Escape':
+                        e.preventDefault();
+                        this.close();
+                        break;
+
+                    case 'Enter':
+                    case ' ':
+                        e.preventDefault();
+                        this.selectOption(this.keyboardIndex);
+                        this.close();
+                        break;
+
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        this.keyboardIndex = Math.min(this.keyboardIndex + 1, this.options.length - 1);
+                        this.updateKeyboardFocus();
+                        this.scrollToKeyboardOption();
+                        break;
+
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        this.keyboardIndex = Math.max(this.keyboardIndex - 1, 0);
+                        this.updateKeyboardFocus();
+                        this.scrollToKeyboardOption();
+                        break;
+
+                    case 'Tab':
+                        this.close();
+                        break;
+                }
+            }
+
+            updateKeyboardFocus() {
+                this.optionEls.forEach((el, i) => {
+                    el.classList.toggle('keyboard-focus', i === this.keyboardIndex);
+                });
+            }
+
+            clearKeyboardFocus() {
+                this.optionEls.forEach(el => el.classList.remove('keyboard-focus'));
+            }
+
+            scrollToKeyboardOption() {
+                const option = this.optionEls[this.keyboardIndex];
+                if (option) {
+                    option.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                }
+            }
+        }
+
+        // Initialize all dropdowns on page load
+        function initCustomDropdowns() {
+            const selects = document.querySelectorAll('select');
+            selects.forEach(select => {
+                if (select.id) { // Only convert selects with IDs
+                    new CustomDropdown(select);
+                }
+            });
+        }
+
+        // Run after DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initCustomDropdowns);
+        } else {
+            initCustomDropdowns();
+        }
+
         // --- LIVE UPDATES ---
         const updateVal = (id, fmt, suffix = '') => {
             const el = document.getElementById(id);
