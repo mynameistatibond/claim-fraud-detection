@@ -356,12 +356,6 @@
                 </div>
 
                 <div class="control-group">
-                    <div class="slider-header"><label>Injury Share</label><span class="slider-val"
-                            id="val_injury_share">10%</span></div>
-                    <input type="range" id="injury_share" min="0" max="100" step="5" value="10">
-                </div>
-
-                <div class="control-group">
                     <label>Collision Type</label>
                     <select id="collision_type">
                         <option value="Rear Collision" selected>Rear collision</option>
@@ -388,7 +382,7 @@
             <div class="tier-header"><span class="tier-title">02 / Claim Size & Timing</span></div>
             <div class="form-grid">
                 <div class="control-group">
-                    <div class="slider-header"><label>Total Claim</label><span class="slider-val"
+                    <div class="slider-header"><label>Total Claim Amount ($)</label><span class="slider-val"
                             id="val_total_claim">$58,000</span></div>
                     <input type="range" id="total_claim_amount" min="1000" max="100000" step="1000" value="58000">
                 </div>
@@ -399,147 +393,181 @@
                     <input type="range" id="incident_hour_of_the_day" min="0" max="23" step="1" value="12">
                     <div class="helper-text" id="helper_hour">Afternoon</div>
                 </div>
+            </div>
 
-                <div class="control-group">
-                    <div class="slider-header"><label>Property Share</label><span class="slider-val"
-                            id="val_prop_share">10%</span></div>
-                    <input type="range" id="property_share" min="0" max="100" step="5" value="10">
+            <!-- BREAKDOWN BLOCK -->
+            <div style="margin-top: 40px; background: rgba(255,255,255,0.05); padding: 25px; border-radius: 4px;">
+                <div style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 5px;">
+                    Claim Amount Breakdown</div>
+                <div style="font-size: 13px; opacity: 0.6; margin-bottom: 25px; font-style: italic;">How the total claim
+                    amount is distributed</div>
+
+                <div class="form-grid">
+                    <!-- Injury Portion -->
+                    <div class="control-group">
+                        <div class="slider-header">
+                            <label>Injury-Related Costs</label>
+                            <span class="slider-val" id="val_injury_share">10%</span>
+                        </div>
+                        <input type="range" id="injury_share" min="0" max="100" step="5" value="10">
+                        <div class="helper-text">Medical and bodily injury related costs</div>
+                    </div>
+
+                    <!-- Property Portion -->
+                    <div class="control-group">
+                        <div class="slider-header">
+                            <label>Property Damage Costs</label>
+                            <span class="slider-val" id="val_prop_share">10%</span>
+                        </div>
+                        <input type="range" id="property_share" min="0" max="100" step="5" value="10">
+                        <div class="helper-text">Vehicle and physical property damage</div>
+                    </div>
+                </div>
+
+                <!-- Remainder -->
+                <div style="margin-top: 25px; border-top: 1px solid var(--clr-divider); padding-top: 15px;">
+                    <div class="slider-header">
+                        <label style="opacity: 0.7;">Other / Administrative (Calculated)</label>
+                        <span class="slider-val" id="val_remainder" style="opacity: 0.7;">80%</span>
+                    </div>
+                    <div class="helper-text">Remaining claim components (legal, admin, other)</div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- TIER 3 -->
-        <div class="tier-section">
-            <div class="tier-header"><span class="tier-title">03 / Policy & Tenure</span></div>
-            <div class="form-grid">
-                <div class="control-group">
-                    <div class="slider-header"><label>Annual Premium</label><span class="slider-val"
-                            id="val_premium">$1,200</span></div>
-                    <input type="range" id="policy_annual_premium" min="500" max="3000" step="100" value="1200">
-                </div>
+    <!-- TIER 3 -->
+    <div class="tier-section">
+        <div class="tier-header"><span class="tier-title">03 / Policy & Tenure</span></div>
+        <div class="form-grid">
+            <div class="control-group">
+                <div class="slider-header"><label>Annual Premium</label><span class="slider-val"
+                        id="val_premium">$1,200</span></div>
+                <input type="range" id="policy_annual_premium" min="500" max="3000" step="100" value="1200">
+            </div>
 
-                <div class="control-group">
-                    <div class="slider-header"><label>Months as Customer</label><span class="slider-val"
-                            id="val_tenure">200</span></div>
-                    <input type="range" id="months_as_customer" min="0" max="500" step="12" value="200">
-                </div>
-                <!-- Policy Age Abstracted -->
-                <div class="control-group">
-                    <label>When did the policy start?</label>
-                    <select id="days_since_bind">
-                        <option value="90">Less than 6 months ago</option>
-                        <option value="270">6–12 months ago</option>
-                        <option value="540">1–2 years ago</option>
-                        <option value="1500" selected>2–5 years ago</option>
-                        <option value="3000">More than 5 years ago</option>
-                    </select>
-                </div>
+            <div class="control-group">
+                <div class="slider-header"><label>Months as Customer</label><span class="slider-val"
+                        id="val_tenure">200</span></div>
+                <input type="range" id="months_as_customer" min="0" max="500" step="12" value="200">
+            </div>
+            <!-- Policy Age Abstracted -->
+            <div class="control-group">
+                <label>When did the policy start?</label>
+                <select id="days_since_bind">
+                    <option value="90">Less than 6 months ago</option>
+                    <option value="270">6–12 months ago</option>
+                    <option value="540">1–2 years ago</option>
+                    <option value="1500" selected>2–5 years ago</option>
+                    <option value="3000">More than 5 years ago</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- TIER 4 -->
+    <div class="tier-section">
+        <div class="tier-header"><span class="tier-title">04 / Vehicle Context</span></div>
+        <div class="form-grid">
+            <div class="control-group">
+                <div class="slider-header"><label>Vehicle Age</label><span class="slider-val" id="val_veh_age">10
+                        yrs</span></div>
+                <input type="range" id="vehicle_age" min="0" max="30" step="1" value="10">
+            </div>
+
+            <div class="control-group">
+                <label>Vehicles Involved</label>
+                <select id="number_of_vehicles_involved">
+                    <option value="1" selected>1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4+</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- TIER 5 -->
+    <div class="tier-section">
+        <div class="tier-header"><span class="tier-title">05 / Administrative</span></div>
+        <div class="form-grid">
+            <div class="control-group">
+                <label>Police Report Filed</label>
+                <select id="police_report_available">
+                    <option value="YES">Yes</option>
+                    <option value="NO">No</option>
+                    <option value="?">Unknown</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>Authorities Involved</label>
+                <select id="authorities_contacted">
+                    <option value="Police" selected>Police</option>
+                    <option value="Fire">Fire department</option>
+                    <option value="Ambulance">Ambulance</option>
+                    <option value="Other">Other</option>
+                    <option value="None">None</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- TIER 6 -->
+    <div class="tier-section" style="border-bottom: none;">
+        <div class="tier-header"><span class="tier-title">06 / Edge Variables</span></div>
+        <div class="form-grid">
+            <div class="control-group">
+                <label>Umbrella Limit</label>
+                <select id="umbrella_limit">
+                    <option value="0" selected>None</option>
+                    <option value="1000000">$1M</option>
+                    <option value="5000000">$5M</option>
+                    <option value="10000000">$10M+</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <div class="slider-header"><label>Insured Age</label><span class="slider-val" id="val_age">38
+                        yrs</span></div>
+                <input type="range" id="age" min="18" max="100" step="1" value="38">
             </div>
         </div>
 
-        <!-- TIER 4 -->
-        <div class="tier-section">
-            <div class="tier-header"><span class="tier-title">04 / Vehicle Context</span></div>
-            <div class="form-grid">
-                <div class="control-group">
-                    <div class="slider-header"><label>Vehicle Age</label><span class="slider-val" id="val_veh_age">10
-                            yrs</span></div>
-                    <input type="range" id="vehicle_age" min="0" max="30" step="1" value="10">
-                </div>
-
-                <div class="control-group">
-                    <label>Vehicles Involved</label>
-                    <select id="number_of_vehicles_involved">
-                        <option value="1" selected>1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4+</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-
-        <!-- TIER 5 -->
-        <div class="tier-section">
-            <div class="tier-header"><span class="tier-title">05 / Administrative</span></div>
-            <div class="form-grid">
-                <div class="control-group">
-                    <label>Police Report Filed</label>
-                    <select id="police_report_available">
-                        <option value="YES">Yes</option>
-                        <option value="NO">No</option>
-                        <option value="?">Unknown</option>
-                    </select>
-                </div>
-
-                <div class="control-group">
-                    <label>Authorities Involved</label>
-                    <select id="authorities_contacted">
-                        <option value="Police" selected>Police</option>
-                        <option value="Fire">Fire department</option>
-                        <option value="Ambulance">Ambulance</option>
-                        <option value="Other">Other</option>
-                        <option value="None">None</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-
-        <!-- TIER 6 -->
-        <div class="tier-section" style="border-bottom: none;">
-            <div class="tier-header"><span class="tier-title">06 / Edge Variables</span></div>
-            <div class="form-grid">
-                <div class="control-group">
-                    <label>Umbrella Limit</label>
-                    <select id="umbrella_limit">
-                        <option value="0" selected>None</option>
-                        <option value="1000000">$1M</option>
-                        <option value="5000000">$5M</option>
-                        <option value="10000000">$10M+</option>
-                    </select>
-                </div>
-
-                <div class="control-group">
-                    <div class="slider-header"><label>Insured Age</label><span class="slider-val" id="val_age">38
-                            yrs</span></div>
-                    <input type="range" id="age" min="18" max="100" step="1" value="38">
-                </div>
+        <!-- CAPITAL IMPACT -->
+        <div class="control-group" style="margin-top: 40px;">
+            <label>Financial Capital Impact</label>
+            <div class="toggle-group">
+                <div class="toggle-opt active" onclick="setCapMode('none')">No capital impact</div>
+                <div class="toggle-opt" onclick="setCapMode('gain')">Capital gain</div>
+                <div class="toggle-opt" onclick="setCapMode('loss')">Capital loss</div>
             </div>
 
-            <!-- CAPITAL IMPACT -->
-            <div class="control-group" style="margin-top: 40px;">
-                <label>Financial Capital Impact</label>
-                <div class="toggle-group">
-                    <div class="toggle-opt active" onclick="setCapMode('none')">No capital impact</div>
-                    <div class="toggle-opt" onclick="setCapMode('gain')">Capital gain</div>
-                    <div class="toggle-opt" onclick="setCapMode('loss')">Capital loss</div>
-                </div>
+            <div id="cap_gain_box" class="hidden" style="margin-top: 20px;">
+                <div class="slider-header"><label>Capital Gain</label><span class="slider-val"
+                        id="val_cap_gain">$0</span></div>
+                <input type="range" id="capital_gains" min="0" max="100000" step="5000" value="0">
+            </div>
 
-                <div id="cap_gain_box" class="hidden" style="margin-top: 20px;">
-                    <div class="slider-header"><label>Capital Gain</label><span class="slider-val"
-                            id="val_cap_gain">$0</span></div>
-                    <input type="range" id="capital_gains" min="0" max="100000" step="5000" value="0">
-                </div>
-
-                <div id="cap_loss_box" class="hidden" style="margin-top: 20px;">
-                    <div class="slider-header"><label>Capital Loss</label><span class="slider-val"
-                            id="val_cap_loss">$0</span></div>
-                    <input type="range" id="capital_loss" min="-100000" max="0" step="5000" value="0">
-                </div>
+            <div id="cap_loss_box" class="hidden" style="margin-top: 20px;">
+                <div class="slider-header"><label>Capital Loss</label><span class="slider-val"
+                        id="val_cap_loss">$0</span></div>
+                <input type="range" id="capital_loss" min="-100000" max="0" step="5000" value="0">
             </div>
         </div>
+    </div>
 
-        <!-- ACTION -->
-        <div class="action-bar">
-            <button class="primary-btn" id="predictBtn">Analyze Claim</button>
-            <div id="errorBox" style="color: #ffcccc; margin-top: 20px; display: none; font-size: 14px;"></div>
-        </div>
+    <!-- ACTION -->
+    <div class="action-bar">
+        <button class="primary-btn" id="predictBtn">Analyze Claim</button>
+        <div id="errorBox" style="color: #ffcccc; margin-top: 20px; display: none; font-size: 14px;"></div>
+    </div>
 
-        <!-- RESULT -->
-        <div id="resultBox" class="result-box">
-            <div class="result-score" id="resultScore">--</div>
-            <div class="result-detail" id="resultText"></div>
-        </div>
+    <!-- RESULT -->
+    <div id="resultBox" class="result-box">
+        <div class="result-score" id="resultScore">--</div>
+        <div class="result-detail" id="resultText"></div>
+    </div>
 
     </div>
 
@@ -578,15 +606,53 @@
         };
 
         updateVal('total_claim_amount', '$');
-        updateVal('policy_annual_premium', '$');
-        updateVal('capital_gains', '$');
-        updateVal('capital_loss', '$'); // just shows raw number with $ prefix
-        updateVal('injury_share', '%');
-        updateVal('property_share', '%');
+        // Attach listeners
+        ['policy_annual_premium', 'capital_gains'].forEach(id => updateVal(id, '$'));
+        ['capital_loss'].forEach(id => updateVal(id, '$')); // Negative is fine
+        // Removed injury/prop/total from here as they have custom logic now
+        ['months_as_customer'].forEach(id => updateVal(id, ''));
         updateVal('vehicle_age', '', 'yrs');
         updateVal('age', '', 'yrs');
-        updateVal('months_as_customer', '');
         updateVal('incident_hour_of_the_day', '');
+
+        // --- BREAKDOWN MATH ---
+        function updateBreakdown() {
+            const total = parseFloat(document.getElementById('total_claim_amount').value);
+            const injuryPct = parseFloat(document.getElementById('injury_share').value);
+            const propPct = parseFloat(document.getElementById('property_share').value);
+
+            const injuryDol = total * (injuryPct / 100.0);
+            const propDol = total * (propPct / 100.0);
+
+            // Remainder
+            const remainderPct = 100 - injuryPct - propPct;
+            const remainderDol = total * (remainderPct / 100.0);
+
+            // Update displays
+            document.getElementById('val_total_claim').innerText = "$" + total.toLocaleString();
+
+            document.getElementById('val_injury_share').innerText = `${injuryPct}% ($${Math.round(injuryDol).toLocaleString()})`;
+            document.getElementById('val_prop_share').innerText = `${propPct}% ($${Math.round(propDol).toLocaleString()})`;
+
+            const remEl = document.getElementById('val_remainder');
+            remEl.innerText = `${remainderPct}% ($${Math.round(remainderDol).toLocaleString()})`;
+
+            // Visual warning for over-allocation
+            if (remainderPct < 0) {
+                remEl.style.color = "#ff9999";
+                remEl.innerText += " [OVER-ALLOCATED]";
+            } else {
+                remEl.style.color = "inherit";
+            }
+        }
+
+        // Attach breakdown listeners
+        ['total_claim_amount', 'injury_share', 'property_share'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updateBreakdown);
+        });
+
+        // Init breakdown
+        updateBreakdown();
 
         // --- SCENARIO DESCRIPTION Logic ---
         const scenarioDesc = {
