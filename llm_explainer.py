@@ -13,7 +13,7 @@ HF_API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-I
 # Note: Using v0.3 or just Instruct as per availability. The prompt requested "mistralai/Mistral-7B-Instruct", 
 # usually it redirects to the latest or specific commit. I'll use the base tag to be safe or v0.3 if known good.
 # Prompt said: "models/mistralai/Mistral-7B-Instruct" -> I will stick to that.
-HF_API_URL_EXACT = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2" # v0.2 is very stable
+HF_API_URL_EXACT = "https://router.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2" # v0.2 is very stable
 
 def build_driver_lines(explanation_items: list, max_items: int = 5) -> str:
     """
