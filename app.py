@@ -120,6 +120,14 @@ def load_models():
     
     logger.info(f"Total models loaded: {len(MODELS)}")
 
+def get_tree_estimator(model):
+    """Extract the actual tree estimator from Pipelines"""
+    # Check for sklearn Pipeline (without importing sklearn if possible, or catch)
+    if hasattr(model, 'steps'):
+        # Assume the last step is the estimator
+        return model.steps[-1][1]
+    return model
+
 def load_shap_resources():
     """Load background data and initialize explainers"""
     global BACKGROUND_DATA
@@ -130,14 +138,25 @@ def load_shap_resources():
         logger.warning(f"SHAP background data not found at {BACKGROUND_DATA_PATH}")
 
     # Pre-compute explainers for loaded models where possible
+    # STRATEGY: Initialize on _uncalibrated (raw trees) and map _calibrated to them.
     for key, model in MODELS.items():
         if "Voting" in key: continue # SHAP for voting is complex
-        try:
-             # Just cache the explainer if we have data
-             if BACKGROUND_DATA is not None:
-                 SHAP_EXPLAINERS[key] = shap.TreeExplainer(model, BACKGROUND_DATA)
-        except Exception as e:
-            logger.warning(f"Could not init SHAP for {key}: {e}")
+        
+        # We only init based on the Uncalibrated (Pipeline) version to get the raw tree
+        if "uncalibrated" in key:
+            try:
+                 estimator = get_tree_estimator(model)
+                 if BACKGROUND_DATA is not None:
+                     explainer = shap.TreeExplainer(estimator, BACKGROUND_DATA)
+                     SHAP_EXPLAINERS[key] = explainer
+                     
+                     # Also allow the calibrated version to use this explainer
+                     # (Calibration is monotonic, so risk drivers are generally preserved)
+                     cal_key = key.replace("uncalibrated", "calibrated")
+                     SHAP_EXPLAINERS[cal_key] = explainer
+                     logger.info(f"Initialized SHAP for {key} (and mapped {cal_key})")
+            except Exception as e:
+                logger.warning(f"Could not init SHAP for {key}: {e}")
 
 @app.on_event("startup")
 async def startup_event():
