@@ -88,7 +88,7 @@ Return JSON:
 """
 
     payload = {
-        "inputs": f"[INST] {prompt} [/INST]", # Mistral instruction format
+        "inputs": prompt, # Plain text (Instruct format removed as per diagnostics)
         "parameters": {
             "temperature": 0.01, # Almost deterministic
             "max_new_tokens": 350,
@@ -97,19 +97,19 @@ Return JSON:
     }
 
     # Retry logic for model loading (503)
-    max_retries = 1
+    max_retries = 2
     for attempt in range(max_retries + 1):
         try:
             response = requests.post(
                 HF_API_URL_EXACT, 
                 headers=headers, 
                 json=payload, 
-                timeout=(3.0, 10.0) # (connect, read)
+                timeout=(5.0, 20.0) # Increased timeout (connect, read)
             )
             
             if response.status_code == 503:
                 if attempt < max_retries:
-                    time.sleep(1.5)
+                    time.sleep(5) # Increased wait for cold starts
                     continue
                 else:
                     return {"error": "Model is loading (503). Try again in a moment."}
@@ -121,6 +121,7 @@ Return JSON:
                 return {"error": "Invalid HF_TOKEN (401). Check permissions."}
 
             if response.status_code != 200:
+                logger.error(f"HF API Error: {response.text}")
                 return {"error": f"HF API Error {response.status_code}: {response.text[:50]}"}
                 
             # Parse Response
@@ -131,39 +132,42 @@ Return JSON:
                 generated_text = result.get('generated_text', '')
             else:
                 generated_text = ''
-                
-            # Extract JSON from potential markdown code blocks
+            
+            # RAW LOGGING for Debugging
+            logger.info(f"RAW LLM RESPONSE: {generated_text[:500]}")
+
+            # Robust JSON Extraction (Primary Method, not fallback)
             clean_text = generated_text.strip()
-            if "```json" in clean_text:
-                clean_text = clean_text.split("```json")[1].split("```")[0].strip()
-            elif "```" in clean_text:
-                clean_text = clean_text.split("```")[1].strip()
             
-            try:
-                data = json.loads(clean_text)
-            except json.JSONDecodeError:
-                # Fallback: sometimes LLM adds text before/after
-                start = clean_text.find('{')
-                end = clean_text.rfind('}')
-                if start != -1 and end != -1:
-                    try:
-                        data = json.loads(clean_text[start:end+1])
-                    except:
-                        return {"error": "Failed to parse LLM JSON response (inner)."}
-                else:
-                    return {"error": "No JSON object found in LLM response."}
+            # 1. Attempt to find JSON object bounds
+            start = clean_text.find('{')
+            end = clean_text.rfind('}')
             
-            # Schema Validation
-            if not all(k in data for k in ("summary", "bullets", "disclaimer")):
-                return {"error": "LLM response missing required keys."}
+            if start != -1 and end != -1:
+                json_str = clean_text[start:end+1]
+                try:
+                    data = json.loads(json_str)
+                except json.JSONDecodeError:
+                    return {"error": "Failed to parse JSON (syntax error)."}
+            else:
+                return {"error": "No JSON object found in response."}
             
-            if not isinstance(data["bullets"], list) or len(data["bullets"]) < 1:
-                return {"error": "LLM response 'bullets' is invalid."}
+            # Relaxed Schema Validation
+            if "summary" not in data:
+                return {"error": "LLM response missing 'summary'."}
+            
+            # Defaults
+            data.setdefault("bullets", [])
+            data.setdefault("disclaimer", "This explanation reflects statistical patterns, not proof.")
+            
+            # Ensure bullets is a list
+            if not isinstance(data["bullets"], list):
+                data["bullets"] = [str(data["bullets"])] # Force list if single string
                 
             return data
 
         except requests.exceptions.Timeout:
-            return {"error": "HF API Request Timed Out."}
+            return {"error": "HF API Request Timed Out (Cold model?)."}
         except Exception as e:
             logger.error(f"LLM Explainer Exception: {e}")
             return {"error": f"Internal Error: {str(e)}"}
