@@ -365,6 +365,14 @@
                     </select>
                 </div>
 
+                <!-- Incident Time (Moved from Tier 2) -->
+                <div class="control-group">
+                    <div class="slider-header"><label>Incident Time</label><span class="slider-val"
+                            id="val_hour">12:00</span></div>
+                    <input type="range" id="incident_hour_of_the_day" min="0" max="23" step="1" value="12">
+                    <div class="helper-text" id="helper_hour">Afternoon</div>
+                </div>
+
                 <div class="control-group">
                     <label>Bodily Injuries</label>
                     <select id="bodily_injuries">
@@ -379,34 +387,29 @@
 
         <!-- TIER 2 -->
         <div class="tier-section">
-            <div class="tier-header"><span class="tier-title">02 / Claim Size & Timing</span></div>
-            <div class="form-grid">
-                <div class="control-group">
-                    <div class="slider-header"><label>Total Claim Amount ($)</label><span class="slider-val"
-                            id="val_total_claim">$58,000</span></div>
-                    <input type="range" id="total_claim_amount" min="1000" max="100000" step="1000" value="58000">
-                </div>
-
-                <div class="control-group">
-                    <div class="slider-header"><label>Incident Time</label><span class="slider-val"
-                            id="val_hour">12:00</span></div>
-                    <input type="range" id="incident_hour_of_the_day" min="0" max="23" step="1" value="12">
-                    <div class="helper-text" id="helper_hour">Afternoon</div>
-                </div>
+            <div class="tier-header"><span class="tier-title">02 / Claim Amount</span></div>
+            <div class="control-group" style="margin-bottom: 30px;">
+                <div class="slider-header"><label>Total Claim Amount ($)</label><span class="slider-val"
+                        id="val_total_claim">$58,000</span></div>
+                <div class="helper-text" style="opacity: 0.6; margin-bottom: 10px;">Total amount claimed before internal
+                    allocation.</div>
+                <input type="range" id="total_claim_amount" min="1000" max="100000" step="1000" value="58000">
             </div>
 
             <!-- BREAKDOWN BLOCK -->
-            <div style="margin-top: 40px; background: rgba(255,255,255,0.05); padding: 25px; border-radius: 4px;">
+            <div
+                style="margin-top: 30px; background: rgba(255,255,255,0.03); padding: 25px 25px 15px 25px; border-radius: 4px; margin-left: 20px; border-left: 2px solid var(--clr-divider);">
                 <div style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 5px;">
                     Claim Amount Breakdown</div>
-                <div style="font-size: 13px; opacity: 0.6; margin-bottom: 25px; font-style: italic;">How the total claim
-                    amount is distributed</div>
+                <div style="font-size: 13px; opacity: 0.6; margin-bottom: 25px; font-style: italic;">Estimated
+                    distribution of the total claim amount (percentages are relative and do not need to sum perfectly)
+                </div>
 
                 <div class="form-grid">
                     <!-- Injury Portion -->
                     <div class="control-group">
                         <div class="slider-header">
-                            <label>Injury-Related Costs</label>
+                            <label>Injury-Related Portion</label>
                             <span class="slider-val" id="val_injury_share">10%</span>
                         </div>
                         <input type="range" id="injury_share" min="0" max="100" step="5" value="10">
@@ -416,7 +419,7 @@
                     <!-- Property Portion -->
                     <div class="control-group">
                         <div class="slider-header">
-                            <label>Property Damage Costs</label>
+                            <label>Property Damage Portion</label>
                             <span class="slider-val" id="val_prop_share">10%</span>
                         </div>
                         <input type="range" id="property_share" min="0" max="100" step="5" value="10">
@@ -425,12 +428,14 @@
                 </div>
 
                 <!-- Remainder -->
-                <div style="margin-top: 25px; border-top: 1px solid var(--clr-divider); padding-top: 15px;">
-                    <div class="slider-header">
-                        <label style="opacity: 0.7;">Other / Administrative (Calculated)</label>
-                        <span class="slider-val" id="val_remainder" style="opacity: 0.7;">80%</span>
-                    </div>
-                    <div class="helper-text">Remaining claim components (legal, admin, other)</div>
+                <div
+                    style="margin-top: 25px; border-top: 1px solid var(--clr-divider); padding-top: 15px; text-align: right;">
+                    <label style="opacity: 0.5; font-size: 12px; display: block; margin-bottom: 4px;">Other /
+                        Administrative (Calculated)</label>
+                    <div id="val_remainder"
+                        style="font-size: 16px; opacity: 0.7; font-family: 'Shippori Mincho B1', serif;">80%</div>
+                    <div class="helper-text" style="text-align: right; opacity: 0.4;">Remaining claim components (legal,
+                        admin, other)</div>
                 </div>
             </div>
         </div>
