@@ -41,6 +41,7 @@ class ClaimInput(BaseModel):
     capital_loss: float = Field(0.0, alias="capital-loss")
     injury_share: float = Field(..., description="Share of injury damage")
     property_share: float = Field(..., description="Share of property damage")
+    age: int = Field(38, description="Insured Age")
     umbrella_limit: int = Field(..., description="Umbrella policy limit")
     incident_hour_of_the_day: int = Field(..., ge=0, le=23)
     

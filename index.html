@@ -224,6 +224,8 @@
                         id="number_of_vehicles_involved" value="1"></div>
                 <div class="form-group"><label>Bodily Injuries</label><input type="text" inputmode="numeric"
                         id="bodily_injuries" value="1"></div>
+                <div class="form-group"><label>Insured Age</label><input type="text" inputmode="numeric" id="age"
+                        value="38"></div>
             </div>
 
             <button type="button" class="predict-btn" id="predictBtn">🔍 Analyze Claim</button>
@@ -290,7 +292,8 @@
                     police_report_available: document.getElementById('police_report_available').value,
                     authorities_contacted: document.getElementById('authorities_contacted').value,
                     number_of_vehicles_involved: parseNum('number_of_vehicles_involved', false),
-                    bodily_injuries: parseNum('bodily_injuries', false)
+                    bodily_injuries: parseNum('bodily_injuries', false),
+                    age: parseNum('age', false)
                 };
 
                 console.log("Sending payload:", formData);
