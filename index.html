@@ -20,10 +20,10 @@
             --clr-divider: rgba(255, 255, 255, 0.2);
 
             /* Accents */
-            --clr-accent: #5076ff;
-            /* Bright Blue */
-            --clr-highlight: #82acff;
-            /* Mid Blue */
+            --clr-accent: rgba(255, 255, 255, 0.12);
+            /* Soft White Accent */
+            --clr-highlight: rgba(255, 255, 255, 0.2);
+            /* Mid Accent */
 
             /* Spacing */
             --space-unit: 20px;
@@ -94,6 +94,7 @@
             background: rgba(255, 255, 255, 0.08);
             padding: 30px;
             border-radius: 6px;
+            /* Standardized radius */
         }
 
         /* TIERS */
@@ -192,11 +193,11 @@
             width: 100%;
             background: transparent;
             border: none;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
             color: var(--clr-text);
             font-family: inherit;
-            font-size: 16px;
-            padding: 8px 0;
+            font-size: 15px;
+            padding: 10px 0;
             border-radius: 0;
             cursor: pointer;
             transition: border-color 0.2s;
@@ -209,9 +210,10 @@
         }
 
         select option {
-            background: #0000aa;
-            /* Dark fallback for options */
+            background: #0700d6;
+            /* Slightly darker than bg */
             color: white;
+            padding: 12px 16px;
         }
 
         /* Helper text context */
@@ -261,7 +263,8 @@
             background: rgba(255, 255, 255, 0.05);
             color: var(--clr-text);
             border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 4px;
+            border-radius: 6px;
+            /* Standardized radius */
             padding: 18px 40px;
             font-size: 16px;
             font-family: inherit;
@@ -276,7 +279,7 @@
             background: rgba(255, 255, 255, 0.15);
             box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
             border-color: rgba(255, 255, 255, 0.8);
-            text-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+            /* Removed text-shadow per requested polish */
         }
 
         button:disabled {
@@ -295,7 +298,8 @@
 
         .result-score {
             font-size: 48px;
-            font-weight: 400;
+            font-weight: 500;
+            /* Reduced weight */
             margin-bottom: 10px;
             letter-spacing: -0.02em;
         }
@@ -600,7 +604,7 @@
 
             <!-- 1. PRIMARY RISK SCORE (Vertical, Authoritative) -->
             <div class="result-section" style="margin-bottom: 30px;">
-                <div id="resScoreVal" style="font-size: 56px; font-weight: 600; line-height: 1; margin-bottom: 10px;">
+                <div id="resScoreVal" style="font-size: 56px; font-weight: 500; line-height: 1; margin-bottom: 10px;">
                     --%</div>
                 <div id="resScoreLabel"
                     style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.15em; font-weight: 500; opacity: 0.7;">
@@ -621,7 +625,7 @@
                 <div
                     style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.6; margin-bottom: 12px;">
                     Recommended Action</div>
-                <div id="resActionHeader" style="font-size: 16px; font-weight: 600; margin-bottom: 15px;">--</div>
+                <div id="resActionHeader" style="font-size: 16px; font-weight: 500; margin-bottom: 15px;">--</div>
                 <div style="font-size: 14px; opacity: 0.8; margin-bottom: 5px;">Next steps:</div>
                 <div id="resActionSteps" style="font-size: 14px; line-height: 1.6; opacity: 0.9; padding-left: 5px;">--
                 </div>
@@ -662,9 +666,9 @@
             <div id="llmSummaryBox" class="result-section"
                 style="display:none; margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--clr-divider);">
                 <div
-                    style="font-size: 14px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                    style="font-size: 13px; font-weight: 500; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
                     How to read this score <span
-                        style="font-size: 10px; opacity: 0.6; font-weight: normal; border: 1px solid rgba(255,255,255,0.3); padding: 1px 4px; border-radius: 3px;">AI
+                        style="font-size: 10px; opacity: 0.4; font-weight: normal; border: 1px solid rgba(255,255,255,0.3); padding: 1px 4px; border-radius: 3px;">AI
                         GENERATED</span>
                 </div>
 
@@ -786,6 +790,16 @@
 
         // Global state for explanation
         let lastExplanation = [];
+
+        // BEHAVIORAL FIX: Invalidate outputs on input change
+        const inputs = document.querySelectorAll('input, select');
+        inputs.forEach(el => {
+            el.addEventListener('input', () => {
+                // Hide AI panels
+                document.getElementById('llmSummaryBox').style.display = 'none';
+                document.getElementById('driversPanel').style.display = 'none';
+            });
+        });
 
         // Toggle Drivers
         document.getElementById('viewDriversBtn').addEventListener('click', () => {
