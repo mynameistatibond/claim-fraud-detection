@@ -12,10 +12,6 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 # LLM API CONFIGURATION
 # ============================================================================
-# GROQ is RECOMMENDED: Free, fast (14,400 requests/day)
-# Sign up at: https://console.groq.com/
-# Add GROQ_API_KEY to your HuggingFace Space secrets
-
 def get_llm_config():
     """
     Check which LLM API is available and return configuration.
@@ -29,11 +25,11 @@ def get_llm_config():
             "provider": "groq",
             "url": "https://api.groq.com/openai/v1/chat/completions",
             "key": groq_key,
-            "model": "mixtral-8x7b-32768",  # Fast and smart
-            "format": "openai"  # OpenAI-compatible API
+            "model": "mixtral-8x7b-32768",
+            "format": "openai"
         }
     
-    # Option 2: Together AI (Good - 1M tokens/month free)
+    # Option 2: Together AI
     together_key = os.getenv("TOGETHER_API_KEY")
     if together_key:
         return {
@@ -44,7 +40,7 @@ def get_llm_config():
             "format": "openai"
         }
     
-    # Option 3: OpenRouter (OK - Free tier available)
+    # Option 3: OpenRouter
     openrouter_key = os.getenv("OPENROUTER_API_KEY")
     if openrouter_key:
         return {
@@ -55,7 +51,7 @@ def get_llm_config():
             "format": "openai"
         }
     
-    # Option 4: HuggingFace (Backup - using Router + Zephyr)
+    # Option 4: HuggingFace (Backup - Router + Zephyr)
     hf_key = os.getenv("HF_TOKEN")
     if hf_key:
         return {
@@ -66,10 +62,200 @@ def get_llm_config():
             "format": "huggingface"
         }
     
-    # No API key found
     return None
 
-# ... (rest of file)
+def build_driver_lines(explanation_items: list, max_items: int = 5) -> str:
+    """
+    Convert ExplanationItem list into newline string lines:
+    - {feature} | {direction} | {text}
+    """
+    lines = []
+    # Handle both dicts and objects
+    for item in explanation_items[:max_items]:
+        if isinstance(item, dict):
+            feat = item.get('feature', 'Unknown')
+            direction = item.get('direction', 'N/A')
+            text = item.get('text', '')
+        else:
+            feat = getattr(item, 'feature', 'Unknown')
+            direction = getattr(item, 'direction', 'N/A')
+            text = getattr(item, 'text', '')
+            
+        lines.append(f"- {feat} | {direction} | {text}")
+    
+    return "\n".join(lines)
+
+def call_openai_format_api(config: dict, prompt: str) -> str:
+    """Call OpenAI-compatible APIs (GROQ, Together, OpenRouter)"""
+    headers = {
+        "Authorization": f"Bearer {config['key']}",
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "model": config["model"],
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are an expert at explaining fraud detection model predictions in simple, clear language."
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        "max_tokens": 400,
+        "temperature": 0.3
+    }
+    
+    response = requests.post(
+        config["url"],
+        headers=headers,
+        json=payload,
+        timeout=10
+    )
+    
+    if response.status_code != 200:
+        raise Exception(f"API Error {config['provider'].upper()} {response.status_code}: {response.text[:200]}")
+    
+    result = response.json()
+    return result["choices"][0]["message"]["content"]
+
+def call_huggingface_api(config: dict, prompt: str) -> str:
+    """Call HuggingFace Inference API"""
+    headers = {
+        "Authorization": f"Bearer {config['key']}",
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "inputs": prompt,
+        "parameters": {
+            "max_new_tokens": 400,
+            "temperature": 0.3,
+            "return_full_text": False
+        }
+    }
+    
+    response = requests.post(
+        config["url"],
+        headers=headers,
+        json=payload,
+        timeout=10
+    )
+    
+    if response.status_code != 200:
+        raise Exception(f"API Error {config['provider'].upper()} {response.status_code}: {response.text[:200]}")
+    
+    result = response.json()
+    if isinstance(result, list) and len(result) > 0:
+        return result[0].get("generated_text", "")
+    return result.get("generated_text", "")
+
+@lru_cache(maxsize=256)
+def _cached_llm_request(selected_model: str, ref_model: str, risk_str: str, drivers_tuple: tuple) -> dict | None:
+    """
+    Internal cached function. Arguments must be hashable.
+    """
+    config = get_llm_config()
+    
+    if not config:
+        logger.warning("No LLM API key found (GROQ/TOGETHER/OPENROUTER/HF).")
+        return {"error": "No LLM credentials configured."}
+
+    drivers_text = "\n".join(drivers_tuple)
+    
+    # Build prompt
+    prompt = f"""You generate user-facing explanations for an insurance claim risk score.
+
+Rules:
+- Use ONLY the provided drivers. Do not invent facts.
+- Do NOT say "fraud" or imply certainty. This is a risk signal, not proof.
+- Speak plainly. No ML jargon. No mention of SHAP.
+- Explain each driver in terms of "tends to be associated with higher/lower risk patterns".
+- Return valid JSON only, matching the schema exactly.
+
+Context:
+- Prediction model: {selected_model}
+- Risk score: {risk_str}%
+- Reference model: {ref_model}
+- Top drivers:
+{drivers_text}
+
+Return ONLY valid JSON (no markdown, no extra text):
+{{
+  "summary": "2-3 sentence summary of the risk assessment",
+  "bullets": ["bullet 1 explaining a driver", "bullet 2", "bullet 3"],
+  "disclaimer": "Standard disclaimer about statistical patterns"
+}}
+"""
+
+    max_retries = 2
+    for attempt in range(max_retries + 1):
+        try:
+            logger.info(f"Using LLM: {config['provider']} ({config['model']})")
+            
+            # Call appropriate API
+            if config["format"] == "openai":
+                generated_text = call_openai_format_api(config, prompt)
+            else:
+                generated_text = call_huggingface_api(config, prompt)
+            
+            logger.info(f"RAW LLM RESPONSE: {generated_text[:500]}")
+            
+            # Extract JSON
+            clean_text = generated_text.strip()
+            
+            # Remove markdown code blocks if present
+            if "```json" in clean_text:
+                clean_text = clean_text.split("```json")[1].split("```")[0]
+            elif "```" in clean_text:
+                clean_text = clean_text.split("```")[1].split("```")[0]
+            
+            # Find JSON object
+            start = clean_text.find('{')
+            end = clean_text.rfind('}')
+            
+            if start != -1 and end != -1:
+                json_str = clean_text[start:end+1]
+                data = json.loads(json_str)
+                
+                # Check for error style return if it's already a dict from fallback? No, text parsing.
+                
+                # Validate schema
+                if "summary" not in data:
+                    logger.warning("Missing 'summary' in response")
+                    return {"error": "LLM response schema invalid (missing summary)"}
+                
+                # Set defaults
+                data.setdefault("bullets", [])
+                data.setdefault("disclaimer", "This explanation reflects statistical patterns, not proof.")
+                
+                # Ensure bullets is a list
+                if not isinstance(data["bullets"], list):
+                    data["bullets"] = [str(data["bullets"])]
+                
+                logger.info(f"✅ Successfully generated LLM explanation using {config['provider']}")
+                return data
+            else:
+                logger.warning("No JSON found in response")
+                return {"error": "LLM response contained no JSON"}
+                
+        except requests.exceptions.Timeout:
+            logger.warning(f"API timeout (attempt {attempt + 1}/{max_retries})")
+            if attempt < max_retries:
+                time.sleep(2)
+                continue
+            return {"error": f"LLM API Timeout ({config['provider']})"}
+            
+        except Exception as e:
+            logger.error(f"LLM API error: {e}")
+            if attempt < max_retries:
+                time.sleep(2)
+                continue
+            return {"error": f"LLM API Error: {str(e)}"}
+    
+    return {"error": "LLM retries exhausted."}
 
 def generate_llm_explanation(
     selected_model_name: str,
@@ -80,6 +266,7 @@ def generate_llm_explanation(
 ) -> dict | None:
     """
     Public API for generating LLM explanations.
+    FALLBACK IS DISABLED per user request. Returns Error dict on failure.
     """
     try:
         if not explanation_items:
@@ -87,7 +274,9 @@ def generate_llm_explanation(
         
         # Format inputs
         risk_str = f"{risk_score * 100:.1f}"
-        driver_str = build_driver_lines(explanation_items, max_items=5)
+        
+        # This function was missing before, leading to NameError. It is now defined above.
+        driver_str = build_driver_lines(explanation_items, max_items=5) 
         drivers_tuple = tuple(driver_str.split('\n'))
         
         # Try LLM
@@ -98,13 +287,15 @@ def generate_llm_explanation(
             drivers_tuple
         )
         
-        if result is not None:
-            return result
+        if result and "error" not in result:
+             return result
+             
+        # If result has error, return it directly
+        if result:
+             return result
         
-        # Fallback Disabled per user request
-        logger.error("LLM Request returned None (Error or Empty). Returning Error state.")
-        return {"error": "LLM generation failed (Check logs for details)."}
+        return {"error": "Unknown Code Path in Helper"}
         
     except Exception as e:
         logger.error(f"Error in generate_llm_explanation: {e}")
-        return {"error": f"LLM Error: {str(e)}"}
+        return {"error": f"LLM Module Error: {str(e)}"}
