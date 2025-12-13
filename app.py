@@ -31,7 +31,7 @@ except ImportError as e:
 
 # --- CONFIG ---
 MODELS_DIR = Path("models")
-APP_VERSION = "1.3.7"
+APP_VERSION = "1.3.8"
 THRESHOLD_AUTO_FLAG = 0.53
 
 # Model registry

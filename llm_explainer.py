@@ -9,11 +9,9 @@ from functools import lru_cache
 logger = logging.getLogger(__name__)
 
 # Constants
-HF_API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3" 
-# Note: Using v0.3 or just Instruct as per availability. The prompt requested "mistralai/Mistral-7B-Instruct", 
-# usually it redirects to the latest or specific commit. I'll use the base tag to be safe or v0.3 if known good.
-# Prompt said: "models/mistralai/Mistral-7B-Instruct" -> I will stick to that.
-HF_API_URL_EXACT = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3" # v0.3 is newer and likely available
+# Constants
+HF_API_URL = "https://router.huggingface.co/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.2"
+# NOTE: We use the router endpoint with /hf-inference/ path as required by the new infrastructure.
 
 def build_driver_lines(explanation_items: list, max_items: int = 5) -> str:
     """
@@ -100,8 +98,11 @@ Return JSON:
     max_retries = 2
     for attempt in range(max_retries + 1):
         try:
+            # DEBUG: Log the exact URL being hit
+            logger.error(f"HF REQUEST URL: {HF_API_URL}")
+
             response = requests.post(
-                HF_API_URL_EXACT, 
+                HF_API_URL, 
                 headers=headers, 
                 json=payload, 
                 timeout=(5.0, 20.0) # Increased timeout (connect, read)
