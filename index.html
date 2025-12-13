@@ -146,7 +146,8 @@
             display: flex;
             justify-content: space-between;
             align-items: baseline;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
+            /* Reduced from 8px for tighter spacing */
         }
 
         .slider-val {
@@ -560,10 +561,10 @@
             <div class="control-group">
                 <label>Prediction Model</label>
                 <select id="model">
-                    <option value="xgb" selected>XGBoost (Fast Inference)</option>
-                    <option value="voting">Voting Ensemble (Highest Accuracy)</option>
-                    <option value="et">Extra Trees</option>
-                    <option value="rf">Random Forest (Explanation Model)</option>
+                    <option value="xgb" selected>XGBoost — Quick signal</option>
+                    <option value="voting">Voting Ensemble — Best overall signal</option>
+                    <option value="et">Extra Trees — Stable signal</option>
+                    <option value="rf">Random Forest — Clear reasoning</option>
                 </select>
                 <!-- Updated Style: Removed font-size 13px and opacity 0.8 for cleaner look, added font-weight:600 to reference model -->
                 <div class="helper-text" style="line-height: 1.4; margin-top: 8px;">
