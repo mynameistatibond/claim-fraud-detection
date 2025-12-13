@@ -168,7 +168,6 @@ def _cached_llm_request(selected_model: str, ref_model: str, risk_str: str, driv
     # Build prompt
     prompt = f"""You explain insurance claim risk scores to busy humans.
 
-You explain insurance claim risk scores to busy humans.
 
 Audience:
 - A claims reviewer or operations specialist skimming many cases.
@@ -192,9 +191,10 @@ Rules:
 Style guidance:
 - Start by explaining what the score means in human terms.
 - Describe drivers as forces acting on the score (pushing it up or pulling it down).
-- Be concrete and concise.
-- Prefer clarity and skimmability over completeness.
-- Write so the explanation can be understood at a glance.
+- For each driver, provide a short but meaningful explanation (2–3 sentences),
+  explaining what the signal represents and how it typically relates to risk patterns.
+- Be concrete, but not technical.
+- Prefer clarity and readability over extreme brevity.
 
 Optional guidance:
 - Include a short line that helps the reviewer gauge how much attention this case deserves.
@@ -216,7 +216,7 @@ Return ONLY valid JSON (no markdown, no extra text), matching this schema exactl
     {{
       "name": "Readable driver name",
       "effect": "up or down",
-      "explanation": "Short, plain-language explanation of how this driver influences risk."
+      "explanation": "2–3 short sentences explaining what this factor represents and how it tends to influence risk patterns."
     }}
   ],
   "guidance": "One short sentence describing what this usually means for attention or handling.",
