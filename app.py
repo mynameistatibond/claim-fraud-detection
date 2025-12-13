@@ -325,6 +325,13 @@ async def predict(
                          
              except Exception as e:
                  logger.warning(f"SHAP gen failed: {e}")
+                 # Debugging: Return error as explanation
+                 explanation_items.append(ExplanationItem(
+                     feature="System Error",
+                     direction="DOWN", 
+                     text=f"SHAP Error: {str(e)}",
+                     importance=0.0
+                 ))
         
     except Exception as e:
         import traceback
