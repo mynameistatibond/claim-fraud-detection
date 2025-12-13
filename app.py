@@ -25,7 +25,7 @@ app = FastAPI(title="Fraud Detection API", version="2.0.0")
 
 # --- CONFIG ---
 MODELS_DIR = Path("models")
-APP_VERSION = "1.3.3"
+APP_VERSION = "1.3.4"
 THRESHOLD_AUTO_FLAG = 0.53
 
 # Model registry
@@ -242,7 +242,8 @@ async def predict(
     model: Literal["rf", "et", "xgb", "voting"] = Query("rf"),
     calibrated: bool = Query(True),
     scenario: Literal["auto_flagger", "dashboard"] = Query("dashboard"),
-    explain: bool = Query(True)
+    explain: bool = Query(True),
+    llm_explain: bool = Query(False)
 ):
     model_map = {"rf": "RandomForest", "et": "ExtraTrees", "xgb": "XGBoost", "voting": "VotingEnsemble"}
     model_name = model_map[model]
