@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from typing import Optional, Literal
 import joblib
 import numpy as np
+import json
 from pathlib import Path
 import logging
 import pandas as pd
@@ -45,12 +46,14 @@ MODELS = {}
 BACKGROUND_DATA_PATH = MODELS_DIR / "shap_background.npy"
 FEATURE_NAMES_PATH = MODELS_DIR / "shap_feature_names.joblib"
 METADATA_PATH = MODELS_DIR / "feature_metadata.joblib"
+TREND_REGISTRY_PATH = MODELS_DIR / "trend_registry.json"
 
 SHAP_EXPLAINERS = {}
 SHAP_INIT_ERRORS = {}
 BACKGROUND_DATA = None
 SHAP_FEATURE_NAMES = None
 FEATURE_METADATA = None
+TREND_REGISTRY = None
 EXPLANATION_SOURCE_MODEL = "ExtraTrees_uncalibrated"
 
 # Feature Name Mapping (Technical -> User)
@@ -85,8 +88,8 @@ class ClaimInput(BaseModel):
     months_as_customer: int = Field(..., description="Months as customer")
     capital_gains: float = Field(0.0, alias="capital-gains")
     capital_loss: float = Field(0.0, alias="capital-loss")
-    injury_share: float = Field(..., description="Share of injury damage")
-    property_share: float = Field(..., description="Share of property damage")
+    injury_share: Optional[float] = Field(None, description="Share of injury damage")
+    property_share: Optional[float] = Field(None, description="Share of property damage")
     age: int = Field(38, description="Insured Age")
     umbrella_limit: int = Field(..., description="Umbrella policy limit")
     incident_hour_of_the_day: int = Field(..., ge=0, le=23)
@@ -116,6 +119,7 @@ class PredictionResponse(BaseModel):
     threshold_flag: Optional[str] = None
     scenario: str
     explanation: Optional[list[ExplanationItem]] = None
+    explanation_source: Optional[str] = None
     llm_explanation: Optional[dict] = None
     app_version: str = "1.0.0"
 
@@ -168,11 +172,20 @@ def load_shap_resources():
     if METADATA_PATH.exists():
         try:
             FEATURE_METADATA = joblib.load(METADATA_PATH)
-            logger.info("Loaded feature metadata.")
         except Exception as e:
             logger.warning(f"Failed to load metadata: {e}")
 
-    # 4. Initialize TreeExplainers (ONLY for the Source Model)
+    # 4. Load Trend Registry
+    global TREND_REGISTRY
+    if TREND_REGISTRY_PATH.exists():
+        try:
+            with open(TREND_REGISTRY_PATH, "r") as f:
+                TREND_REGISTRY = json.load(f)
+            logger.info("Loaded Trend Registry.")
+        except Exception as e:
+            logger.warning(f"Failed to load Trend Registry: {e}")
+
+    # 5. Initialize TreeExplainers (ONLY for the Source Model)
     # We explicitly skip XGBoost to avoid version crashes, and Voting.
     # We only really need the EXPLANATION_SOURCE_MODEL.
     
@@ -238,13 +251,61 @@ def get_readable_explanation(feature_name, shap_val, metadata=None):
         
     return direction, reason
 
+def get_nuanced_explanation(feature_name, shap_val, feature_val, metadata=None):
+    """
+    Generate explanation with relative-to-typical context.
+    """
+    baseline_direction = "UP" if shap_val > 0 else "DOWN"
+    
+    # Default Text
+    direction, text = get_readable_explanation(feature_name, shap_val, metadata)
+    
+    # Trend Analysis
+    if TREND_REGISTRY and feature_name in TREND_REGISTRY:
+        try:
+            entry = TREND_REGISTRY[feature_name]
+            bins = entry["bins"]
+            shaps = entry["shap_values"]
+            ref_idx = entry.get("ref_idx", len(bins)//2)
+            
+            # Find current bin
+            # simple nearest neighbor in bins
+            # bins are sorted. np.searchsorted or just min dist
+            curr_idx = (np.abs(np.array(bins) - feature_val)).argmin()
+            
+            curr_shap_med = shaps[curr_idx]
+            ref_shap_med = shaps[ref_idx]
+            
+            typical_delta = curr_shap_med - ref_shap_med
+            
+            # Threshold for "significant" relative difference? 
+            # Let's say if abs delta > 0.0005 (small but real for SHAP probability)
+            if typical_delta > 0.0005:
+                # Riskier than typical
+                if baseline_direction == "DOWN":
+                    text += ", but riskier than typical values"
+                else: 
+                    text += " (high risk factor)"
+            elif typical_delta < -0.0005:
+                # Safer than typical
+                if baseline_direction == "UP":
+                    text += ", but safer than typical values"
+                else:
+                    text += " (low risk factor)"
+                    
+        except Exception as e:
+            # Fallback to standard
+            pass
+            
+    return baseline_direction, text
+
 @app.get("/")
 async def root():
     return FileResponse("index.html")
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "models_loaded": len(MODELS)}
+    return {"status": "healthy", "models_loaded": len(MODELS), "registry_loaded": TREND_REGISTRY is not None}
 
 @app.post("/predict", response_model=PredictionResponse)
 async def predict(
@@ -382,23 +443,36 @@ async def predict(
                              if root_feat not in VISIBLE_ROOTS and root_feat not in FEATURE_MAP: 
                                  continue
                                  
-                             direction, text = get_readable_explanation(feat_name, item['shap'], FEATURE_METADATA)
+                             # Retrieve value for nuanced explanation
+                             # We already extracted f_val, but need to ensure it corresponds to root_feat name if we check registry
+                             # The registry keys match raw continuous features (e.g. "injury_share")
+                             # feat_name might be "injury_share" or "numerical__injury_share..."
+                             # Our registry builder used "injury_share".
                              
-                             # Clean display name: Remove underscores, Title Case
-                             # e.g. "incident_severity_Major Damage" -> "Major Damage Severity"
+                             # Clean Name for display
                              clean_name = feat_name
                              if "_" in clean_name:
                                  parts = clean_name.split('_')
-                                 # Heuristic: if last part is the category ("Major Damage"), put it first?
-                                 # Or just replace underscores.
-                                 # User wanted "Major Damage Severity"
                                  if len(parts) >= 2:
-                                      # Generic clean: "Incident Severity Minor Damage"
                                       clean_name = clean_name.replace("_", " ").title()
                              
+                             # Determine Value to pass
+                             # If categorical (one-hot), value is 1/0. 
+                             # If continuous, value is f_val.
+                             # Registry lookup key is root_feat (e.g. injury_share)
+                             
+                             # We use root_feat for registry lookup
+                             try:
+                                f_index_reg = list(feature_names).index(feat_name)
+                                val_for_trend = input_vector[f_index_reg]
+                                direction, text = get_nuanced_explanation(root_feat, item['shap'], val_for_trend, FEATURE_METADATA)
+                             except:
+                                direction, text = get_readable_explanation(feat_name, item['shap'], FEATURE_METADATA)
+                             
+                             
                              explanation_items.append(ExplanationItem(
-                                 feature=FEATURE_MAP.get(feat_name, clean_name), # Use cleaned name as fallback
-                                 direction="UP" if item['shap'] > 0 else "DOWN",
+                                 feature=FEATURE_MAP.get(root_feat, clean_name), # Map root feat to Label
+                                 direction=direction,
                                  text=text,
                                  importance=float(abs(item['shap']))
                              ))
@@ -460,6 +534,7 @@ async def predict(
         threshold_flag=threshold_flag,
         scenario=scenario,
         explanation=explanation_items,
+        explanation_source=EXPLANATION_SOURCE_MODEL if explain else None,
         llm_explanation=llm_result,
         app_version=APP_VERSION
     )

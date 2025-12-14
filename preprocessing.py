@@ -97,7 +97,39 @@ def preprocess_input(input_data: dict) -> pd.DataFrame:
          if isinstance(DEFAULTS.get('authorities_contacted_missing'), (int, float)):
              final_data['authorities_contacted_missing'] = 0
 
-    # 4. Create DataFrame
+    # 4. Share Normalization Logic (New)
+    # Check if we have injury_share/property_share in input, or using defaults
+    inj_share = input_data.get('injury_share')
+    prop_share = input_data.get('property_share')
+    
+    if inj_share is not None and prop_share is not None:
+        # Both provided: Normalize if sum != 1
+        total_share = inj_share + prop_share
+        if abs(total_share - 1.0) > 0.01 and total_share > 0:
+            final_data['injury_share'] = inj_share / total_share
+            final_data['property_share'] = prop_share / total_share
+    elif inj_share is not None and prop_share is None:
+        # Only injury provided: Infer property
+        # Clip to 0-1 range first? Model handles it, but safety is good.
+        final_data['property_share'] = max(0.0, 1.0 - inj_share)
+    elif inj_share is None and prop_share is not None:
+        # Only property provided: Infer injury
+        final_data['injury_share'] = max(0.0, 1.0 - prop_share)
+    else:
+        # Both missing: Use Defaults (0.125 each) ??
+        # User requested fix for "silent invention".
+        # Since we can't break the model, let's normalize the defaults IF they are weird?
+        # Defaults are 0.125/0.125 -> sum 0.25.
+        # If we normalize defaults, we get 0.5/0.5.
+        # Let's enforce normalization on final_data regardless of source
+        curr_inj = final_data.get('injury_share', 0.0)
+        curr_prop = final_data.get('property_share', 0.0)
+        curr_tot = curr_inj + curr_prop
+        if abs(curr_tot - 1.0) > 0.01 and curr_tot > 0:
+             final_data['injury_share'] = curr_inj / curr_tot
+             final_data['property_share'] = curr_prop / curr_tot
+
+    # 5. Create DataFrame
     # Ensure strict column order
     df = pd.DataFrame([final_data])
     
