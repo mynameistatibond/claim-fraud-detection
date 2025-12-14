@@ -244,18 +244,18 @@ Top drivers:
 Output:
 Return ONLY valid JSON (no markdown, no extra text), matching this schema exactly:
 
-{
+{{
 "summary": "2–3 short sentences giving a clear, human-readable orientation to the risk and overall takeaway, reflecting how the drivers combine.",
 "drivers": [
-{
+{{
 "name": "Readable driver name",
 "effect": "up or down",
 "explanation": "2–3 short sentences explaining what this factor represents and how it tends to influence risk patterns."
-}
+}}
 ],
 "guidance": "One short sentence describing what this usually means for attention or handling.",
 "disclaimer": "One short sentence noting this reflects statistical patterns, not proof."
-}
+}}
 }}
 
 
