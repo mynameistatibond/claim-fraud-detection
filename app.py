@@ -253,51 +253,75 @@ def get_readable_explanation(feature_name, shap_val, metadata=None):
 
 def get_nuanced_explanation(feature_name, shap_val, feature_val, metadata=None):
     """
-    Generate explanation with relative-to-typical context.
+    Generate explanation with relative-to-typical context and value descriptors.
     """
     baseline_direction = "UP" if shap_val > 0 else "DOWN"
     
-    # Default Text
-    direction, text = get_readable_explanation(feature_name, shap_val, metadata)
+    # 1. Resolve Name
+    raw_feat = feature_name
+    if metadata and feature_name in metadata:
+        raw_feat = metadata[feature_name].get("raw_feature", feature_name)
+    user_label = FEATURE_MAP.get(raw_feat, raw_feat.replace("_", " ").title())
     
-    # Trend Analysis
+    # 2. Trend Analysis
+    trend_text = ""
+    value_desc = ""
+    
     if TREND_REGISTRY and feature_name in TREND_REGISTRY:
         try:
             entry = TREND_REGISTRY[feature_name]
             bins = entry["bins"]
             shaps = entry["shap_values"]
             ref_idx = entry.get("ref_idx", len(bins)//2)
+            min_val, max_val = entry.get("min_val", bins[0]), entry.get("max_val", bins[-1])
             
             # Find current bin
-            # simple nearest neighbor in bins
-            # bins are sorted. np.searchsorted or just min dist
             curr_idx = (np.abs(np.array(bins) - feature_val)).argmin()
             
             curr_shap_med = shaps[curr_idx]
             ref_shap_med = shaps[ref_idx]
-            
             typical_delta = curr_shap_med - ref_shap_med
             
-            # Threshold for "significant" relative difference? 
-            # Let's say if abs delta > 0.0005 (small but real for SHAP probability)
+            # Value Descriptor (Low/High/Typical)
+            # Simple percentile check
+            rng = max_val - min_val
+            if rng > 0:
+                rel_pos = (feature_val - min_val) / rng
+                if rel_pos < 0.33: value_desc = "Low "
+                elif rel_pos > 0.66: value_desc = "High "
+                else: value_desc = "Typical "
+            
+            # Threshold for "significant" relative difference
             if typical_delta > 0.0005:
                 # Riskier than typical
-                if baseline_direction == "DOWN":
-                    text += ", but riskier than typical values"
-                else: 
-                    text += " (high risk factor)"
+                trend_text = "associated with higher risk than average"
             elif typical_delta < -0.0005:
                 # Safer than typical
-                if baseline_direction == "UP":
-                    text += ", but safer than typical values"
-                else:
-                    text += " (low risk factor)"
+                trend_text = "associated with lower risk than average"
                     
-        except Exception as e:
-            # Fallback to standard
+        except Exception:
             pass
-            
-    return baseline_direction, text
+
+    # 3. Construct Final Sentence
+    # Case A: Trend info available and significant
+    if trend_text:
+        # "Low Injury Cost Portion is associated with higher risk than average."
+        if value_desc == "Typical ": value_desc = "" # Omit "Typical" prefix usually
+        full_text = f"{value_desc}{user_label} is {trend_text}"
+        
+        # Add baseline context if it contradicts?
+        # If baseline is DOWN but trend is RISKIER -> "Reduces risk overall, but Low X is associated with higher risk than average"
+        # User implies they just want the "causes it higher" part.
+        # "Low Injury Cost Portion is associated with higher risk than average" is very clear.
+        pass
+    else:
+        # Case B: Standard Baseline Fallback
+        if shap_val > 0:
+            full_text = f"{user_label} contributes to risk"
+        else:
+            full_text = f"{user_label} reduces risk estimate"
+
+    return baseline_direction, full_text
 
 @app.get("/")
 async def root():
