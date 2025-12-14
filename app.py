@@ -304,17 +304,22 @@ def get_nuanced_explanation(feature_name, shap_val, feature_val, metadata=None, 
          # Sanity check: if root became empty or weird, ignore
          if root:
              if "Authorities" in root:
-                  if category == "None": user_label = "No Authorities Contacted"
-                  else: user_label = f"Contacting {category}"
+              if category == "None": user_label = "No Authorities Contacted"
+              else: user_label = f"Contacting {category}"
              elif "Severity" in root: user_label = f"{category} Severity"
-             elif "Collision" in root: user_label = f"{category} Type"
+             elif "Collision" in root: 
+                  if category == "?": user_label = "Unknown Collision Type"
+                  else: user_label = f"{category} Type"
+             elif "Report" in root:
+                  # Police Report Available
+                  if category == "YES": user_label = "Police Report Available"
+                  elif category == "NO": user_label = "No Police Report"
+                  elif category == "?": user_label = "Police Report Status Unknown"
+                  else: user_label = f"Police Report: {category}"
              else: 
-                 # Only use this fallback if we really think we extracted a category
-                 # e.g. "injury_share" -> parts=["injury", "share"], cat="share". Bad.
-                 # Heuristic: Category usually comes from OneHot, so original_name has more parts than root?
-                 # Or just trust specific keywords like above.
-                 # For generic: Do nothing to avoid "Contacting contacted" bugs
-                 pass
+                 # Generic Fallback
+                 if category == "?": user_label = f"Unknown {FEATURE_MAP.get(raw_feat, root)}"
+                 else: user_label = f"{category} ({FEATURE_MAP.get(raw_feat, root)})"
 
     # 2. Trend Analysis
     trend_text = ""
