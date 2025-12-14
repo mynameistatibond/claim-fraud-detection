@@ -214,38 +214,28 @@ Be concrete, but not technical.
 
 Prefer clarity and readability over extreme brevity.
 
-Synthesis guidance (important):
-
-After considering all drivers together, ensure the summary reflects the combined picture they create.
-
-If some factors push risk up while others pull it down, acknowledge this balance naturally.
-
-Do not frame this as a contradiction or conflict; describe it as a mix of reinforcing and stabilizing signals.
-
-Use this synthesis to help the reader understand why the score lands where it does overall, not to introduce new information.
+Synthesis guidance (CRITICAL):
+- The "summary" must be a cohesive narrative that WEAVES specific drivers together.
+- Do NOT just say "there are mixed signals". Explain WHICH signals conflict.
+- Example: "While [Driver A] suggests a standard claim, the combination of [Driver B] and [Driver C] drives the risk up significantly."
+- Connect the dots for the user.
 
 Optional guidance:
-
-Include a short line that helps the reviewer gauge how much attention this case deserves.
-
-Frame this as typical handling or attention level, not instructions or required actions.
+- Include a short line that helps the reviewer gauge how much attention this case deserves.
+- Frame this as typical handling or attention level, not instructions or required actions.
 
 Context:
-
-Prediction model: {selected_model}
-
-Risk score: {risk_str}%
-
-Reference model: {ref_model}
-
-Top drivers:
+- Prediction model: {selected_model}
+- Risk score: {risk_str}%
+- Reference model: {ref_model}
+- Top drivers:
 {drivers_text}
 
 Output:
 Return ONLY valid JSON (no markdown, no extra text), matching this schema exactly:
 
 {{
-"summary": "2–3 short sentences giving a clear, human-readable orientation to the risk and overall takeaway, reflecting how the drivers combine.",
+"summary": "A 2-3 sentence narrative that connects the strongest drivers into a cohesive story. Explicitly mention how key factors interact (e.g., 'X offsets Y').",
 "drivers": [
 {{
 "name": "Readable driver name",
