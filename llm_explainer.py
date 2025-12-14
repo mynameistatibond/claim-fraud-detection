@@ -218,8 +218,9 @@ Synthesis guidance (CRITICAL):
 - The "summary" must be a cohesive narrative that WEAVES specific drivers together.
 - Do NOT just say "there are mixed signals". Explain WHICH signals conflict.
 - ADDRESS CONTRADICTIONS DIRECTLY:
-    - Example: If "Authorities Contacted: Police" is Safe (↓), but "No Police Report" is Risky (↑), you MUST explain this discrepancy (e.g., "Police were reportedly contacted, but the absence of an official report creates a verification gap").
-    - Use this synthesis to resolve confusion, not just list factors.
+    - Example: If "Authorities Contacted: Police" is Safe (↓), but "No Police Report" is Risky (↑), explain the REAL-WORLD implication. 
+    - Say: "Use of police is typically safe, but the lack of a report suggests the claimant *asserted* police contact without official verification, or police attended but declined to file a report. This discrepancy is a key risk driver."
+    - Do not just say "it's a gap". Explain *why* it's suspicious.
 - Connect the dots for the user.
 
 Optional guidance:
