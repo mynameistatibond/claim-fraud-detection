@@ -243,11 +243,31 @@ def get_readable_explanation(feature_name, shap_val, metadata=None):
     # 3. Generate Reason
     reason = f"{user_label} factor"
     
-    # categorical logic (if it looks like OneHot)
-    # If feature is "collision_type_Rear Collision", logic:
-    # "Rear Collision Type detected" (if positive shap)
-    # We rely on direction for now.
+    # categorical logic
+    # If feature looks like "authorities_contacted_Police", we want "Police Contacted" or "Contacting Police"
     
+    if "_" in feature_name:
+        parts = feature_name.split("_")
+        # Heuristic: The last part is likely the category if it's capitalized or distinct
+        # E.g. incident_severity_Major Damage -> Major Damage
+        # E.g. authorities_contacted_Police -> Police
+        
+        category = parts[-1]
+        root = " ".join(parts[:-1]).title()
+        
+        # Override user label for categories to be more specific
+        if "Authorities" in root:
+             if category == "None": user_label = "No Authorities Contacted"
+             else: user_label = f"Contacting {category}"
+        elif "Severity" in root:
+             user_label = f"{category} Severity"
+        elif "Collision" in root:
+             user_label = f"{category} Type"
+        else:
+             # Fallback: "Major Damage (incident_severity)"
+             # Actually, just appending category is usually good
+             user_label = f"{category} ({FEATURE_MAP.get(raw_feat, root)})"
+
     if shap_val > 0:
         reason = f"{user_label} contributes to higher risk"
     else:
@@ -267,6 +287,20 @@ def get_nuanced_explanation(feature_name, shap_val, feature_val, metadata=None):
         raw_feat = metadata[feature_name].get("raw_feature", feature_name)
     user_label = FEATURE_MAP.get(raw_feat, raw_feat.replace("_", " ").title())
     
+    # Precise Categorical Handling for Nuanced Text
+    # If raw feature is "authorities_contacted_Police", raw_feat might be that literal string if passed from loop
+    if "_" in feature_name and feature_name not in FEATURE_MAP:
+         parts = feature_name.split("_")
+         category = parts[-1]
+         root = " ".join(parts[:-1]).title()
+         
+         if "Authorities" in root:
+              if category == "None": user_label = "No Authorities Contacted"
+              else: user_label = f"Contacting {category}"
+         elif "Severity" in root: user_label = f"{category} Severity"
+         elif "Collision" in root: user_label = f"{category} Type"
+         else: user_label = f"{category} ({FEATURE_MAP.get(raw_feat, root)})"
+
     # 2. Trend Analysis
     trend_text = ""
     value_desc = ""
