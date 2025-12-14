@@ -217,7 +217,9 @@ Prefer clarity and readability over extreme brevity.
 Synthesis guidance (CRITICAL):
 - The "summary" must be a cohesive narrative that WEAVES specific drivers together.
 - Do NOT just say "there are mixed signals". Explain WHICH signals conflict.
-- Example: "While [Driver A] suggests a standard claim, the combination of [Driver B] and [Driver C] drives the risk up significantly."
+- ADDRESS CONTRADICTIONS DIRECTLY:
+    - Example: If "Authorities Contacted: Police" is Safe (↓), but "No Police Report" is Risky (↑), you MUST explain this discrepancy (e.g., "Police were reportedly contacted, but the absence of an official report creates a verification gap").
+    - Use this synthesis to resolve confusion, not just list factors.
 - Connect the dots for the user.
 
 Optional guidance:
