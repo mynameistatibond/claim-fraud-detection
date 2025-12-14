@@ -169,58 +169,93 @@ def _cached_llm_request(selected_model: str, ref_model: str, risk_str: str, driv
     prompt = f"""You explain insurance claim risk scores to busy humans.
 
 
-Audience:
-- A claims reviewer or operations specialist skimming many cases.
-- They want quick orientation and context, not theory or instructions.
+    Audience:
+
+A claims reviewer or operations specialist skimming many cases.
+
+They want quick orientation and context, not theory or instructions.
 
 Tone:
-- Clear, calm, and human.
-- Slightly playful understatement is welcome (Douglas Adams–style), but no jokes or sarcasm.
-- Avoid bureaucratic, legalistic, or brochure-like language.
+
+Clear, calm, and human.
+
+Slightly playful understatement is welcome (Douglas Adams–style).
+
+Avoid bureaucratic, legalistic, or brochure-like language.
 
 Rules:
-- Use ONLY the provided drivers. Do not invent facts.
-- List ALL provided drivers.
-- For each driver, clearly indicate whether it pushes risk up or pulls it down.
-- Do NOT say "fraud" or imply certainty.
-- Do NOT claim causality. Describe statistical associations only.
-- Do NOT mention models, SHAP, ML, or methodology.
-- Avoid generic phrases like "this assessment is based on" or "the model has identified".
-- Avoid repeating feature names mechanically; paraphrase naturally.
+
+Use ONLY the provided drivers. Do not invent facts.
+
+List ALL provided drivers.
+
+For each driver, clearly indicate whether it pushes risk up or pulls it down.
+
+Do NOT say "fraud" or imply certainty.
+
+Do NOT claim causality. Describe statistical associations only.
+
+Do NOT mention models, SHAP, ML, or methodology.
+
+Avoid generic phrases like "this assessment is based on" or "the model has identified".
+
+Avoid repeating feature names mechanically; paraphrase naturally.
 
 Style guidance:
-- Start by explaining what the score means in human terms.
-- Describe drivers as forces acting on the score (pushing it up or pulling it down).
-- For each driver, provide a short but meaningful explanation (2–3 sentences),
-  explaining what the signal represents and how it typically relates to risk patterns.
-- Be concrete, but not technical.
-- Prefer clarity and readability over extreme brevity.
+
+Start by explaining what the score means in human terms.
+
+Describe drivers as forces acting on the score (pushing it up or pulling it down).
+
+For each driver, provide a short but meaningful explanation (2–3 sentences),
+explaining what the signal represents and how it typically relates to risk patterns.
+
+Be concrete, but not technical.
+
+Prefer clarity and readability over extreme brevity.
+
+Synthesis guidance (important):
+
+After considering all drivers together, ensure the summary reflects the combined picture they create.
+
+If some factors push risk up while others pull it down, acknowledge this balance naturally.
+
+Do not frame this as a contradiction or conflict; describe it as a mix of reinforcing and stabilizing signals.
+
+Use this synthesis to help the reader understand why the score lands where it does overall, not to introduce new information.
 
 Optional guidance:
-- Include a short line that helps the reviewer gauge how much attention this case deserves.
-- Frame this as typical handling or attention level, not instructions or required actions.
+
+Include a short line that helps the reviewer gauge how much attention this case deserves.
+
+Frame this as typical handling or attention level, not instructions or required actions.
 
 Context:
-- Prediction model: {selected_model}
-- Risk score: {risk_str}%
-- Reference model: {ref_model}
-- Top drivers:
+
+Prediction model: {selected_model}
+
+Risk score: {risk_str}%
+
+Reference model: {ref_model}
+
+Top drivers:
 {drivers_text}
 
 Output:
 Return ONLY valid JSON (no markdown, no extra text), matching this schema exactly:
 
-{{
-  "summary": "2–3 short sentences giving a clear, human-readable orientation to the risk and overall takeaway.",
-  "drivers": [
-    {{
-      "name": "Readable driver name",
-      "effect": "up or down",
-      "explanation": "2–3 short sentences explaining what this factor represents and how it tends to influence risk patterns."
-    }}
-  ],
-  "guidance": "One short sentence describing what this usually means for attention or handling.",
-  "disclaimer": "One short sentence noting this reflects statistical patterns, not proof."
+{
+"summary": "2–3 short sentences giving a clear, human-readable orientation to the risk and overall takeaway, reflecting how the drivers combine.",
+"drivers": [
+{
+"name": "Readable driver name",
+"effect": "up or down",
+"explanation": "2–3 short sentences explaining what this factor represents and how it tends to influence risk patterns."
+}
+],
+"guidance": "One short sentence describing what this usually means for attention or handling.",
+"disclaimer": "One short sentence noting this reflects statistical patterns, not proof."
+}
 }}
 
 
