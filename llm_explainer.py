@@ -223,9 +223,12 @@ Synthesis guidance (CRITICAL):
     - Do not just say "it's a gap". Explain *why* it's suspicious.
 - Connect the dots for the user.
 
-Optional guidance:
-- Include a short line that helps the reviewer gauge how much attention this case deserves.
-- Frame this as typical handling or attention level, not instructions or required actions.
+Optional guidance (Dynamic based on Risk Score):
+- Look at the "Risk score" in the Context.
+- If Risk < 50%: Suggest standard/routine checking.
+- If Risk 50-75%: Suggest "Heightened Scrutiny" or "Closer Review".
+- If Risk > 75%: Suggest "Immediate Escalation" or "Priority Investigation".
+- MATCH THE URGENCY TO THE SCORE. Do not understate a high risk (e.g. >70%) as "moderate".
 
 Context:
 - Prediction model: {selected_model}
