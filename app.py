@@ -303,22 +303,28 @@ def get_nuanced_explanation(feature_name, shap_val, feature_val, metadata=None, 
          
          # Sanity check: if root became empty or weird, ignore
          if root:
+             # Normalize category for checks
+             cat_lower = category.lower()
+             
              if "Authorities" in root:
-              if category == "None": user_label = "No Authorities Contacted"
-              else: user_label = f"Contacting {category}"
-             elif "Severity" in root: user_label = f"{category} Severity"
+                  if cat_lower == "none": user_label = "No Authorities Contacted"
+                  elif cat_lower in ["missing", "unknown", "?", "nan"]: user_label = "Authority Contact Info Missing"
+                  else: user_label = f"Contacting {category}"
+             elif "Severity" in root: 
+                  if cat_lower in ["missing", "unknown", "?", "nan"]: user_label = "Unknown Severity"
+                  else: user_label = f"{category} Severity"
              elif "Collision" in root: 
-                  if category == "?": user_label = "Unknown Collision Type"
+                  if cat_lower in ["missing", "unknown", "?", "nan"]: user_label = "Unknown Collision Type"
                   else: user_label = f"{category} Type"
              elif "Report" in root:
                   # Police Report Available
-                  if category == "YES": user_label = "Police Report Available"
-                  elif category == "NO": user_label = "No Police Report"
-                  elif category == "?": user_label = "Police Report Status Unknown"
+                  if cat_lower == "yes": user_label = "Police Report Available"
+                  elif cat_lower == "no": user_label = "No Police Report"
+                  elif cat_lower in ["missing", "unknown", "?", "nan"]: user_label = "Police Report Status Unknown"
                   else: user_label = f"Police Report: {category}"
              else: 
                  # Generic Fallback
-                 if category == "?": user_label = f"Unknown {FEATURE_MAP.get(raw_feat, root)}"
+                 if cat_lower in ["missing", "unknown", "?", "nan"]: user_label = f"Unknown {FEATURE_MAP.get(raw_feat, root)}"
                  else: user_label = f"{category} ({FEATURE_MAP.get(raw_feat, root)})"
 
     # 2. Trend Analysis

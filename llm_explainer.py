@@ -213,6 +213,14 @@ explaining what the signal represents and how it typically relates to risk patte
 Be concrete, but not technical.
 
 Prefer clarity and readability over extreme brevity.
+ 
+NON-NEGOTIABLE RULE FOR MISSING DATA:
+- If a driver name indicates "Missing", "Unknown", or "Info Unavailable":
+- You MUST describe it as "absence of recorded information".
+- You MUST NOT say "the user did not..." or "the authorities were..."
+- You MUST NOT imply any action, decision, or behavior.
+- BANNED for missing: "discrepancy", "offset", "asserted", "suspicion".
+- Correct: "There is no recorded information indicating..."
 
 Synthesis guidance (CRITICAL):
 - The "summary" must be a cohesive narrative that WEAVES specific drivers together.
