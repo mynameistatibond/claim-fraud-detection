@@ -275,31 +275,46 @@ def get_readable_explanation(feature_name, shap_val, metadata=None):
         
     return direction, reason
 
-def get_nuanced_explanation(feature_name, shap_val, feature_val, metadata=None):
+def get_nuanced_explanation(feature_name, shap_val, feature_val, metadata=None, original_name=None):
     """
     Generate explanation with relative-to-typical context and value descriptors.
     """
     baseline_direction = "UP" if shap_val > 0 else "DOWN"
     
     # 1. Resolve Name
-    raw_feat = feature_name
-    if metadata and feature_name in metadata:
-        raw_feat = metadata[feature_name].get("raw_feature", feature_name)
+    # Use original_name (specific) if provided, else feature_name (root)
+    name_to_resolve = original_name if original_name else feature_name
+    
+    raw_feat = name_to_resolve
+    if metadata and name_to_resolve in metadata:
+        raw_feat = metadata[name_to_resolve].get("raw_feature", name_to_resolve)
     user_label = FEATURE_MAP.get(raw_feat, raw_feat.replace("_", " ").title())
     
     # Precise Categorical Handling for Nuanced Text
-    # If raw feature is "authorities_contacted_Police", raw_feat might be that literal string if passed from loop
-    if "_" in feature_name and feature_name not in FEATURE_MAP:
-         parts = feature_name.split("_")
+    # We prefer the original name (e.g. authorities_contacted_Police) for category extraction
+    # The feature_name passed is usually length 1 (root), original is specific.
+    
+    target_for_parsing = original_name if original_name else feature_name
+    
+    if "_" in target_for_parsing and target_for_parsing not in FEATURE_MAP:
+         parts = target_for_parsing.split("_")
          category = parts[-1]
-         root = " ".join(parts[:-1]).title()
+         root = " ".join(parts[:-1]).title() 
          
-         if "Authorities" in root:
-              if category == "None": user_label = "No Authorities Contacted"
-              else: user_label = f"Contacting {category}"
-         elif "Severity" in root: user_label = f"{category} Severity"
-         elif "Collision" in root: user_label = f"{category} Type"
-         else: user_label = f"{category} ({FEATURE_MAP.get(raw_feat, root)})"
+         # Sanity check: if root became empty or weird, ignore
+         if root:
+             if "Authorities" in root:
+                  if category == "None": user_label = "No Authorities Contacted"
+                  else: user_label = f"Contacting {category}"
+             elif "Severity" in root: user_label = f"{category} Severity"
+             elif "Collision" in root: user_label = f"{category} Type"
+             else: 
+                 # Only use this fallback if we really think we extracted a category
+                 # e.g. "injury_share" -> parts=["injury", "share"], cat="share". Bad.
+                 # Heuristic: Category usually comes from OneHot, so original_name has more parts than root?
+                 # Or just trust specific keywords like above.
+                 # For generic: Do nothing to avoid "Contacting contacted" bugs
+                 pass
 
     # 2. Trend Analysis
     trend_text = ""
@@ -532,7 +547,7 @@ async def predict(
                              try:
                                 f_index_reg = list(feature_names).index(feat_name)
                                 val_for_trend = input_vector[f_index_reg]
-                                direction, text = get_nuanced_explanation(root_feat, item['shap'], val_for_trend, FEATURE_METADATA)
+                                direction, text = get_nuanced_explanation(root_feat, item['shap'], val_for_trend, FEATURE_METADATA, original_name=feat_name)
                              except:
                                 direction, text = get_readable_explanation(feat_name, item['shap'], FEATURE_METADATA)
                              
