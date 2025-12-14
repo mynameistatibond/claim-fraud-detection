@@ -41,6 +41,7 @@ THRESHOLD_AUTO_FLAG = 0.53
 
 # Model registry
 MODELS = {}
+LOADING_ERRORS = {}
 
 # SHAP Configuration
 BACKGROUND_DATA_PATH = MODELS_DIR / "shap_background.npy"
@@ -142,8 +143,11 @@ def load_models():
                         logger.info(f"Loaded model: {key}")
                 except Exception as e:
                     logger.error(f"Error loading {filepath}: {e}")
+                    LOADING_ERRORS[key] = str(e)
     
     logger.info(f"Total models loaded: {len(MODELS)}")
+    if LOADING_ERRORS:
+        logger.warning(f"Models failed to load: {list(LOADING_ERRORS.keys())}")
 
 def get_pipeline_components(model):
     """Extract (preprocessor, estimator) from Pipeline"""
@@ -329,7 +333,12 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "models_loaded": len(MODELS), "registry_loaded": TREND_REGISTRY is not None}
+    return {
+        "status": "healthy",
+        "models_loaded": len(MODELS),
+        "registry_loaded": TREND_REGISTRY is not None,
+        "loading_errors": LOADING_ERRORS
+    }
 
 @app.post("/predict", response_model=PredictionResponse)
 async def predict(
@@ -501,8 +510,21 @@ async def predict(
                                  importance=float(abs(item['shap']))
                              ))
                              count += 1
-                     else:
-                          explanation_items.append(ExplanationItem(feature="System Error", direction="DOWN", text="Explanation preprocessor missing", importance=0))
+                             if count >= 5: break
+                             
+                     # Safety Net: If filtering removed all features (rare), add generic backup
+                     if not explanation_items:
+                         explanation_items.append(ExplanationItem(
+                             feature="No Key Drivers", 
+                             direction="DOWN", 
+                             text="No single feature exceeded importance threshold.", 
+                             importance=0.0
+                         ))
+                         
+                     # Fallback for empty list (should be covered above, but just in case)
+                     # This 'pass' was part of an extraneous 'else' block.
+                     pass
+                          
                  except Exception as e:
                      logger.error(f"Explanation generation failed: {e}")
                      explanation_items.append(ExplanationItem(feature="System Error", direction="DOWN", text="Explanation error", importance=0))

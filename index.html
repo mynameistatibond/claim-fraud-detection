@@ -1475,12 +1475,16 @@
                 const model = document.getElementById('model').value;
                 const scenario = document.getElementById('scenario').value;
 
-                // Request explanation by default now
-                const response = await fetch(`/predict?model=${model}&scenario=${scenario}&explain=true`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
+                let response;
+                try {
+                    response = await fetch(`/predict?model=${model}&scenario=${scenario}&explain=true`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                } catch (netErr) {
+                    throw new Error("Cannot connect to server. Is the API running?");
+                }
 
                 if (!response.ok) throw new Error(await response.text());
                 const data = await response.json();
