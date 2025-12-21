@@ -78,7 +78,8 @@ class FraudTriageAgent:
                 "strategy": strategy,
                 "capacity_used": daily_capacity
             },
-            "full_dataset_available": True
+            "full_dataset_available": True,
+            "full_df": df # Return full dataframe for CSV export
         }
 
     def _determine_strategy(self, batch_size: int) -> str:

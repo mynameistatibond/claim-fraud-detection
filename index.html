@@ -1102,12 +1102,18 @@
             }
 
             .badge-p2 {
-                background: rgba(100, 100, 100, 0.15);
-                border: 1px solid rgba(100, 100, 100, 0.3);
-                color: #aaaaaa;
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                opacity: 0.6;
             }
         </style>
-        <h3 style="margin-bottom: 15px; font-weight: 400; opacity: 0.9; text-align: center;">Batch Analysis Results</h3>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div style="font-size: 1.2rem; font-weight: 500;">Batch Analysis Results</div>
+            <a id="downloadResultsBtn" href="#" target="_blank"
+                style="display:none; text-decoration: none; font-size: 13px; padding: 6px 12px; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; color: white; background: rgba(255,255,255,0.05);">↓
+                Download Full Triage CSV</a>
+        </div>
 
         <!-- AGENT SUMMARY BOX -->
         <div id="agentSummaryBox" class="agent-summary" style="display:none;">
@@ -1774,6 +1780,16 @@
                                     btn.style.display = 'block';
                                     btn.innerText = "Analyze Batch";
                                     progressContainer.style.display = 'none';
+
+                                    // Show Download Button if CSV available
+                                    if (statusData.result && statusData.result.csv_file) {
+                                        const dlBtn = document.getElementById('downloadResultsBtn');
+                                        if (dlBtn) {
+                                            dlBtn.style.display = 'inline-block';
+                                            dlBtn.href = `/outputs/${statusData.result.csv_file}`;
+                                        }
+                                    }
+
                                     renderBatchResults(statusData.result);
                                 }, 500);
                             } else if (statusData.status === 'failed') {

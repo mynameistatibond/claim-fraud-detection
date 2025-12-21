@@ -402,11 +402,28 @@ async def process_batch_file(
     # batch_size is total_raw (includes invalid rows, to capture magnitude)
     triage_result = agent.triage_batch(
         scored_df, 
-        batch_size=len(df_raw),
+        len(scored_df),
         team_size=team_size,
-        review_time_mins=review_time
+        review_time_mins=review_time,
+        risk_appetite="balanced"
     )
     
+    # Save Full Results CSV
+    output_filename = f"batch_results_{int(time.time())}.csv"
+    output_path = Path("outputs") / output_filename
+    output_path.parent.mkdir(exist_ok=True)
+    
+    if "full_df" in triage_result:
+        # Clean up for export (remove complex objects if any)
+        export_df = triage_result["full_df"].copy()
+        # Ensure drivers are stringified if needed, or drop complex columns
+        if 'drivers' in export_df.columns:
+            export_df['drivers'] = export_df['drivers'].apply(lambda x: str(x) if isinstance(x, list) else x)
+            
+        export_df.to_csv(output_path, index=False)
+        triage_result["csv_file"] = output_filename
+        del triage_result["full_df"] # Remove from memory return
+        
     # Merge Processing Stats into Agent Summary
     processed_count = len(valid_rows)
     failed_count = len(df_raw) - processed_count
