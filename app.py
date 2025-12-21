@@ -802,8 +802,6 @@ async def get_job_status(job_id: str):
         created_at=job.get("created_at")
     )
 
-    )
-
 @app.get("/outputs/{filename}")
 async def download_output(filename: str):
     file_path = Path("outputs") / filename
