@@ -45,7 +45,10 @@
             font-family: 'Shippori Mincho B1', serif;
             min-height: 100vh;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
+            /* Allow stacking */
+            align-items: center;
+            /* Center horizontally */
             padding: 60px 20px;
             line-height: 1.5;
             -webkit-font-smoothing: antialiased;
@@ -562,8 +565,18 @@
             <div class="subtitle">Predictive analysis of auto claim irregularities</div>
         </header>
 
+
         <!-- CONFIG -->
         <div class="config-bar">
+            <!-- GLOBAL MODE selector (New) -->
+            <div class="control-group" style="grid-column: 1 / -1;">
+                <label>Analysis Mode</label>
+                <select id="analysis_mode">
+                    <option value="single" selected>Single claim (form)</option>
+                    <option value="batch">Batch upload (CSV)</option>
+                </select>
+            </div>
+
             <!-- Model Selection -->
             <div class="control-group">
                 <label>Prediction Model</label>
@@ -583,9 +596,9 @@
                 <!-- Removed modelHint div -->
             </div>
 
-            <!-- Analysis Mode -->
+            <!-- Scenario Selection (Renamed from Analysis Mode) -->
             <div class="control-group">
-                <label>Analysis Mode</label>
+                <label>Scenario</label>
                 <select id="scenario">
                     <option value="auto_flagger" selected>Auto-Flagger (Operational)</option>
                     <option value="dashboard">Dashboard Review (Calibrated)</option>
@@ -593,6 +606,48 @@
                 <div id="scenario_desc" class="helper-text" style="line-height: 1.4; margin-top: 8px;">
                     Optimized for detecting potentially fraudulent claims. Designed for automated or semi-automated
                     flagging where recall is critical.
+                </div>
+            </div>
+        </div>
+
+        <!-- BATCH UPLOAD PANEL (New) -->
+        <div id="batchPanel" class="config-bar"
+            style="display: none; text-align: center; border: 2px dashed rgba(255,255,255,0.2); background: transparent;">
+            <div style="padding: 40px;">
+                <div style="font-size: 18px; margin-bottom: 15px; font-weight: 500;">Batch Processing Workflow</div>
+
+                <input type="file" id="batchFile" accept=".csv"
+                    style="display: block; margin: 0 auto 20px auto; max-width: 300px;">
+
+                <div style="font-size: 14px; opacity: 0.7; max-width: 400px; margin: 0 auto; line-height: 1.5;">
+                    Upload a CSV file with one row per claim.<br>
+                    Batch processing logic will be added in a later step.
+                </div>
+
+                <div style="margin-top: 20px; font-size: 13px; opacity: 0.5;">
+                    <span style="border-bottom: 1px dotted rgba(255,255,255,0.5); cursor: not-allowed;">Download CSV
+                        template</span>
+                </div>
+
+                <!-- Capacity Inputs (New) -->
+                <div
+                    style="margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); text-align: left;">
+                    <label style="font-size: 0.9em; opacity: 0.8; margin-bottom: 10px; display: block;">Review Capacity
+                        Settings</label>
+                    <div style="display: flex; gap: 15px;">
+                        <div style="flex: 1;">
+                            <label style="font-size: 0.8em; opacity: 0.6; display: block; margin-bottom: 5px;">Team
+                                Size</label>
+                            <input type="number" id="team_size" value="5" min="1"
+                                style="width: 100%; padding: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="font-size: 0.8em; opacity: 0.6; display: block; margin-bottom: 5px;">Avg
+                                Review Time (min)</label>
+                            <input type="number" id="review_time" value="20" min="1"
+                                style="width: 100%; padding: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px;">
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -826,6 +881,20 @@
         <!-- ACTION -->
         <div class="action-bar">
             <button class="primary-btn" id="predictBtn">Analyze Claim</button>
+
+            <!-- Progress Bar (Async Batch) -->
+            <div id="progressContainer" style="display: none; margin-top: 15px; width: 100%;">
+                <div
+                    style="background: rgba(255,255,255,0.1); border-radius: 4px; height: 8px; overflow: hidden; position: relative;">
+                    <div id="progressBarFill"
+                        style="background: var(--clr-accent); width: 0%; height: 100%; transition: width 0.3s ease;">
+                    </div>
+                </div>
+                <div id="progressText"
+                    style="text-align: center; margin-top: 8px; color: rgba(255,255,255,0.6); font-size: 0.85em;">
+                    Initializing...</div>
+            </div>
+
             <div id="errorBox" style="color: #ffcccc; margin-top: 20px; display: none; font-size: 14px;"></div>
         </div>
 
@@ -919,6 +988,149 @@
             </div>
         </div>
 
+        <!-- CLOSE MAIN CONTAINER -->
+    </div>
+
+    <!-- BATCH RESULTS CONTAINER (Outside main container for wider layout) -->
+    <div id="batchResultsContainer" style="display: none; width: 100%; max-width: 950px; margin-top: 40px;">
+        <style>
+            .batch-table {
+                width: 100%;
+                border-collapse: collapse;
+                background: rgba(255, 255, 255, 0.03);
+                border-radius: 12px;
+                overflow: hidden;
+                font-size: 0.95em;
+            }
+
+            .batch-table th,
+            .batch-table td {
+                padding: 10px 15px;
+                /* Compact padding */
+                text-align: left;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+                /* Fainter border */
+                vertical-align: middle;
+                /* Center vertically */
+            }
+
+            .batch-table th {
+                background: rgba(0, 0, 0, 0.2);
+                font-weight: 500;
+                /* Less bold */
+                color: rgba(255, 255, 255, 0.6);
+                /* Less contrast */
+                font-size: 0.75em;
+                /* Smaller */
+                letter-spacing: 0.05em;
+                text-transform: uppercase;
+            }
+
+            .batch-table tr:last-child td {
+                border-bottom: none;
+            }
+
+            .driver-pill {
+                display: inline-block;
+                padding: 3px 8px;
+                /* Compact */
+                border-radius: 4px;
+                background: rgba(255, 255, 255, 0.08);
+                color: rgba(255, 255, 255, 0.9);
+                /* White text */
+                font-size: 0.75em;
+                /* Smaller */
+                white-space: nowrap;
+                border-left-width: 3px;
+                border-left-style: solid;
+            }
+
+            .driver-up {
+                border-left-color: #ff6b6b;
+            }
+
+            /* Only border color */
+            .driver-down {
+                border-left-color: #4ecdc4;
+            }
+
+            /* Only border color */
+            .score-cell {
+                font-family: 'SF Mono', 'Roboto Mono', monospace;
+                font-weight: 600;
+                font-size: 1em;
+            }
+
+            .agent-summary {
+                background: rgba(43, 88, 219, 0.1);
+                /* Subtle Blue */
+                border: 1px solid rgba(43, 88, 219, 0.3);
+                border-radius: 8px;
+                padding: 15px 20px;
+                margin-bottom: 20px;
+                color: #b0c4de;
+                font-size: 0.95rem;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .agent-summary .icon {
+                font-size: 1.2rem;
+            }
+
+            .priority-badge {
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 0.8rem;
+                font-weight: 600;
+                display: inline-block;
+                min-width: 60px;
+                text-align: center;
+            }
+
+            .badge-p0 {
+                background: rgba(255, 50, 50, 0.15);
+                border: 1px solid rgba(255, 50, 50, 0.4);
+                color: #ff8888;
+            }
+
+            .badge-p1 {
+                background: rgba(255, 165, 0, 0.15);
+                border: 1px solid rgba(255, 165, 0, 0.4);
+                color: #ffbb66;
+            }
+
+            .badge-p2 {
+                background: rgba(100, 100, 100, 0.15);
+                border: 1px solid rgba(100, 100, 100, 0.3);
+                color: #aaaaaa;
+            }
+        </style>
+        <h3 style="margin-bottom: 15px; font-weight: 400; opacity: 0.9; text-align: center;">Batch Analysis Results</h3>
+
+        <!-- AGENT SUMMARY BOX -->
+        <div id="agentSummaryBox" class="agent-summary" style="display:none;">
+            <div class="icon">🤖</div>
+            <div id="agentSummaryText">Agent logic initialized.</div>
+        </div>
+
+        <table class="batch-table">
+            <thead>
+                <tr>
+                    <th style="width: 120px;">Case ID</th>
+                    <!-- P Badge Col -->
+                    <th style="width: 100px;">Priority</th>
+                    <th style="width: 140px;">Risk Score</th>
+                    <th>Top Driver 1</th>
+                    <th>Top Driver 2</th>
+                    <th>Top Driver 3</th>
+                </tr>
+            </thead>
+            <tbody id="batchTableBody">
+                <!-- Rows injected via JS -->
+            </tbody>
+        </table>
     </div>
 
     <script>
@@ -1433,12 +1645,247 @@
             el.addEventListener('input', clearResults);
         });
 
+        // ========================================
+        // ANALYSIS MODE LOGIC (NEW)
+        // ========================================
+        const modeSelector = document.getElementById('analysis_mode');
+        const batchPanel = document.getElementById('batchPanel');
+        const tierSections = document.querySelectorAll('.tier-section');
+        const predictBtn = document.getElementById('predictBtn');
+
+        // Initial State
+        let analysisMode = "single";
+
+        modeSelector.addEventListener('change', (e) => {
+            analysisMode = e.target.value;
+            toggleModeUI();
+        });
+
+        function toggleModeUI() {
+            clearResults(); // Always clear old results on switch
+
+            if (analysisMode === "batch") {
+                // HIDE Tiers
+                tierSections.forEach(el => el.style.display = 'none');
+
+                // SHOW Batch Panel
+                batchPanel.style.display = 'block';
+
+                // UPDATE Button
+                predictBtn.innerText = "Analyze Batch";
+            } else {
+                // SHOW Tiers
+                tierSections.forEach(el => el.style.display = 'block');
+
+                // HIDE Batch Panel
+                batchPanel.style.display = 'none';
+
+                // UPDATE Button
+                predictBtn.innerText = "Analyze Claim";
+            }
+        }
+
         // --- SUBMISSION ---
         document.getElementById('predictBtn').addEventListener('click', async () => {
             const btn = document.getElementById('predictBtn');
             const resBox = document.getElementById('resultBox');
             const errBox = document.getElementById('errorBox');
             const driversPanel = document.getElementById('driversPanel');
+
+            // Handle Batch Mode
+            if (analysisMode === "batch") {
+                handleBatchPredict();
+                return;
+            }
+
+            async function handleBatchPredict() {
+                const fileInput = document.getElementById('batchFile');
+                if (!fileInput.files.length) {
+                    alert("Please select a CSV file first.");
+                    return;
+                }
+
+                const btn = document.getElementById('predictBtn');
+                const progressContainer = document.getElementById('progressContainer');
+                const progressFill = document.getElementById('progressBarFill');
+                const progressText = document.getElementById('progressText');
+                const resultsContainer = document.getElementById('batchResultsContainer');
+                const tbody = document.getElementById('batchTableBody');
+
+                // UI STATE: LOADING
+                btn.style.display = 'none'; // Hide button
+                progressContainer.style.display = 'block'; // Show progress
+                progressFill.style.width = '0%';
+                progressText.innerText = "Uploading & Initializing...";
+                resultsContainer.style.display = 'none';
+                tbody.innerHTML = '';
+
+                try {
+                    const formData = new FormData();
+                    formData.append('file', fileInput.files[0]);
+
+                    const model = document.getElementById('model').value;
+                    const scenario = document.getElementById('scenario').value;
+                    const teamSize = document.getElementById('team_size').value;
+                    const reviewTime = document.getElementById('review_time').value;
+
+                    // 1. Submit Job
+                    const submitResp = await fetch(`/submit_batch?model=${model}&scenario=${scenario}&explain=true&team_size=${teamSize}&review_time=${reviewTime}`, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!submitResp.ok) throw new Error("Submission Failed");
+                    const submitData = await submitResp.json();
+                    const jobId = submitData.job_id;
+
+                    // 2. Poll Status
+                    const startTime = Date.now();
+
+                    async function poll() {
+                        try {
+                            const statusResp = await fetch(`/job_status/${jobId}`);
+                            const statusData = await statusResp.json();
+
+                            // Update Progress UI
+                            const pct = statusData.progress || 0;
+                            const elapsed = (Date.now() - startTime) / 1000;
+
+                            let timeText = "";
+                            if (pct > 5 && pct < 100 && elapsed > 2) {
+                                const rate = pct / elapsed;
+                                if (rate > 0) {
+                                    const remaining = (100 - pct) / rate;
+                                    timeText = ` · ~${Math.ceil(remaining)}s remaining`;
+                                }
+                            } else if (elapsed > 3 && pct <= 5) {
+                                timeText = " (Warming up...)";
+                            }
+
+
+                            progressFill.style.width = pct + "%";
+                            progressText.innerText = `Analyzing... ${pct}%${timeText}`;
+
+                            if (statusData.status === 'completed') {
+                                // FINISHED
+                                progressText.innerText = "Analysis Complete!";
+                                setTimeout(() => {
+                                    // Reset UI after short delay
+                                    btn.style.display = 'block';
+                                    btn.innerText = "Analyze Batch";
+                                    progressContainer.style.display = 'none';
+                                    renderBatchResults(statusData.result);
+                                }, 500);
+                            } else if (statusData.status === 'failed') {
+                                // FAILED
+                                alert("Analysis Failed: " + statusData.error);
+                                btn.style.display = 'block';
+                                progressContainer.style.display = 'none';
+                            } else {
+                                // CONTINUE
+                                setTimeout(poll, 1000);
+                            }
+                        } catch (e) {
+                            console.error("Polling Error", e);
+                            // Keep polling? Or fail? Let's retry.
+                            setTimeout(poll, 2000);
+                        }
+                    }
+
+                    // Start Polling
+                    poll();
+
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert("Error submitting batch: " + error.message);
+                    btn.style.display = 'block';
+                    progressContainer.style.display = 'none';
+                }
+            }
+
+            function renderBatchResults(data) {
+                const resultsContainer = document.getElementById('batchResultsContainer');
+                const tbody = document.getElementById('batchTableBody');
+                const summaryBox = document.getElementById('agentSummaryBox');
+                const summaryText = document.getElementById('agentSummaryText');
+
+                if (data.summary && data.summary.status === 'error') {
+                    alert(data.summary.message);
+                    return;
+                }
+
+                // SHOW AGENT SUMMARY
+                if (data.summary && data.summary.rationale) {
+                    summaryText.innerText = data.summary.rationale;
+                    summaryBox.style.display = 'flex';
+                } else {
+                    summaryBox.style.display = 'none';
+                }
+
+                // Sort by Risk Score Descending (Data already sorted by backend, but safe to ensure)
+                // Backend sends "rows".
+
+                data.rows.forEach(row => {
+                    const tr = document.createElement('tr');
+
+                    // Triage Badge Logic
+                    let badgeHtml = "-";
+                    const p = row.triage_decision; // P0_IMMEDIATE, P1_REVIEW_IF_CAPACITY, P2_MONITOR
+                    if (p) {
+                        let badgeClass = "badge-p2";
+                        let badgeLabel = "P2";
+                        if (p === "P0_IMMEDIATE") { badgeClass = "badge-p0"; badgeLabel = "P0 - Review"; }
+                        else if (p === "P1_REVIEW_IF_CAPACITY") { badgeClass = "badge-p1"; badgeLabel = "P1 - Queue"; }
+                        else if (p === "P2_MONITOR") { badgeClass = "badge-p2"; badgeLabel = "P2 - Monitor"; }
+
+                        badgeHtml = `<span class="priority-badge ${badgeClass}">${badgeLabel}</span>`;
+                    }
+
+                    // Risk Score
+                    const prob = row.probability;
+                    const pct = (prob * 100).toFixed(1) + "%";
+                    let color = "var(--clr-low)"; // Low
+                    let label = "LOW";
+
+                    if (prob >= 0.3) { color = "var(--clr-med)"; label = "MOD"; }
+                    if (prob >= 0.5) { color = "var(--clr-high)"; label = "HIGH"; }
+                    if (prob >= 0.7) { color = "var(--clr-crit)"; label = "V. HIGH"; }
+
+                    // Drivers (Now consolidated)
+                    const drivers = row.drivers || [];
+                    // We want columns 1, 2, 3
+                    const d1 = drivers[0] ? createDriverPill(drivers[0]) : "-";
+                    const d2 = drivers[1] ? createDriverPill(drivers[1]) : "-";
+                    const d3 = drivers[2] ? createDriverPill(drivers[2]) : "-";
+
+                    tr.innerHTML = `
+                        <td style="font-weight:bold; color: var(--clr-text-main);">${row.claim_id || row.original_index}</td>
+                        <td>${badgeHtml}</td>
+                        <td style="font-weight:bold; color: ${color}; font-size: 1.1em;">
+                            ${pct}
+                        </td>
+                        <td>${d1}</td>
+                        <td>${d2}</td>
+                        <td>${d3}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+                resultsContainer.style.display = 'block';
+                // Scroll to results
+                resultsContainer.scrollIntoView({ behavior: 'smooth' });
+            }
+
+            function createDriverPill(d) {
+                // d = {name: "Severity: Major", effect: "↑ ...", value: ...}
+                const isRisk = d.effect.includes("Increases");
+                const cls = isRisk ? "driver-up" : "driver-down";
+                const arrow = isRisk ? "↑" : "↓";
+                // Shorten text if needed? "Severity: Major Damage" is fine.
+                return `<span class="driver-pill ${cls}">${d.name} ${arrow}</span>`;
+            }
+
+
 
             // Reset
             btn.disabled = true;
@@ -1494,14 +1941,20 @@
                 const pct = (prob * 100).toFixed(1) + "%";
 
                 // 1. Label Mapping (ALL CAPS)
-                let label = "LOW RISK";
-                if (prob >= 0.3) label = "MODERATE RISK";
-                if (prob >= 0.5) label = "HIGH RISK";
-                if (prob >= 0.7) label = "VERY HIGH RISK";
+                let label = "LOW PRIORITY";
+                if (prob >= 0.3) label = "MODERATE PRIORITY";
+                if (prob >= 0.5) label = "HIGH PRIORITY";
+                if (prob >= 0.7) label = "VERY HIGH PRIORITY";
 
                 document.getElementById('resScoreVal').innerText = pct;
-                document.getElementById('resScoreLabel').innerText = label;
+                const lblEl = document.getElementById('resScoreLabel');
+                lblEl.innerText = label;
 
+                // Color coding
+                if (prob < 0.3) lblEl.style.color = "#4ecdc4";
+                else if (prob < 0.5) lblEl.style.color = "#ffe66d";
+                else if (prob < 0.7) lblEl.style.color = "#ff6b6b";
+                else lblEl.style.color = "#ff4757";
                 // 2. Risk Context
                 let context = "This claim falls within the typical risk range compared to similar claims.";
                 if (prob >= 0.6) context = "This claim falls within the elevated risk range compared to similar claims.";

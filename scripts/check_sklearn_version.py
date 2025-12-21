@@ -4,7 +4,7 @@ import os
 import sys
 from sklearn.base import is_classifier
 
-models_dir = "models"
+models_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "models")
 files = [
     "best_tree_models_calibrated.joblib",
     "best_tree_models_uncalibrated.joblib"

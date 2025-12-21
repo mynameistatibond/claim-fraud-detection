@@ -233,9 +233,10 @@ Synthesis guidance (CRITICAL):
 
 Optional guidance (Dynamic based on Risk Score):
 - Look at the "Risk score" in the Context.
-- If Risk < 50%: Suggest standard/routine checking.
-- If Risk 50-75%: Suggest "Heightened Scrutiny" or "Closer Review".
-- If Risk > 75%: Suggest "Immediate Escalation" or "Priority Investigation".
+- If Risk < 30%: Suggest standard/routine checking (Low Priority).
+- If Risk 30-50%: Suggest "Moderate Priority" review.
+- If Risk 50-70%: Suggest "High Priority" scrutiny.
+- If Risk > 70%: Suggest "Very High Priority" immediate escalation.
 - MATCH THE URGENCY TO THE SCORE. Do not understate a high risk (e.g. >70%) as "moderate".
 
 Context:

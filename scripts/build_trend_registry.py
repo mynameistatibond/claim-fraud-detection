@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 
 # Paths
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 MODELS_DIR = BASE_DIR / "models"
 MODEL_PATH = MODELS_DIR / "best_tree_models_uncalibrated.joblib"
 # FEATURE_NAMES_PATH might be missing based on previous steps, we extract from pipeline

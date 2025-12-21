@@ -645,6 +645,163 @@ async def predict(
         app_version=APP_VERSION
     )
 
+# --- ASYNC BATCH JOB MANAGEMENT ---
+from fastapi import BackgroundTasks
+import uuid
+import datetime
+
+# In-memory Job Store
+# Structure: { job_id: { "status": "pending"|"running"|"completed"|"failed", "progress": int, "result": dict, "error": str, "created_at": str } }
+JOBS = {}
+
+class JobStatusResponse(BaseModel):
+    job_id: str
+    status: str
+    progress: int
+    result: Optional[dict] = None
+    error: Optional[str] = None
+    created_at: str
+
+async def run_batch_job(job_id: str, file_content: bytes, model_name: str, scenario: str, explain: bool, team_size: int, review_time: int):
+    """
+    Background Task Wrapper for Batch Processing
+    """
+    try:
+        JOBS[job_id]["status"] = "running"
+        JOBS[job_id]["progress"] = 0
+        
+        # Prepare Context (moved from submit_batch)
+        model_context = MODELS.copy()
+        model_context["shap_explainer"] = SHAP_EXPLAINERS.get(EXPLANATION_SOURCE_MODEL)
+        model_context["feature_names"] = SHAP_FEATURE_NAMES
+        source_model = MODELS.get(EXPLANATION_SOURCE_MODEL)
+        prep_step, _ = get_pipeline_components(source_model)
+        model_context["preprocessor"] = prep_step
+        
+        async def update_progress(p):
+            JOBS[job_id]["progress"] = p
+            
+        # Run the heavy lifting
+        result = await batch_ingest.process_batch_file(
+            file_content=file_content,
+            model_context=model_context,
+            model_key=model_name, # Use model_name from signature
+            scenario=scenario,
+            explain=explain,
+            progress_callback=update_progress,
+            team_size=team_size,
+            review_time=review_time
+        )
+        
+        JOBS[job_id]["status"] = "completed"
+        JOBS[job_id]["progress"] = 100
+        JOBS[job_id]["result"] = result
+        
+    except Exception as e:
+        logger.error(f"Job {job_id} failed: {e}")
+        JOBS[job_id]["status"] = "failed"
+        JOBS[job_id]["error"] = str(e)
+
+# --- BATCH PREDICTION ENDPOINT (V1) ---
+from fastapi import UploadFile, File
+import batch_ingest
+
+@app.post("/batch_predict")
+async def batch_predict(
+    file: UploadFile = File(...),
+    model: str = "xgb",
+    scenario: str = "auto_flagger",
+    explain: bool = False
+):
+    """
+    Legacy Synchronous Endpoint (Keep for backward compatibility)
+    """
+    if not file.filename.endswith('.csv'):
+        return {"summary": {"status": "error", "message": "File must be CSV"}, "rows": []}
+    
+    contents = await file.read()
+    
+    # Context Setup (Same as before)
+    model_context = MODELS.copy()
+    model_context["shap_explainer"] = SHAP_EXPLAINERS.get(EXPLANATION_SOURCE_MODEL)
+    model_context["feature_names"] = SHAP_FEATURE_NAMES
+    source_model = MODELS.get(EXPLANATION_SOURCE_MODEL)
+    prep_step, _ = get_pipeline_components(source_model)
+    model_context["preprocessor"] = prep_step
+    
+    result = await batch_ingest.process_batch_file(
+        file_content=contents,
+        model_context=model_context,
+        model_key=model,
+        scenario=scenario,
+        explain=explain
+    )
+    return result
+
+@app.post("/submit_batch")
+async def submit_batch(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    model: str = Query("xgb", regex="^(xgb|rf|et)$"),
+    scenario: str = Query("dashboard", regex="^(dashboard|auto_flagger|underwriter)$"),
+    explain: bool = True,
+    team_size: int = Query(5, ge=1, description="Number of investigators"),
+    review_time: int = Query(20, ge=1, description="Minutes per review")
+):
+    """
+    Async Batch Submission. Returns Job ID.
+    """
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(status_code=400, detail="File must be CSV")
+
+    contents = await file.read()
+    job_id = str(uuid.uuid4())
+
+    # Initialize Job
+    JOBS[job_id] = {
+        "status": "pending",
+        "progress": 0,
+        "created_at": datetime.datetime.now().isoformat()
+    }
+
+    # Prepare Context
+    model_context = MODELS.copy()
+    model_context["shap_explainer"] = SHAP_EXPLAINERS.get(EXPLANATION_SOURCE_MODEL)
+    model_context["feature_names"] = SHAP_FEATURE_NAMES
+    source_model = MODELS.get(EXPLANATION_SOURCE_MODEL)
+    prep_step, _ = get_pipeline_components(source_model)
+    model_context["preprocessor"] = prep_step
+    
+    # Launch Background Task
+    # Launch Background Task
+    background_tasks.add_task(
+        run_batch_job,
+        job_id,
+        contents,
+        model,
+        scenario,
+        explain,
+        team_size,
+        review_time
+    )
+    
+    return {"job_id": job_id, "status": "pending"}
+
+@app.get("/job_status/{job_id}", response_model=JobStatusResponse)
+async def get_job_status(job_id: str):
+    if job_id not in JOBS:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    job = JOBS[job_id]
+    return JobStatusResponse(
+        job_id=job_id,
+        status=job["status"],
+        progress=job.get("progress", 0),
+        result=job.get("result"),
+        error=job.get("error"),
+        created_at=job.get("created_at")
+    )
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

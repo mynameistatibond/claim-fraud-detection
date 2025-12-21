@@ -2,7 +2,7 @@
 
 # Fraud Detection API - Example curl Commands
 
-BASE_URL="http://localhost:7860"
+BASE_URL="http://localhost:8000"
 
 echo "========================================="
 echo "Fraud Detection API - Example Requests"
@@ -14,7 +14,7 @@ echo "1. Dashboard Scenario (Calibrated XGBoost):"
 echo "-----------------------------------------"
 curl -X POST "${BASE_URL}/predict?model=xgb&scenario=dashboard" \
   -H "Content-Type: application/json" \
-  -d @example_claim.json
+  -d @../example_claim.json
 echo -e "\n\n"
 
 # Test 2: Auto-Flagger Scenario (Uncalibrated) with RandomForest
@@ -22,7 +22,7 @@ echo "2. Auto-Flagger Scenario (Uncalibrated RandomForest):"
 echo "-----------------------------------------------------"
 curl -X POST "${BASE_URL}/predict?model=rf&scenario=auto_flagger" \
   -H "Content-Type: application/json" \
-  -d @example_claim.json
+  -d @../example_claim.json
 echo -e "\n\n"
 
 # Test 3: High-Risk Claim Example

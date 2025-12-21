@@ -6,6 +6,11 @@ import sys
 # We can run this LOCALLY against the "app" logic if we import it, 
 # But easier to just unit test `preprocessing.py` and model loading.
 
+import sys
+from pathlib import Path
+# Add parent dir to path to import preprocessing
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
 from preprocessing import preprocess_input, EXPECTED_COLS
 import joblib
 import pandas as pd
@@ -44,7 +49,7 @@ print(f"Collision Missing Flag: {df['collision_type_missing'].values[0]}")
 
 # Load Model
 print("\nLoading Model...")
-models = joblib.load("models/best_tree_models_uncalibrated.joblib")
+models = joblib.load(str(Path(__file__).resolve().parent.parent / "models/best_tree_models_uncalibrated.joblib"))
 model = list(models['Trees'].values())[0]
 
 print("Predicting...")
