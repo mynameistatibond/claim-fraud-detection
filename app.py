@@ -802,6 +802,15 @@ async def get_job_status(job_id: str):
         created_at=job.get("created_at")
     )
 
+    )
+
+@app.get("/outputs/{filename}")
+async def download_output(filename: str):
+    file_path = Path("outputs") / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(file_path, media_type='text/csv', filename=filename)
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
