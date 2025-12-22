@@ -1,4 +1,3 @@
-
 import os
 import json
 import logging
@@ -7,233 +6,6 @@ import requests
 from llm_explainer import get_llm_config, call_openai_format_api, robust_api_call
 
 logger = logging.getLogger(__name__)
-
-class ExplanationAgent:
-    def __init__(self):
-        self.llm_config = get_llm_config()
-        if self.llm_config:
-            logger.info(f"ExplanationAgent initialized with provider: {self.llm_config.get('provider')}")
-        else:
-            logger.warning("ExplanationAgent initialized with NO LLM config.")
-
-    def generate_explanation(self, decision_contract: dict) -> dict:
-        """
-        Generates the explanation text, validates it, and parses it for the UI.
-        Returns a dict matching the UI schema with metadata.
-        """
-        if not self.llm_config:
-            return self._generate_fallback(decision_contract, reason="No LLM Config")
-
-        system_prompt = (
-            "You are a senior claims operations lead writing the official explanation of a decision that has already been made.\n\n"
-            "Rules:\n"
-            "- Use ONLY the provided DecisionContract JSON.\n"
-            "- Do NOT reference UI elements, panels, settings, buttons, links, or 'advanced views'.\n"
-            "- Do NOT use the word 'audit'.\n"
-            "- Do NOT invent numbers, thresholds, metrics, or missing fields.\n"
-            "- Be explicit, human, and accountable.\n"
-            "- P0 must be described as strict and the first priority. P1/P2 are optional depending on capacity.\n"
-            "- Provide exactly one recommended next step.\n"
-            "- Output the explanation in the specified section structure only, using plain text."
-        )
-
-        user_prompt = f"""
-        Write the user-facing explanation using the DecisionContract below.
-
-        Use exactly this structure:
-        1) Headline
-        2) How this decision was made
-        3) Workload commitment
-        4) Why this is safe
-        5) What to do next
-        6) System assumptions (bullet list)
-
-        DecisionContract:
-        {json.dumps(decision_contract, indent=2)}
-        """
-
-        try:
-            # Check format from config (added in llm_explainer)
-            api_format = self.llm_config.get("format", "huggingface")
-            text = ""
-
-            if api_format == "openai":
-                # GROQ / OPENROUTER PATH - Now using Robust Retry Helper
-                messages = [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ]
-                
-                try:
-                    text = robust_api_call(self.llm_config, messages, temperature=0.1)
-                except Exception as e:
-                    logger.error(f"LLM Robust Call Failed: {e}")
-                    return self._generate_fallback(decision_contract, reason=str(e))
-                
-            else:
-                # HUGGING FACE PATH
-                headers = {
-                    "Authorization": f"Bearer {self.llm_config['key']}",
-                    "Content-Type": "application/json"
-                }
-                payload = {
-                    "inputs": f"<|system|>\n{system_prompt}\n<|user|>\n{user_prompt}\n<|assistant|>",
-                    "parameters": {
-                        "max_new_tokens": 600,
-                        "temperature": 0.1, 
-                        "return_full_text": False
-                    }
-                }
-                
-                response = requests.post(self.llm_config['url'], headers=headers, json=payload, timeout=15)
-                if response.status_code == 200:
-                    result = response.json()
-                    if isinstance(result, list) and 'generated_text' in result[0]:
-                        text = result[0]['generated_text'].strip()
-                    else:
-                        logger.error(f"Unexpected LLM response format: {result}")
-                        return self._generate_fallback(decision_contract, reason="Invalid HF Response")
-                else:
-                    logger.error(f"LLM Error {response.status_code}: {response.text}")
-                    return self._generate_fallback(decision_contract, reason=f"API Error {response.status_code}")
-
-            # Validate and Parse (Shared)
-            if text and self._validate_text(text, decision_contract):
-                parsed = self._parse_to_ui_schema(text)
-                parsed["meta"] = {
-                    "source": "LLM",
-                    "provider": self.llm_config.get('provider', 'unknown'),
-                    "model": self.llm_config.get('model', 'unknown')
-                }
-                return parsed
-            else:
-                logger.warning(f"LLM output failed validation. Text: {text[:100]}...")
-                return self._generate_fallback(decision_contract, reason="Validation Failed")
-
-        except Exception as e:
-            logger.error(f"Explanation Agent Exception: {e}")
-            return self._generate_fallback(decision_contract, reason=f"Exception: {str(e)}")
-
-    def _validate_text(self, text: str, contract: dict) -> bool:
-        """
-        Deterministic Explanation Validator (Spec 6.2).
-        """
-        text_lower = text.lower()
-        
-        # 1. Check sections (Loose match to handle minor formatting vars)
-        required_sections = [
-            "how this decision was made",
-            "workload commitment",
-            "why this is safe",
-            "what to do next",
-            "system assumptions"
-        ]
-        for section in required_sections:
-            if section not in text_lower:
-                logger.warning(f"Validation Error: Missing section '{section}'")
-                return False
-
-        # 2. Forbidden terms
-        forbidden = ["audit", "panel", "settings", "click", "link", "advanced view", "optimization"]
-        contract_str = json.dumps(contract).lower()
-        
-        for term in forbidden:
-            if term in text_lower:
-                # Exception for "optimization" if strictly needed, but spec says forbid unless verbatim.
-                if term == "optimization" and "optimization" in contract_str:
-                    continue
-                logger.warning(f"Validation Error: Forbidden term '{term}' found.")
-                return False
-
-        return True
-
-    def _parse_to_ui_schema(self, text: str) -> dict:
-        """
-        Parses strictly formatted text back to the JSON schema expected by valid index.html
-        """
-        sections = {
-            "headline": "",
-            "impact": "",
-            "workload_commitment": "",
-            "why_this_is_safe": "",
-            "recommended_next_step": "",
-            "technical_assumptions": []
-        }
-        
-        lines = text.split('\n')
-        current_section = "headline"
-        buffer = []
-
-        header_map = {
-            "headline": "headline",
-            "how this decision was made": "impact",
-            "workload commitment": "workload_commitment",
-            "why this is safe": "why_this_is_safe",
-            "what to do next": "recommended_next_step",
-            "system assumptions": "technical_assumptions"
-        }
-        
-        for line in lines:
-            line = line.strip()
-            if not line:
-                continue
-            
-            lower_line = re.sub(r'^\d+[\).]\s*', '', line.lower().replace(":", "")).strip()
-            
-            if lower_line in header_map:
-                valid_content = [b for b in buffer if b]
-                if valid_content:
-                    if current_section == "technical_assumptions":
-                        sections[current_section] = valid_content
-                    else:
-                        sections[current_section] = " ".join(valid_content).strip()
-                
-                current_section = header_map[lower_line]
-                buffer = []
-            else:
-                if current_section == "technical_assumptions":
-                    if line.startswith("-") or line.startswith("•") or line.startswith("*"):
-                        buffer.append(line.lstrip("-•* ").strip())
-                else:
-                    buffer.append(line)
-        
-        valid_content = [b for b in buffer if b]
-        if valid_content:
-            if current_section == "technical_assumptions":
-                sections[current_section] = valid_content
-            else:
-                sections[current_section] = " ".join(valid_content).strip()
-        
-        if not sections["headline"] and sections["impact"]:
-             # Heuristic: LLM might have put headline in output?
-             pass
-
-        return sections
-
-    def _generate_fallback(self, contract: dict, reason: str = "Unknown") -> dict:
-        """
-        Deterministic fallback template (Spec 6.3).
-        """
-        c = contract["workload_commitment"]
-        p = contract["policy"]
-        
-        return {
-            "headline": f"{contract['review_mode']['mode_label']} — {contract['review_mode']['capacity_status']}",
-            "impact": f"{contract['decision_basis']['model_statement']} {contract['decision_basis']['how_thresholds_were_set']}",
-            "workload_commitment": f"You are committed to reviewing {c['p0_cases']} strict P0 cases over the {c['window_label']}. {c['ordering_guarantee']}",
-            "why_this_is_safe": contract['safety_statement']['why_safe'],
-            "recommended_next_step": "Review P0 cases immediately; they are your verified priority.",
-            "technical_assumptions": [
-                f"Review Window: {c['window_label']}",
-                f"Team Capacity: {contract['decision_basis']['inputs_used']['team_capacity_cases_per_day']}/day",
-                f"Thresholds: P0 > {p['thresholds']['p0']}, P1 > {p['thresholds']['p1']}"
-            ],
-            "meta": {
-                "source": "Fallback",
-                "reason": reason,
-                "provider": "Internal Rule Engine"
-            }
-        }
 
 class DecisionContractBuilder:
     """
@@ -267,6 +39,24 @@ class DecisionContractBuilder:
         else:
             capacity_status = "backlog risk"
 
+        # Detailed Workload Math (Per Person)
+        # Cases assigned vs Capacity
+        total_assigned = p0_count + p1_count
+        cases_per_person = round(total_assigned / team_size, 1)
+        hours_per_person_needed = round((cases_per_person * review_time_mins) / 60, 1)
+        
+        # Available hours per person (assuming 8h day)
+        available_hours_per_person = review_window_days * 8
+        utilization_pct = round((hours_per_person_needed / available_hours_per_person) * 100, 1) if available_hours_per_person > 0 else 100
+
+        workload_analysis = {
+            "cases_per_person": cases_per_person,
+            "hours_needed_per_person": hours_per_person_needed,
+            "available_hours_per_person": available_hours_per_person,
+            "utilization_pct": utilization_pct,
+            "recommendation": "Free time available" if utilization_pct < 85 else ("Balanced workload" if utilization_pct < 105 else "Overload risk")
+        }
+
         # Window Label
         if review_window_days == 1:
             window_label = "today"
@@ -298,8 +88,9 @@ class DecisionContractBuilder:
                 "window_label": window_label,
                 "p0_cases": p0_count,
                 "p1_cases": p1_count,
-                "ordering_guarantee": "Cases are ordered from most to least likely fraud."
+                "ordering_guarantee": "Strict ordering: P0 first, then P1 by highest fraud score."
             },
+            "workload_analysis": workload_analysis,
             "policy": {
                 "thresholds": triage_result["decision_policy"]["thresholds"],
                 "p0_strictness_statement": "P0 thresholds are intentionally strict to ensure the most credible fraud cases are reviewed first.",
@@ -333,7 +124,7 @@ class ExplanationAgent:
             "- Use ONLY the provided DecisionContract JSON.\n"
             "- Do NOT reference UI elements, panels, settings, buttons, links, or 'advanced views'.\n"
             "- Do NOT use the word 'audit'.\n"
-            "- Do NOT invent numbers, thresholds, metrics, or missing fields.\n"
+            "- Use the provided Workload Analysis metrics. Do not invent new ones.\n"
             "- Be explicit, human, and accountable.\n"
             "- P0 must be described as strict and the first priority. P1/P2 are optional depending on capacity.\n"
             "- Provide exactly one recommended next step.\n"
@@ -346,10 +137,11 @@ class ExplanationAgent:
         Use exactly this structure:
         1) Headline
         2) How this decision was made
-        3) Workload commitment
-        4) Why this is safe
-        5) What to do next
-        6) System assumptions (bullet list)
+        3) Workload commitment (include ordering guarantee)
+        4) Team Workload Analysis (breakdown per person and utilization recommendation)
+        5) Why this is safe
+        6) What to do next
+        7) System assumptions (bullet list)
 
         DecisionContract:
         {json.dumps(decision_contract, indent=2)}
@@ -469,41 +261,33 @@ class ExplanationAgent:
         buffer = []
 
         header_map = {
-            "headline": "headline", # Should be first line usually
+            "headline": "headline",
             "how this decision was made": "impact",
             "workload commitment": "workload_commitment",
+            "team workload analysis": "workload_commitment", # MERGE into workload commitment
             "why this is safe": "why_this_is_safe",
             "what to do next": "recommended_next_step",
             "system assumptions": "technical_assumptions"
         }
         
-        # First line is Headline (usually)
-        if lines:
-            first_line = lines[0].strip()
-            # If first line looks like a header (e.g. "Headline"), skip it, but spec says output structure: 1) Headline...
-            # User Prompt: "1) Headline" (header), then content? Or "Headline: content"?
-            # Prompt: "Use exactly this structure: 1) Headline...". 
-            # Usually LLM outputs "Headline\nContent".
-            # We assume the first non-empty line IS the headline content if it doesn't match a header keyword string
-            pass
-
         for line in lines:
             line = line.strip()
             if not line:
                 continue
             
-            # Normalize line to check for header
-            # Remove numbering and punctuation
             lower_line = re.sub(r'^\d+[\).]\s*', '', line.lower().replace(":", "")).strip()
             
             if lower_line in header_map:
-                # Flush buffer to *previous* section
                 valid_content = [b for b in buffer if b]
                 if valid_content:
                     if current_section == "technical_assumptions":
                         sections[current_section] = valid_content
-                    elif current_section == "headline": # Special case if we captured lines before first explicit header
-                         sections[current_section] = " ".join(valid_content).strip()
+                    elif current_section == "workload_commitment" and header_map[lower_line] == "workload_commitment":
+                         # We are APPENDING to the same section (Analysis merged into Commitment)
+                         # So flush buffer to existing content with a newline
+                         existing = sections[current_section]
+                         new_text = " ".join(valid_content).strip()
+                         sections[current_section] = f"{existing}\n\n{new_text}".strip()
                     else:
                         sections[current_section] = " ".join(valid_content).strip()
                 
@@ -511,14 +295,9 @@ class ExplanationAgent:
                 current_section = header_map[lower_line]
                 buffer = []
             else:
-                # Add to buffer
                 if current_section == "technical_assumptions":
-                    # Only add bullet points
                     if line.startswith("-") or line.startswith("•") or line.startswith("*"):
                         buffer.append(line.lstrip("-•* ").strip())
-                elif current_section == "headline":
-                    # If we are in headline mode and encounter a line that isn't a header, assume it's the headline text
-                    buffer.append(line)
                 else:
                     buffer.append(line)
         
@@ -527,6 +306,14 @@ class ExplanationAgent:
         if valid_content:
             if current_section == "technical_assumptions":
                 sections[current_section] = valid_content
+            elif current_section == "workload_commitment":
+                # Special flush for merge scenario
+                 existing = sections[current_section]
+                 new_text = " ".join(valid_content).strip()
+                 if existing:
+                     sections[current_section] = f"{existing}\n\n{new_text}".strip()
+                 else:
+                     sections[current_section] = new_text
             else:
                 sections[current_section] = " ".join(valid_content).strip()
 
