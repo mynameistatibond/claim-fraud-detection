@@ -62,14 +62,16 @@ class FraudTriageAgent:
         llm_decision = self._call_llm_triage(df, batch_size, daily_capacity_cases, risk_appetite)
         
         if llm_decision:
-            # Apply LLM Thresholds
+            # Apply LLM Thresholds (and capture meta)
             df = self._apply_thresholds(df, llm_decision['p0_threshold'], llm_decision['p1_threshold'])
             rationale = llm_decision['rationale']
+            decision_meta = llm_decision.get("meta", {"source": "LLM", "provider": "Unknown"})
         else:
             logger.warning("LLM Triage failed, reverting to rule-based.")
             df = self._allocate_tiers_fallback(df, strategy, daily_capacity_cases, risk_appetite)
             p0_count = len(df[df['triage_decision'] == 'P0_IMMEDIATE'])
             rationale = self._generate_fallback_summary(batch_size, strategy, p0_count)
+            decision_meta = {"source": "Fallback", "provider": "Rule Engine"}
 
         # 5. Determine UI Rows
         ui_rows_df = self._select_ui_rows(df, strategy)
@@ -142,7 +144,8 @@ class FraudTriageAgent:
             "decision_policy": {
                 "risk_appetite": risk_appetite,
                 "thresholds": active_thresholds,
-                "method": "LLM_REFINED" if llm_decision else "RULE_BASED_FALLBACK"
+                "method": "LLM_REFINED" if llm_decision else "RULE_BASED_FALLBACK",
+                "meta": decision_meta
             },
             "full_dataset_available": True,
             "full_df": df # Return full dataframe for CSV export
