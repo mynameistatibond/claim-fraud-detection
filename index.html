@@ -2037,28 +2037,7 @@
 
                     summaryBox.style.display = 'flex';
 
-                    // Update Risk Appetite Badge
-                    if (data.risk_analysis) {
-                        const badge = document.getElementById('riskAppetiteBadge');
-                        const confEl = document.getElementById('riskConfidence');
-
-                        badge.innerText = ra.risk_appetite;
-                        badge.title = bullets.join('\n');
-                        confEl.innerText = ""; // Clear old conf text as it is in header now
-                        confEl.style.display = 'none'; // Cleaner to hide it since it is in header
-
-                        // Color Coding
-                        if (ra.risk_appetite === 'Aggressive') {
-                            badge.style.borderColor = '#ff6b6b';
-                            badge.style.color = '#ff6b6b';
-                        } else if (ra.risk_appetite === 'Conservative') {
-                            badge.style.borderColor = '#4ecdc4';
-                            badge.style.color = '#4ecdc4';
-                        } else {
-                            badge.style.borderColor = 'rgba(255,255,255,0.3)';
-                            badge.style.color = '#dddddd';
-                        }
-                    }
+                    // Legacy badge logic removed (subsumed by summaryBox)
                 } else {
                     summaryBox.style.display = 'none';
                 }
