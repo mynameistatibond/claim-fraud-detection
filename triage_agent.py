@@ -5,7 +5,7 @@ import json
 import logging
 import requests
 import time
-from llm_explainer import get_llm_config, call_openai_format_api
+from llm_explainer import get_llm_config, call_openai_format_api, robust_api_call
 
 logger = logging.getLogger(__name__)
 
@@ -214,43 +214,17 @@ class FraudTriageAgent:
             response_text = ""
 
             if api_format == "openai":
-                # GROQ / OPENROUTER PATH using shared helper
-                # Helper adds system prompt to messages if we omit it? 
-                # Actually helper takes (config, prompt). 
-                # Let's verify prompt construction. call_openai_format_api implementation (seen in step 2551):
-                # payload = { "model": config["model"], "messages": [ { "role": "system", "content": "You are an expert..." }, { "role": "user", "content": prompt } ] ... }
-                # The helper has a HARDCODED system prompt in line 100: "You are an expert at explaining..."
-                # This is BAD for Triage Agent which needs a specific persona!
-                # I should NOT use the helper if it overrides system prompt, OR I should accept that limitation, OR I should fix the helper.
-                # Given I am editing Triage Agent now, I will implement the customized call here for Triage to be safe.
+                # GROQ / OPENROUTER PATH - Now using Robust Retry Helper
+                messages = [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ]
                 
-                headers = {
-                    "Authorization": f"Bearer {self.llm_config['key']}",
-                    "Content-Type": "application/json"
-                }
-                
-                # Provider specific adjustments for OpenAI format
-                if self.llm_config['provider'] == "openrouter":
-                    headers["HTTP-Referer"] = "https://fraud-detector.internal"
-                
-                payload = {
-                    "model": self.llm_config['model'],
-                    "messages": [
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt}
-                    ],
-                    "temperature": 0.1,
-                    "response_format": {"type": "json_object"}
-                }
-                
-                response = requests.post(self.llm_config['url'], headers=headers, json=payload, timeout=10)
-                if response.status_code == 200:
-                    res_json = response.json()
-                    response_text = res_json['choices'][0]['message']['content']
-                else:
-                    logger.error(f"LLM Error: {response.text}")
+                try:
+                    response_text = robust_api_call(self.llm_config, messages, temperature=0.1, json_mode=True)
+                except Exception as e:
+                    logger.error(f"LLM Triage Robust Call Failed: {e}")
                     return None
-
             else:
                 # HUGGING FACE PATH
                 headers = {

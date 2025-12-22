@@ -21,6 +21,7 @@ def get_llm_config():
     # Option 1: GROQ (BEST - Free, fast, reliable)
     groq_key = os.getenv("GROQ_API_KEY")
     if groq_key:
+        logger.info(f"LLM Config: Found GROQ key (Length: {len(groq_key)})")
         return {
             "provider": "groq",
             "url": "https://api.groq.com/openai/v1/chat/completions",
@@ -28,6 +29,8 @@ def get_llm_config():
             "model": "llama-3.3-70b-versatile",
             "format": "openai"
         }
+    else:
+        logger.warning("LLM Config: No GROQ key found.")
     
     # Option 2: Together AI
     together_key = os.getenv("TOGETHER_API_KEY")
@@ -119,7 +122,60 @@ def call_openai_format_api(config: dict, prompt: str) -> str:
         raise Exception(f"API Error {config['provider'].upper()} {response.status_code}: {response.text[:200]}")
     
     result = response.json()
+    result = response.json()
     return result["choices"][0]["message"]["content"]
+
+def robust_api_call(config: dict, messages: list, temperature: float = 0.1, json_mode: bool = False) -> str:
+    """
+    Robust API caller with Retries for Rate Limits (429).
+    Supports custom messages/personas.
+    """
+    import time
+    
+    headers = {
+        "Authorization": f"Bearer {config['key']}",
+        "Content-Type": "application/json"
+    }
+    # Provider specific
+    if config.get("provider") == "openrouter":
+        headers["HTTP-Referer"] = "https://fraud-detector.internal"
+
+    payload = {
+        "model": config["model"],
+        "messages": messages,
+        "temperature": temperature
+    }
+    
+    if json_mode:
+        payload["response_format"] = {"type": "json_object"}
+
+    retries = 3
+    base_delay = 2
+
+    for attempt in range(retries):
+        try:
+            response = requests.post(config["url"], headers=headers, json=payload, timeout=20)
+            
+            if response.status_code == 200:
+                res_json = response.json()
+                return res_json['choices'][0]['message']['content']
+            
+            elif response.status_code == 429:
+                # Rate Limit - Wait and Retry
+                sleep_time = base_delay * (2 ** attempt) # 2, 4, 8
+                logger.warning(f"LLM Rate Limit (429). Retrying in {sleep_time}s...")
+                time.sleep(sleep_time)
+                continue
+                
+            else:
+                raise Exception(f"LLM Error {response.status_code}: {response.text}")
+                
+        except Exception as e:
+            if attempt == retries - 1:
+                raise e
+            time.sleep(1)
+            
+    return ""
 
 def call_huggingface_api(config: dict, prompt: str) -> str:
     """Call HuggingFace Inference API"""

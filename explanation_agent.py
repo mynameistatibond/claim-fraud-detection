@@ -4,9 +4,236 @@ import json
 import logging
 import re
 import requests
-from llm_explainer import get_llm_config, call_openai_format_api
+from llm_explainer import get_llm_config, call_openai_format_api, robust_api_call
 
 logger = logging.getLogger(__name__)
+
+class ExplanationAgent:
+    def __init__(self):
+        self.llm_config = get_llm_config()
+        if self.llm_config:
+            logger.info(f"ExplanationAgent initialized with provider: {self.llm_config.get('provider')}")
+        else:
+            logger.warning("ExplanationAgent initialized with NO LLM config.")
+
+    def generate_explanation(self, decision_contract: dict) -> dict:
+        """
+        Generates the explanation text, validates it, and parses it for the UI.
+        Returns a dict matching the UI schema with metadata.
+        """
+        if not self.llm_config:
+            return self._generate_fallback(decision_contract, reason="No LLM Config")
+
+        system_prompt = (
+            "You are a senior claims operations lead writing the official explanation of a decision that has already been made.\n\n"
+            "Rules:\n"
+            "- Use ONLY the provided DecisionContract JSON.\n"
+            "- Do NOT reference UI elements, panels, settings, buttons, links, or 'advanced views'.\n"
+            "- Do NOT use the word 'audit'.\n"
+            "- Do NOT invent numbers, thresholds, metrics, or missing fields.\n"
+            "- Be explicit, human, and accountable.\n"
+            "- P0 must be described as strict and the first priority. P1/P2 are optional depending on capacity.\n"
+            "- Provide exactly one recommended next step.\n"
+            "- Output the explanation in the specified section structure only, using plain text."
+        )
+
+        user_prompt = f"""
+        Write the user-facing explanation using the DecisionContract below.
+
+        Use exactly this structure:
+        1) Headline
+        2) How this decision was made
+        3) Workload commitment
+        4) Why this is safe
+        5) What to do next
+        6) System assumptions (bullet list)
+
+        DecisionContract:
+        {json.dumps(decision_contract, indent=2)}
+        """
+
+        try:
+            # Check format from config (added in llm_explainer)
+            api_format = self.llm_config.get("format", "huggingface")
+            text = ""
+
+            if api_format == "openai":
+                # GROQ / OPENROUTER PATH - Now using Robust Retry Helper
+                messages = [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ]
+                
+                try:
+                    text = robust_api_call(self.llm_config, messages, temperature=0.1)
+                except Exception as e:
+                    logger.error(f"LLM Robust Call Failed: {e}")
+                    return self._generate_fallback(decision_contract, reason=str(e))
+                
+            else:
+                # HUGGING FACE PATH
+                headers = {
+                    "Authorization": f"Bearer {self.llm_config['key']}",
+                    "Content-Type": "application/json"
+                }
+                payload = {
+                    "inputs": f"<|system|>\n{system_prompt}\n<|user|>\n{user_prompt}\n<|assistant|>",
+                    "parameters": {
+                        "max_new_tokens": 600,
+                        "temperature": 0.1, 
+                        "return_full_text": False
+                    }
+                }
+                
+                response = requests.post(self.llm_config['url'], headers=headers, json=payload, timeout=15)
+                if response.status_code == 200:
+                    result = response.json()
+                    if isinstance(result, list) and 'generated_text' in result[0]:
+                        text = result[0]['generated_text'].strip()
+                    else:
+                        logger.error(f"Unexpected LLM response format: {result}")
+                        return self._generate_fallback(decision_contract, reason="Invalid HF Response")
+                else:
+                    logger.error(f"LLM Error {response.status_code}: {response.text}")
+                    return self._generate_fallback(decision_contract, reason=f"API Error {response.status_code}")
+
+            # Validate and Parse (Shared)
+            if text and self._validate_text(text, decision_contract):
+                parsed = self._parse_to_ui_schema(text)
+                parsed["meta"] = {
+                    "source": "LLM",
+                    "provider": self.llm_config.get('provider', 'unknown'),
+                    "model": self.llm_config.get('model', 'unknown')
+                }
+                return parsed
+            else:
+                logger.warning(f"LLM output failed validation. Text: {text[:100]}...")
+                return self._generate_fallback(decision_contract, reason="Validation Failed")
+
+        except Exception as e:
+            logger.error(f"Explanation Agent Exception: {e}")
+            return self._generate_fallback(decision_contract, reason=f"Exception: {str(e)}")
+
+    def _validate_text(self, text: str, contract: dict) -> bool:
+        """
+        Deterministic Explanation Validator (Spec 6.2).
+        """
+        text_lower = text.lower()
+        
+        # 1. Check sections (Loose match to handle minor formatting vars)
+        required_sections = [
+            "how this decision was made",
+            "workload commitment",
+            "why this is safe",
+            "what to do next",
+            "system assumptions"
+        ]
+        for section in required_sections:
+            if section not in text_lower:
+                logger.warning(f"Validation Error: Missing section '{section}'")
+                return False
+
+        # 2. Forbidden terms
+        forbidden = ["audit", "panel", "settings", "click", "link", "advanced view", "ui", "optimization"]
+        contract_str = json.dumps(contract).lower()
+        
+        for term in forbidden:
+            if term in text_lower:
+                # Exception for "optimization" if strictly needed, but spec says forbid unless verbatim.
+                if term == "optimization" and "optimization" in contract_str:
+                    continue
+                logger.warning(f"Validation Error: Forbidden term '{term}' found.")
+                return False
+
+        return True
+
+    def _parse_to_ui_schema(self, text: str) -> dict:
+        """
+        Parses strictly formatted text back to the JSON schema expected by valid index.html
+        """
+        sections = {
+            "headline": "",
+            "impact": "",
+            "workload_commitment": "",
+            "why_this_is_safe": "",
+            "recommended_next_step": "",
+            "technical_assumptions": []
+        }
+        
+        lines = text.split('\n')
+        current_section = "headline"
+        buffer = []
+
+        header_map = {
+            "headline": "headline",
+            "how this decision was made": "impact",
+            "workload commitment": "workload_commitment",
+            "why this is safe": "why_this_is_safe",
+            "what to do next": "recommended_next_step",
+            "system assumptions": "technical_assumptions"
+        }
+        
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            
+            lower_line = re.sub(r'^\d+[\).]\s*', '', line.lower().replace(":", "")).strip()
+            
+            if lower_line in header_map:
+                valid_content = [b for b in buffer if b]
+                if valid_content:
+                    if current_section == "technical_assumptions":
+                        sections[current_section] = valid_content
+                    else:
+                        sections[current_section] = " ".join(valid_content).strip()
+                
+                current_section = header_map[lower_line]
+                buffer = []
+            else:
+                if current_section == "technical_assumptions":
+                    if line.startswith("-") or line.startswith("•") or line.startswith("*"):
+                        buffer.append(line.lstrip("-•* ").strip())
+                else:
+                    buffer.append(line)
+        
+        valid_content = [b for b in buffer if b]
+        if valid_content:
+            if current_section == "technical_assumptions":
+                sections[current_section] = valid_content
+            else:
+                sections[current_section] = " ".join(valid_content).strip()
+        
+        if not sections["headline"] and sections["impact"]:
+             # Heuristic: LLM might have put headline in output?
+             pass
+
+        return sections
+
+    def _generate_fallback(self, contract: dict, reason: str = "Unknown") -> dict:
+        """
+        Deterministic fallback template (Spec 6.3).
+        """
+        c = contract["workload_commitment"]
+        p = contract["policy"]
+        
+        return {
+            "headline": f"{contract['review_mode']['mode_label']} — {contract['review_mode']['capacity_status']}",
+            "impact": f"{contract['decision_basis']['model_statement']} {contract['decision_basis']['how_thresholds_were_set']}",
+            "workload_commitment": f"You are committed to reviewing {c['p0_cases']} strict P0 cases over the {c['window_label']}. {c['ordering_guarantee']}",
+            "why_this_is_safe": contract['safety_statement']['why_safe'],
+            "recommended_next_step": "Review P0 cases immediately; they are your verified priority.",
+            "technical_assumptions": [
+                f"Review Window: {c['window_label']}",
+                f"Team Capacity: {contract['decision_basis']['inputs_used']['team_capacity_cases_per_day']}/day",
+                f"Thresholds: P0 > {p['thresholds']['p0']}, P1 > {p['thresholds']['p1']}"
+            ],
+            "meta": {
+                "source": "Fallback",
+                "reason": reason,
+                "provider": "Internal Rule Engine"
+            }
+        }
 
 class DecisionContractBuilder:
     """
@@ -87,6 +314,10 @@ class DecisionContractBuilder:
 class ExplanationAgent:
     def __init__(self):
         self.llm_config = get_llm_config()
+        if self.llm_config:
+            logger.info(f"ExplanationAgent initialized with provider: {self.llm_config.get('provider')}")
+        else:
+            logger.warning("ExplanationAgent initialized with NO LLM config.")
 
     def generate_explanation(self, decision_contract: dict) -> dict:
         """
@@ -130,38 +361,17 @@ class ExplanationAgent:
             text = ""
 
             if api_format == "openai":
-                # GROQ / OPENROUTER PATH
-                # Custom implementation to preserve System Prompt (avoiding helper override)
-                headers = {
-                    "Authorization": f"Bearer {self.llm_config['key']}",
-                    "Content-Type": "application/json"
-                }
+                # GROQ / OPENROUTER PATH - Using Robust Retry Helper
+                messages = [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ]
                 
-                # Provider specific adjustments
-                if self.llm_config['provider'] == "openrouter":
-                    headers["HTTP-Referer"] = "https://fraud-detector.internal"
-
-                payload = {
-                    "model": self.llm_config['model'],
-                    "messages": [
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt}
-                    ],
-                    "temperature": 0.1
-                }
-                
-                response = requests.post(self.llm_config['url'], headers=headers, json=payload, timeout=15)
-                
-                if response.status_code == 200:
-                    try:
-                        res_json = response.json()
-                        text = res_json['choices'][0]['message']['content'].strip()
-                    except Exception as e:
-                        logger.error(f"OpenAI Format Parse Error: {e}")
-                        return self._generate_fallback(decision_contract, reason="LLM Parse Error")
-                else:
-                    logger.error(f"LLM Error {response.status_code}: {response.text}")
-                    return self._generate_fallback(decision_contract, reason=f"API Error {response.status_code}")
+                try:
+                    text = robust_api_call(self.llm_config, messages, temperature=0.1)
+                except Exception as e:
+                    logger.error(f"LLM Robust Call Failed: {e}")
+                    return self._generate_fallback(decision_contract, reason=str(e))
                 
             else:
                 # HUGGING FACE PATH
