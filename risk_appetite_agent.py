@@ -35,6 +35,9 @@ class RiskAppetiteAgent:
         """
         Main entry point. Returns appetite decision dict.
         """
+        # Validate Inputs
+        if operating_mode not in ["daily_ops", "incident_sweep", "regulatory_audit"]:
+            operating_mode = "daily_ops"
         
         # 1. Compute Capacity Signals
         signals = self._compute_signals(
@@ -66,7 +69,9 @@ class RiskAppetiteAgent:
             
         return {
             "risk_appetite": final_appetite,
+            "risk_appetite": final_appetite,
             "confidence": 0.8 if not used_fallback else 0.6,
+            "confidence_type": "operational", # Not statistical
             "rationale": final_rationale,
             "signals": signals,
             "guardrails": {
@@ -79,7 +84,7 @@ class RiskAppetiteAgent:
     def _compute_signals(self, team_size, review_time, batch_size, window, backlog):
         daily_capacity = math.floor((team_size * 480) / max(1, review_time))
         effective_capacity = daily_capacity * window
-        if backlog:
+        if backlog is not None:
             effective_capacity -= backlog
         
         effective_capacity = max(effective_capacity, 1) # Prevent div/0
@@ -185,7 +190,15 @@ class RiskAppetiteAgent:
                 content = response.json()['choices'][0]['message']['content']
                 if "```" in content:
                     content = content.split("```json")[1].split("```")[0].strip() if "```json" in content else content.split("```")[1].split("```")[0]
-                return json.loads(content)
+                
+                result = json.loads(content)
+                
+                # Robustness check for rationale
+                if "rationale" in result:
+                     if not isinstance(result["rationale"], list):
+                         result["rationale"] = [str(result["rationale"])]
+                         
+                return result
         except Exception as e:
             logger.warning(f"Risk Appetite LLM Failed: {e}")
             return None

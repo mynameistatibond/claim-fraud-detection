@@ -750,7 +750,7 @@ async def submit_batch(
     explain: bool = True,
     team_size: int = Query(5, ge=1, description="Number of investigators"),
     review_time: int = Query(20, ge=1, description="Minutes per review"),
-    operating_mode: str = Query("daily_ops", pattern="^(daily_ops|incident_sweep|regulatory_audit)$", description="Operational Context"),
+    operating_mode: str = Query("daily_ops", description="Operational Context"),
     review_window_days: int = Query(1, ge=1, description="Days to review"),
     current_backlog_cases: int = Query(0, ge=0, description="Existing Backlog")
 ):
