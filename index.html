@@ -2066,13 +2066,29 @@
 
                     // Triage Badge Logic
                     let badgeHtml = "-";
-                    const p = row.triage_decision; // P0_IMMEDIATE, P1_REVIEW_IF_CAPACITY, P2_MONITOR
+                    // Support both old API (triage_decision) and new API (priority)
+                    const p = row.priority || row.triage_decision;
+
                     if (p) {
                         let badgeClass = "badge-p2";
-                        let badgeLabel = "P2";
-                        if (p === "P0_IMMEDIATE") { badgeClass = "badge-p0"; badgeLabel = "P0 - Review"; }
-                        else if (p === "P1_REVIEW_IF_CAPACITY") { badgeClass = "badge-p1"; badgeLabel = "P1 - Queue"; }
-                        else if (p === "P2_MONITOR") { badgeClass = "badge-p2"; badgeLabel = "P2 - Monitor"; }
+                        let badgeLabel = p; // Default to raw string (e.g. "P0 - Review")
+
+                        // Map Backend Strings to Styles
+                        if (p.includes("P0") || p === "P0_IMMEDIATE") {
+                            badgeClass = "badge-p0";
+                            if (!p.includes("-")) badgeLabel = "P0 - Review";
+                        }
+                        else if (p.includes("P1") || p === "P1_REVIEW_IF_CAPACITY") {
+                            badgeClass = "badge-p1";
+                            if (!p.includes("-")) badgeLabel = "P1 - Queue";
+                        }
+                        else if (p.includes("P2") || p === "P2_MONITOR") {
+                            badgeClass = "badge-p2";
+                            if (!p.includes("-")) badgeLabel = "P2 - Monitor";
+                        }
+                        else if (p.includes("P3")) {
+                            badgeClass = "badge-ignore"; // You might need CSS for this or reuse p2
+                        }
 
                         badgeHtml = `<span class="priority-badge ${badgeClass}">${badgeLabel}</span>`;
                     }
@@ -2081,14 +2097,14 @@
                     const prob = row.probability;
                     const pct = (prob * 100).toFixed(1) + "%";
                     let color = "var(--clr-low)"; // Low
-                    let label = "LOW";
 
-                    if (prob >= 0.3) { color = "var(--clr-med)"; label = "MOD"; }
-                    if (prob >= 0.5) { color = "var(--clr-high)"; label = "HIGH"; }
-                    if (prob >= 0.7) { color = "var(--clr-crit)"; label = "V. HIGH"; }
+                    if (prob >= 0.3) { color = "var(--clr-med)"; }
+                    if (prob >= 0.5) { color = "var(--clr-high)"; }
+                    if (prob >= 0.7) { color = "var(--clr-crit)"; }
 
-                    // Drivers (Now consolidated)
-                    const drivers = row.drivers || [];
+                    // Drivers (Handle 'top_drivers' from new API or 'drivers' from old)
+                    const drivers = row.top_drivers || row.drivers || [];
+
                     // We want columns 1, 2, 3
                     const d1 = drivers[0] ? createDriverPill(drivers[0]) : "-";
                     const d2 = drivers[1] ? createDriverPill(drivers[1]) : "-";
