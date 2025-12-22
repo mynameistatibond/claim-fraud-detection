@@ -96,6 +96,13 @@ class FraudTriageAgent:
         df = df.sort_values(by='probability', ascending=False)
         
         # UI Formatting
+        # Ensure top_drivers exists (maps from 'drivers' if needed)
+        if 'top_drivers' not in df.columns:
+            if 'drivers' in df.columns:
+                df['top_drivers'] = df['drivers']
+            else:
+                df['top_drivers'] = [[] for _ in range(len(df))]
+
         ui_rows = df.head(self.UI_FULL_DISPLAY_THRESHOLD)[
             ['claim_id', 'priority', 'probability', 'top_drivers']
         ].to_dict('records')
