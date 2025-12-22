@@ -1887,44 +1887,95 @@
                 // SHOW AGENT SUMMARY
                 if (data.summary && data.summary.rationale) {
                     // Rich Summary Construction
+                    // Rich Summary Construction (Phase 4 Redesign)
                     const ra = data.risk_analysis || {};
-                    let bullets = [];
 
-                    // 1. Appetite & Confidence
-                    const confType = ra.confidence_type === "operational" ? "operational" : "statistical";
-                    const confLabel = ra.confidence >= 0.8 ? "High" : (ra.confidence >= 0.6 ? "Medium" : "Low");
-                    let headerText = `${ra.risk_appetite} (Confidence: ${confLabel})`;
+                    // 1. Map to Human-Centric Mode & Consequence
+                    let displayMode = "Standard Review";
+                    let consequenceText = "The system is balancing risk detection with your team's available time. You will see a representative mix of cases.";
+                    let modeColor = "#dddddd";
 
-                    // 2. Rationale (Top 2)
-                    if (Array.isArray(ra.rationale)) {
-                        ra.rationale.slice(0, 2).forEach(r => bullets.push(r));
-                    } else if (ra.rationale) {
-                        bullets.push(ra.rationale);
+                    if (ra.risk_appetite === "Conservative") {
+                        displayMode = "Strict Review Mode";
+                        consequenceText = "The system is prioritizing only the highest-risk cases to avoid overwhelming your team. You will see fewer cases.";
+                        modeColor = "#4ecdc4"; // Cyan
+                    } else if (ra.risk_appetite === "Aggressive") {
+                        displayMode = "Broad Review Mode";
+                        consequenceText = "The system is casting a wide net to capture all potential insights. You will see more low-risk cases than usual.";
+                        modeColor = "#ff6b6b"; // Red
+                    } else {
+                        // Balanced
+                        displayMode = "Standard Review Mode";
+                        modeColor = "#feca57"; // Yellowish/White
                     }
 
-                    // 3. Signals (Explicit)
+                    // 2. The "Why" (Logic)
+                    let whyHtml = "";
                     if (ra.signals) {
-                        bullets.push(`Capacity Ratio: ${ra.signals.capacity_ratio}x`);
-                        if (data.decision_policy && data.decision_policy.thresholds) {
-                            const th = data.decision_policy.thresholds;
-                            bullets.push(`Active Policy: P0 \u2265 ${th.p0}, P1 \u2265 ${th.p1}`);
-                        }
+                        const cap = ra.signals.daily_capacity || "?";
+                        const total = data.summary.total_rows || "?";
+                        const ratio = ra.signals.capacity_ratio ? ra.signals.capacity_ratio.toFixed(1) : "?";
+
+                        whyHtml = `
+                            <div style="margin-top: 8px;">
+                                <details style="cursor: pointer; opacity: 0.8; font-size: 0.9em;">
+                                    <summary style="outline: none;"><b>Why this mode?</b></summary>
+                                    <ul style="margin: 4px 0 0 0; padding-left: 20px; line-height: 1.4;">
+                                        <li>Your team can review <b>~${cap} cases/day</b></li>
+                                        <li>This batch contains <b>~${total} claims</b></li>
+                                        <li>Capacity Ratio: <b>${ratio}x</b></li>
+                                    </ul>
+                                </details>
+                            </div>
+                        `;
                     }
 
-                    // 4. Mode
+                    // 3. Advanced Details
+                    let advancedHtml = "";
+                    let bullets = [];
+                    // Existing advanced bullets logic
+                    const confLabel = ra.confidence >= 0.8 ? "High" : (ra.confidence >= 0.6 ? "Medium" : "Low");
+                    bullets.push(`Internal Appetite: ${ra.risk_appetite} (Conf: ${confLabel})`);
+                    if (data.decision_policy && data.decision_policy.thresholds) {
+                        const th = data.decision_policy.thresholds;
+                        bullets.push(`Active Policy: P0 \u2265 ${th.p0}, P1 \u2265 ${th.p1}`);
+                    }
+                    if (ra.signals) {
+                        bullets.push(`P95 Score: ${ra.signals.p95 ? ra.signals.p95.toFixed(2) : '?'}`);
+                    }
                     if (data.metric_context && data.metric_context.operating_mode) {
-                        bullets.push(`Mode: ${data.metric_context.operating_mode}`);
-                    } else if (ra.guardrails && ra.guardrails.baseline_appetite) {
-                        // Fallback if needed
+                        bullets.push(`Op Mode: ${data.metric_context.operating_mode}`);
                     }
 
-                    // Render
-                    summaryText.innerHTML = `
-                        <div style="font-weight: 600; margin-bottom: 6px; font-size: 1.05em;">${headerText}</div>
-                        <ul style="margin: 0; padding-left: 20px; opacity: 0.9; line-height: 1.5;">
-                            ${bullets.map(b => `<li>${b}</li>`).join('')}
-                        </ul>
+                    advancedHtml = `
+                        <div style="margin-top: 6px;">
+                            <details style="cursor: pointer; opacity: 0.6; font-size: 0.85em;">
+                                <summary style="outline: none;">Advanced details</summary>
+                                <ul style="margin: 4px 0 0 0; padding-left: 20px; line-height: 1.4;">
+                                    ${bullets.map(b => `<li>${b}</li>`).join('')}
+                                </ul>
+                            </details>
+                        </div>
                     `;
+
+                    // Render Final HTML
+                    summaryText.innerHTML = `
+                        <div style="font-size: 1.1em; font-weight: 600; color: ${modeColor}; margin-bottom: 4px;">
+                            ${displayMode}
+                        </div>
+                        <div style="font-size: 0.95em; opacity: 0.9; line-height: 1.4; margin-bottom: 0px;">
+                            ${consequenceText}
+                        </div>
+                        ${whyHtml}
+                        ${advancedHtml}
+                    `;
+
+                    // Hide Legacy Badges (Subsumed by new UI)
+                    const badge = document.getElementById('riskAppetiteBadge');
+                    const confEl = document.getElementById('riskConfidence');
+                    if (badge) badge.style.display = 'none';
+                    if (confEl) confEl.style.display = 'none';
+
                     summaryBox.style.display = 'flex';
 
                     // Update Risk Appetite Badge
