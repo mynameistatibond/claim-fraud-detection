@@ -84,9 +84,17 @@ class DecisionContractBuilder:
         # Mode Label
         mode_label = f"{'Strict' if appetite_str == 'Conservative' else ('Broad' if appetite_str == 'Aggressive' else 'Standard')} review mode"
 
+        # Backlog Context
+        backlog_suggestion = None
+        if utilization_pct < 95 and current_backlog_cases > 0:
+            # Simple capacity check
+            hours_spare_team = (available_hours_per_person * team_size) - (hours_per_person_needed * team_size)
+            if hours_spare_team > 5: # Threshold to mention it
+                backlog_suggestion = f"You have approx {int(hours_spare_team)} hours of spare team capacity. Consider reviewing cases from your backlog ({current_backlog_cases} pending)."
+
         # 2. Construct Contract
         contract = {
-            "contract_version": "1.1",
+            "contract_version": "1.2",
             "review_mode": {
                 "mode_label": mode_label,
                 "capacity_status": capacity_status
@@ -107,7 +115,8 @@ class DecisionContractBuilder:
                 "p0_cases": p0_count,
                 "p1_cases": p1_count,
                 "p2_cases": p2_count,
-                "ordering_guarantee": "Strict ordering: P0 -> P1 -> P2. Review P2 only if time remains."
+                "ordering_guarantee": "Strict ordering: P0 -> P1 -> P2. Review P2 only if time remains.",
+                "backlog_opportunity": backlog_suggestion
             },
             "workload_analysis": workload_analysis,
             "policy": {
@@ -116,7 +125,7 @@ class DecisionContractBuilder:
                 "p1_flex_statement": "P1/P2 expand or shrink based on available capacity and fraud score distribution."
             },
             "safety_statement": {
-                "why_safe": "Claims below P2 Threshold (or < 0.25) are explicitly ignored as noise."
+                "why_safe": "Claims below P2 Threshold (or < 0.25) are explicitly ignored as noise. If P2 Threshold > 0.25, the Ignore bucket expands."
             }
         }
         return contract
@@ -148,7 +157,8 @@ class ExplanationAgent:
             "- **Distinction:** Clearly state that the 'ML Model' provided the scores, but the 'Agentic AI' decided the thresholds and capacity allocation.\n"
             "- P0 must be described as strict and the first priority. P1/P2 are optional depending on capacity.\n"
             "- **IF IS_OVERLOADED (utilization > 100%):** You MUST explicitly state that P0 cases alone will take X hours per person. Recommend finishing P0 first. State clearly how many hours (if any) remain for P1.\n"
-            "- **IF NOT OVERLOADED:** Compare 'Hours Remaining after P0' vs 'Hours Required for P1/P2' to confirm fit.\n"
+            "- **IF NOT OVERLOADED:** Compare 'Hours Remaining after P0' vs 'Hours Required for P1/P2'. If 'backlog_opportunity' is present, recommend reviewing backlog cases with the spare capacity.\n"
+            "- **Safety:** Explicitly state that anything below the P2 threshold is considered 'Ignore/P3' and will be auto-closed or monitored."
             "- Provide exactly one recommended next step.\n"
             "- Output the explanation in the specified section structure only, using plain text."
         )
