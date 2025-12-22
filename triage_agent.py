@@ -111,7 +111,7 @@ class FraudTriageAgent:
         p0_count = int(mask_p0.sum())
         p1_count = int(mask_p1.sum())
         p2_count = int(mask_p2.sum())
-        p3_count = batch_size - p0_count - p1_count - p2_count
+        p3_count = len(df) - p0_count - p1_count - p2_count
         
         # Capacity Calculations
         # We assume passed 'capacity' (in run_batch) was just for LLM context.
@@ -156,7 +156,7 @@ class FraudTriageAgent:
         return {
             "rows": ui_rows,
             "summary": {
-                "total_rows": batch_size,
+                "total_rows": len(df),
                 "ui_displayed_count": len(ui_rows),
                 "p0_count": p0_count,
                 "p1_count": p1_count,
