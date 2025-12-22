@@ -8,6 +8,7 @@ from pathlib import Path
 from preprocessing import preprocess_input, DEFAULTS
 from triage_agent import FraudTriageAgent
 from risk_appetite_agent import RiskAppetiteAgent
+from explanation_agent import ExplanationAgent
 
 # --- CONFIGURATION (Spec 3, 2.2) ---
 FRIENDLY_TO_INTERNAL = {
@@ -448,6 +449,34 @@ async def process_batch_file(
     
     # Attach Risk Analysis to Result
     triage_result['risk_analysis'] = risk_decision
+    
+    # 5c. Generate Narrative (Product-Grade)
+    explanation_agent = ExplanationAgent()
+    
+    fact_sheet = {
+        "mode_label": f"{'Strict' if appetite_str == 'Conservative' else ('Broad' if appetite_str == 'Aggressive' else 'Standard')} Review Mode",
+        "review_window_days": review_window_days,
+        "daily_capacity_cases": triage_result["summary"]["capacity_used"],
+        "batch_size": len(scored_df),
+        "thresholds": triage_result["decision_policy"]["thresholds"],
+        "counts": {
+            "p0": triage_result["summary"]["p0_count"],
+            "p1": triage_result["workload_summary"]["assigned_work"]["p1"],
+            "p2": len(scored_df) - triage_result["summary"]["p0_count"] - triage_result["workload_summary"]["assigned_work"]["p1"]
+        },
+        "workload": triage_result["workload_summary"],
+        "risk_shape": {
+            "p95": risk_decision["signals"].get("p95"),
+            "share_ge_0_3": risk_decision["signals"].get("share_ge_0_3")
+        }
+    }
+    
+    try:
+        ops_briefing = explanation_agent.generate_ops_briefing(fact_sheet)
+        triage_result["narrative"] = ops_briefing
+    except Exception as e:
+        print(f"Explanation Generation Failed: {e}")
+        triage_result["narrative"] = None
     
     # Save Full Results CSV
     output_filename = f"batch_results_{int(time.time())}.csv"

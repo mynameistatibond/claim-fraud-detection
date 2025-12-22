@@ -1887,96 +1887,147 @@
 
                 // SHOW AGENT SUMMARY
                 // SHOW AGENT SUMMARY
-                if (data.summary && data.summary.rationale) {
-                    // Rich Summary Construction
-                    // Rich Summary Construction (Phase 4 Redesign)
-                    const ra = data.risk_analysis || {};
+                if (data.summary) {
+                    // Check for Product-Grade Narrative (Phase 6)
+                    if (data.narrative) {
+                        const n = data.narrative;
 
-                    // 1. Map to Human-Centric Mode & Consequence
-                    let displayMode = "Standard Review";
-                    let consequenceText = "The system is balancing risk detection with your team's available time. You will see a representative mix of cases.";
-                    let modeColor = "#dddddd";
+                        // Helper to render bullets
+                        const renderBullets = (items) => items.map(i => `<li>${i}</li>`).join('');
 
-                    if (ra.risk_appetite === "Conservative") {
-                        displayMode = "Strict Review Mode";
-                        consequenceText = "The system is prioritizing only the highest-risk cases to avoid overwhelming your team. You will see fewer cases.";
-                        modeColor = "#4ecdc4"; // Cyan
-                    } else if (ra.risk_appetite === "Aggressive") {
-                        displayMode = "Broad Review Mode";
-                        consequenceText = "The system is casting a wide net to capture all potential insights. You will see more low-risk cases than usual.";
-                        modeColor = "#ff6b6b"; // Red
-                    } else {
-                        // Balanced
-                        displayMode = "Standard Review Mode";
-                        modeColor = "#feca57"; // Yellowish/White
-                    }
-
-                    // Phase 5: Capacity Impact Analysis Override
-                    // If backend provides explicit workload calculation, use that instead of generic text
-                    if (data.workload_summary && data.workload_summary.message_html) {
-                        consequenceText = data.workload_summary.message_html;
-                    }
-
-                    // 2. The "Why" (Logic)
-                    let whyHtml = "";
-                    if (ra.signals) {
-                        const cap = ra.signals.daily_capacity || "?";
-                        const total = data.summary.total_rows || "?";
-                        const ratio = ra.signals.capacity_ratio ? ra.signals.capacity_ratio.toFixed(1) : "?";
-
-                        whyHtml = `
-                            <div style="margin-top: 8px;">
-                                <details style="cursor: pointer; opacity: 0.8; font-size: 0.9em;">
-                                    <summary style="outline: none;"><b>Why this mode?</b></summary>
+                        summaryText.innerHTML = `
+                            <div style="font-size: 1.15em; font-weight: 600; color: #feca57; margin-bottom: 8px;">
+                                ${n.title}
+                            </div>
+                            <div style="font-size: 0.95em; opacity: 0.9; line-height: 1.5; margin-bottom: 12px;">
+                                ${n.summary}
+                            </div>
+                            
+                            <!-- What You Get -->
+                            <div style="margin-bottom: 10px;">
+                                <div style="font-size: 0.85em; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.7; margin-bottom: 4px;">What you get</div>
+                                <ul style="margin: 0; padding-left: 20px; line-height: 1.4; font-size: 0.9em; opacity: 0.9;">
+                                    ${renderBullets(n.what_you_get)}
+                                </ul>
+                            </div>
+                            
+                            <!-- Why This Mode -->
+                            <div style="margin-bottom: 12px;">
+                                <div style="font-size: 0.85em; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.7; margin-bottom: 4px;">Why this mode</div>
+                                <ul style="margin: 0; padding-left: 20px; line-height: 1.4; font-size: 0.9em; opacity: 0.9;">
+                                    ${renderBullets(n.why_this_mode)}
+                                </ul>
+                            </div>
+                            
+                            <!-- Action -->
+                            <div style="background: rgba(255,255,255,0.05); border-left: 3px solid #4ecdc4; padding: 10px; border-radius: 4px; margin-bottom: 12px;">
+                                <div style="font-weight: 600; color: #4ecdc4; font-size: 0.95em; margin-bottom: 2px;">Recommendation</div>
+                                <div style="font-size: 0.9em;">
+                                    <b>Action:</b> ${n.recommended_next_step.action}<br>
+                                    <span style="opacity: 0.8"><b>Reason:</b> ${n.recommended_next_step.reason}</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Audit Details -->
+                            <div>
+                                <details style="cursor: pointer; opacity: 0.6; font-size: 0.85em;">
+                                    <summary style="outline: none;">Audit Details</summary>
                                     <ul style="margin: 4px 0 0 0; padding-left: 20px; line-height: 1.4;">
-                                        <li>Your team can review <b>~${cap} cases/day</b></li>
-                                        <li>This batch contains <b>~${total} claims</b></li>
-                                        <li>Capacity Ratio: <b>${ratio}x</b></li>
+                                        <li><b>Thresholds:</b> ${n.audit_details.thresholds}</li>
+                                        <li><b>Capacity:</b> ${n.audit_details.capacity}</li>
+                                        <li><b>Risk Shape:</b> ${n.audit_details.risk_shape}</li>
                                     </ul>
                                 </details>
                             </div>
                         `;
-                    }
+                    } else if (data.summary.rationale) {
+                        // FALLBACK (Phase 4 Logic)
+                        const ra = data.risk_analysis || {};
 
-                    // 3. Advanced Details
-                    let advancedHtml = "";
-                    let bullets = [];
-                    // Existing advanced bullets logic
-                    const confLabel = ra.confidence >= 0.8 ? "High" : (ra.confidence >= 0.6 ? "Medium" : "Low");
-                    bullets.push(`Internal Appetite: ${ra.risk_appetite} (Conf: ${confLabel})`);
-                    if (data.decision_policy && data.decision_policy.thresholds) {
-                        const th = data.decision_policy.thresholds;
-                        bullets.push(`Active Policy: P0 \u2265 ${th.p0}, P1 \u2265 ${th.p1}`);
-                    }
-                    if (ra.signals) {
-                        bullets.push(`P95 Score: ${ra.signals.p95 ? ra.signals.p95.toFixed(2) : '?'}`);
-                    }
-                    if (data.metric_context && data.metric_context.operating_mode) {
-                        bullets.push(`Op Mode: ${data.metric_context.operating_mode}`);
-                    }
+                        // 1. Map to Human-Centric Mode & Consequence
+                        let displayMode = "Standard Review";
+                        let consequenceText = "The system is balancing risk detection with your team's available time. You will see a representative mix of cases.";
+                        let modeColor = "#dddddd";
 
-                    advancedHtml = `
-                        <div style="margin-top: 6px;">
-                            <details style="cursor: pointer; opacity: 0.6; font-size: 0.85em;">
-                                <summary style="outline: none;">Advanced details</summary>
-                                <ul style="margin: 4px 0 0 0; padding-left: 20px; line-height: 1.4;">
-                                    ${bullets.map(b => `<li>${b}</li>`).join('')}
-                                </ul>
-                            </details>
-                        </div>
-                    `;
+                        if (ra.risk_appetite === "Conservative") {
+                            displayMode = "Strict Review Mode";
+                            consequenceText = "The system is prioritizing only the highest-risk cases to avoid overwhelming your team. You will see fewer cases.";
+                            modeColor = "#4ecdc4"; // Cyan
+                        } else if (ra.risk_appetite === "Aggressive") {
+                            displayMode = "Broad Review Mode";
+                            consequenceText = "The system is casting a wide net to capture all potential insights. You will see more low-risk cases than usual.";
+                            modeColor = "#ff6b6b"; // Red
+                        } else {
+                            // Balanced
+                            displayMode = "Standard Review Mode";
+                            modeColor = "#feca57"; // Yellowish/White
+                        }
 
-                    // Render Final HTML
-                    summaryText.innerHTML = `
-                        <div style="font-size: 1.1em; font-weight: 600; color: ${modeColor}; margin-bottom: 4px;">
-                            ${displayMode}
-                        </div>
-                        <div style="font-size: 0.95em; opacity: 0.9; line-height: 1.4; margin-bottom: 0px;">
-                            ${consequenceText}
-                        </div>
-                        ${whyHtml}
-                        ${advancedHtml}
-                    `;
+                        // Phase 5: Capacity Impact Analysis Override
+                        if (data.workload_summary && data.workload_summary.message_html) {
+                            consequenceText = data.workload_summary.message_html;
+                        }
+
+                        // 2. The "Why" (Logic)
+                        let whyHtml = "";
+                        if (ra.signals) {
+                            const cap = ra.signals.daily_capacity || "?";
+                            const total = data.summary.total_rows || "?";
+                            const ratio = ra.signals.capacity_ratio ? ra.signals.capacity_ratio.toFixed(1) : "?";
+
+                            whyHtml = `
+                                <div style="margin-top: 8px;">
+                                    <details style="cursor: pointer; opacity: 0.8; font-size: 0.9em;">
+                                        <summary style="outline: none;"><b>Why this mode?</b></summary>
+                                        <ul style="margin: 4px 0 0 0; padding-left: 20px; line-height: 1.4;">
+                                            <li>Your team can review <b>~${cap} cases/day</b></li>
+                                            <li>This batch contains <b>~${total} claims</b></li>
+                                            <li>Capacity Ratio: <b>${ratio}x</b></li>
+                                        </ul>
+                                    </details>
+                                </div>
+                            `;
+                        }
+
+                        // 3. Advanced Details
+                        let advancedHtml = "";
+                        let bullets = [];
+                        const confLabel = ra.confidence >= 0.8 ? "High" : (ra.confidence >= 0.6 ? "Medium" : "Low");
+                        bullets.push(`Internal Appetite: ${ra.risk_appetite} (Conf: ${confLabel})`);
+                        if (data.decision_policy && data.decision_policy.thresholds) {
+                            const th = data.decision_policy.thresholds;
+                            bullets.push(`Active Policy: P0 \u2265 ${th.p0}, P1 \u2265 ${th.p1}`);
+                        }
+                        if (ra.signals) {
+                            bullets.push(`P95 Score: ${ra.signals.p95 ? ra.signals.p95.toFixed(2) : '?'}`);
+                        }
+                        if (data.metric_context && data.metric_context.operating_mode) {
+                            bullets.push(`Op Mode: ${data.metric_context.operating_mode}`);
+                        }
+
+                        advancedHtml = `
+                            <div style="margin-top: 6px;">
+                                <details style="cursor: pointer; opacity: 0.6; font-size: 0.85em;">
+                                    <summary style="outline: none;">Advanced details</summary>
+                                    <ul style="margin: 4px 0 0 0; padding-left: 20px; line-height: 1.4;">
+                                        ${bullets.map(b => `<li>${b}</li>`).join('')}
+                                    </ul>
+                                </details>
+                            </div>
+                        `;
+
+                        // Render Final HTML
+                        summaryText.innerHTML = `
+                            <div style="font-size: 1.1em; font-weight: 600; color: ${modeColor}; margin-bottom: 4px;">
+                                ${displayMode}
+                            </div>
+                            <div style="font-size: 0.95em; opacity: 0.9; line-height: 1.4; margin-bottom: 0px;">
+                                ${consequenceText}
+                            </div>
+                            ${whyHtml}
+                            ${advancedHtml}
+                        `;
+                    }
 
                     // Hide Legacy Badges (Subsumed by new UI)
                     const badge = document.getElementById('riskAppetiteBadge');
