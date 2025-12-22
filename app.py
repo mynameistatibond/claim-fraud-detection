@@ -742,8 +742,8 @@ async def batch_predict(
 async def submit_batch(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    model: str = Query("xgb", regex="^(xgb|rf|et)$"),
-    scenario: str = Query("dashboard", regex="^(dashboard|auto_flagger|underwriter)$"),
+    model: str = Query("xgb", pattern="^(xgb|rf|et|voting)$"),
+    scenario: str = Query("dashboard", pattern="^(dashboard|auto_flagger|underwriter)$"),
     explain: bool = True,
     team_size: int = Query(5, ge=1, description="Number of investigators"),
     review_time: int = Query(20, ge=1, description="Minutes per review")
