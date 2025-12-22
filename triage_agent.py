@@ -31,18 +31,25 @@ class FraudTriageAgent:
 
     def triage_batch(self, scored_df: pd.DataFrame, batch_size: int, 
                      team_size: int = 5, review_time_mins: int = 20,
-                     risk_appetite: str = "balanced") -> dict:
+                     risk_appetite: str = "balanced",
+                     review_window_days: int = 1,
+                     current_backlog_cases: int = 0) -> dict:
         """
         Main entry point for triaging a scored batch.
         """
         # 1. Determine Strategy
         strategy = self._determine_strategy(batch_size)
         
-        # 2. Compute Capacity
-        # Daily minutes / review time * team size
-        # Assuming 8 hour work day (480 mins)
-        daily_capacity = int((team_size * 480) / max(1, review_time_mins))
+        # 2. Compute Capacity (Deterministic)
+        # Daily slots (cases per day)
+        daily_capacity_cases = int((team_size * 480) / max(1, review_time_mins))
         
+        # Effective Capacity (Total slots in window - Backlog)
+        effective_capacity = (daily_capacity_cases * review_window_days)
+        if current_backlog_cases:
+            effective_capacity -= current_backlog_cases
+        effective_capacity = max(0, effective_capacity)
+
         # 3. Prepare Data
         df = scored_df.copy()
         df['probability'] = df['probability'].astype(float)
@@ -51,16 +58,16 @@ class FraudTriageAgent:
         
         # 4. Agentic Decision (LLM)
         # We try to get thresholds from LLM. If fail, fall back to rule-based.
-        llm_decision = self._call_llm_triage(df, batch_size, daily_capacity, risk_appetite)
+        # Pass daily_capacity_cases for context
+        llm_decision = self._call_llm_triage(df, batch_size, daily_capacity_cases, risk_appetite)
         
         if llm_decision:
             # Apply LLM Thresholds
             df = self._apply_thresholds(df, llm_decision['p0_threshold'], llm_decision['p1_threshold'])
             rationale = llm_decision['rationale']
         else:
-            # Fallback Rule-Based (Appetite-Aware)
             logger.warning("LLM Triage failed, reverting to rule-based.")
-            df = self._allocate_tiers_fallback(df, strategy, daily_capacity, risk_appetite)
+            df = self._allocate_tiers_fallback(df, strategy, daily_capacity_cases, risk_appetite)
             p0_count = len(df[df['triage_decision'] == 'P0_IMMEDIATE'])
             rationale = self._generate_fallback_summary(batch_size, strategy, p0_count)
 
@@ -73,7 +80,50 @@ class FraudTriageAgent:
             
         ui_rows = [fmt_row(r) for _, r in ui_rows_df.iterrows()]
         
+        # 6. CAPACITY QUANTIFICATION (New Layer)
         p0_count = len(df[df['triage_decision'] == 'P0_IMMEDIATE'])
+        p1_count = len(df[df['triage_decision'] == 'P1_REVIEW_IF_CAPACITY']) # Changed from P1_QUEUE to match _apply_thresholds
+        
+        # Workload Demand (Cases Equivalent: P0=1.0, P1=0.6)
+        required_cases = p0_count + (0.6 * p1_count)
+        
+        # Delta Analysis
+        delta = effective_capacity - required_cases
+        delta_pct = delta / max(1, effective_capacity) if effective_capacity > 0 else -1.0
+        
+        # Status & Message
+        capacity_json = {
+            "review_window_days": review_window_days,
+            "team_capacity_cases": daily_capacity_cases * review_window_days,
+            "effective_capacity": effective_capacity,
+            "assigned_work": {
+                "p0": p0_count,
+                "p1": p1_count,
+                "required_cases_equivalent": round(required_cases, 1)
+            }
+        }
+        
+        if delta_pct < -0.1: # Overloaded by >10%
+            capacity_json["status"] = "Overloaded"
+            capacity_json["message_html"] = (
+                f"<b>⚠️ Backlog likely</b><br>"
+                f"With the current review mode, your team would need to review <b>{p0_count} high-priority</b> and "
+                f"<b>{p1_count} medium-priority</b> cases within <b>{review_window_days} days</b>, which exceeds your available capacity.<br>"
+                f"<div style='margin-top:4px; opacity:0.8'>Consider: extending the review window, switching to a stricter mode, or focusing only on P0 cases.</div>"
+            )
+        elif delta_pct > 0.1: # Spare >10%
+            capacity_json["status"] = "Underloaded"
+            capacity_json["message_html"] = (
+                f"<b>✅ Spare capacity available</b><br>"
+                f"Your team can comfortably handle the <b>{p0_count} high-priority</b> cases identified.<br>"
+                f"<div style='margin-top:4px; opacity:0.8'>You may: review P1 cases as well, switch to a broader mode, or focus on other operational tasks.</div>"
+            )
+        else: # Balanced
+            capacity_json["status"] = "Balanced"
+            capacity_json["message_html"] = (
+                f"<b>⚖️ Balanced workload</b><br>"
+                f"The selected review mode fills your team’s capacity well, with no expected backlog growth."
+            )
         
         # Active Thresholds (for Explainability)
         active_thresholds = self.THRESHOLDS_BY_APPETITE.get(risk_appetite, self.THRESHOLDS_BY_APPETITE["Balanced"])
@@ -86,8 +136,9 @@ class FraudTriageAgent:
                 "p0_count": p0_count,
                 "rationale": rationale,
                 "strategy": strategy,
-                "capacity_used": daily_capacity
+                "capacity_used": daily_capacity_cases
             },
+            "workload_summary": capacity_json,
             "decision_policy": {
                 "risk_appetite": risk_appetite,
                 "thresholds": active_thresholds,

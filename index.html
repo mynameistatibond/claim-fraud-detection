@@ -1911,6 +1911,12 @@
                         modeColor = "#feca57"; // Yellowish/White
                     }
 
+                    // Phase 5: Capacity Impact Analysis Override
+                    // If backend provides explicit workload calculation, use that instead of generic text
+                    if (data.workload_summary && data.workload_summary.message_html) {
+                        consequenceText = data.workload_summary.message_html;
+                    }
+
                     // 2. The "Why" (Logic)
                     let whyHtml = "";
                     if (ra.signals) {

@@ -438,10 +438,12 @@ async def process_batch_file(
     # 5b. Run Triage with Derived Appetite
     triage_result = triage_agent.triage_batch(
         scored_df, 
-        len(scored_df),
+        batch_size=len(scored_df),
         team_size=team_size,
         review_time_mins=review_time,
-        risk_appetite=appetite_str
+        risk_appetite=appetite_str,
+        review_window_days=review_window_days,
+        current_backlog_cases=current_backlog_cases
     )
     
     # Attach Risk Analysis to Result
