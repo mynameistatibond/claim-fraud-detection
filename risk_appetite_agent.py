@@ -45,6 +45,13 @@ class RiskAppetiteAgent:
             review_window_days, current_backlog
         )
         
+        # Inject Risk signals for Explainability
+        if batch_stats:
+            signals.update({
+                "p95": batch_stats.get("p95"),
+                "share_ge_0_3": batch_stats.get("share_ge_0_3")
+            })
+        
         # 2. Compute Deterministic Baseline
         baseline_appetite, baseline_reason = self._determine_baseline(
             signals, batch_stats, operating_mode
