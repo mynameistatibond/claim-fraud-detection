@@ -87,6 +87,9 @@ class ExplanationAgent:
     def __init__(self):
         self.llm_config = get_llm_config()
 
+    # Added import for specific helper if not already there, but keeping it clean
+    from llm_explainer import call_openai_format_api
+
     def generate_explanation(self, decision_contract: dict) -> dict:
         """
         Generates the explanation text, validates it, and parses it for the UI.
@@ -124,36 +127,53 @@ class ExplanationAgent:
         """
 
         try:
-            headers = {
-                "Authorization": f"Bearer {self.llm_config['key']}",
-                "Content-Type": "application/json"
-            }
-            # Spec requires plain text Output, low temp
-            payload = {
-                "inputs": f"<|system|>\n{system_prompt}\n<|user|>\n{user_prompt}\n<|assistant|>",
-                "parameters": {
-                    "max_new_tokens": 600,
-                    "temperature": 0.1, 
-                    "return_full_text": False
-                }
-            }
+            # Check format from config (added in llm_explainer)
+            api_format = self.llm_config.get("format", "huggingface")
 
-            response = requests.post(self.llm_config['url'], headers=headers, json=payload, timeout=15)
-            
-            if response.status_code == 200:
-                result = response.json()
-                if isinstance(result, list) and 'generated_text' in result[0]:
-                    text = result[0]['generated_text'].strip()
-                    if self._validate_text(text, decision_contract):
-                        return self._parse_to_ui_schema(text)
+            if api_format == "openai":
+                # GROQ / OPENROUTER PATH
+                full_prompt = f"{system_prompt}\n\n{user_prompt}"
+                # call_openai_format_api expects (config, prompt)
+                # But looking at llm_explainer.py, it constructs messages from prompt.
+                # Let's double check llm_explainer.py signature in next step if needed, 
+                # but based on reading it earlier:
+                # def call_openai_format_api(config, prompt): matches.
+                # It puts prompt in user message.
+                
+                text = call_openai_format_api(self.llm_config, full_prompt)
+                
+            else:
+                # HUGGING FACE PATH
+                headers = {
+                    "Authorization": f"Bearer {self.llm_config['key']}",
+                    "Content-Type": "application/json"
+                }
+                payload = {
+                    "inputs": f"<|system|>\n{system_prompt}\n<|user|>\n{user_prompt}\n<|assistant|>",
+                    "parameters": {
+                        "max_new_tokens": 600,
+                        "temperature": 0.1, 
+                        "return_full_text": False
+                    }
+                }
+                
+                response = requests.post(self.llm_config['url'], headers=headers, json=payload, timeout=15)
+                if response.status_code == 200:
+                    result = response.json()
+                    if isinstance(result, list) and 'generated_text' in result[0]:
+                        text = result[0]['generated_text'].strip()
                     else:
-                        logger.warning(f"LLM output failed validation. Text: {text[:100]}...")
+                        logger.error(f"Unexpected LLM response format: {result}")
                         return self._generate_fallback(decision_contract)
                 else:
-                    logger.error(f"Unexpected LLM response format: {result}")
+                    logger.error(f"LLM Error {response.status_code}: {response.text}")
                     return self._generate_fallback(decision_contract)
+
+            # Validate and Parse (Shared)
+            if text and self._validate_text(text, decision_contract):
+                return self._parse_to_ui_schema(text)
             else:
-                logger.error(f"LLM Error {response.status_code}: {response.text}")
+                logger.warning(f"LLM output failed validation. Text: {text[:100]}...")
                 return self._generate_fallback(decision_contract)
 
         except Exception as e:

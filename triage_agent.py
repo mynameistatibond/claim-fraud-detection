@@ -5,7 +5,7 @@ import json
 import logging
 import requests
 import time
-from llm_explainer import get_llm_config
+from llm_explainer import get_llm_config, call_openai_format_api
 
 logger = logging.getLogger(__name__)
 
@@ -198,51 +198,97 @@ class FraudTriageAgent:
         2. Determine 'p1_threshold' (Queue).
         3. Provide a 'rationale' (1-2 sentences) explaining your decision based on the stats and capacity.
         
-        Response Format (JSON):
+        Output Schema (Strict JSON):
         {{
-            "p0_threshold": 0.XX,
-            "p1_threshold": 0.XX,
-            "rationale": "..."
+            "p0_threshold": 0.85,
+            "p1_threshold": 0.60,
+            "rationale": "High volume of risky claims requires stricter thresholds to protect capacity."
         }}
         """
         
         try:
-            headers = {
-                "Authorization": f"Bearer {self.llm_config['key']}",
-                "Content-Type": "application/json"
-            }
-            
-            # Provider specific adjustments
-            if self.llm_config['provider'] == "openrouter":
-                headers["HTTP-Referer"] = "https://fraud-detector.internal"
-            
-            payload = {
-                "model": self.llm_config['model'],
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
-                "temperature": 0.1,
-                "response_format": {"type": "json_object"} if self.llm_config['format'] == "openai" else None
-            }
-            
-            response = requests.post(self.llm_config['url'], headers=headers, json=payload, timeout=10)
-            if response.status_code == 200:
-                res_json = response.json()
-                content = res_json['choices'][0]['message']['content']
-                # Clean markdown if present
-                if "```json" in content:
-                    content = content.split("```json")[1].split("```")[0].strip()
-                elif "```" in content:
-                    content = content.split("```")[1].split("```")[0].strip()
-                    
-                return json.loads(content)
+            api_format = self.llm_config.get("format", "huggingface")
+            response_text = ""
+
+            if api_format == "openai":
+                # GROQ / OPENROUTER PATH using shared helper
+                # Helper adds system prompt to messages if we omit it? 
+                # Actually helper takes (config, prompt). 
+                # Let's verify prompt construction. call_openai_format_api implementation (seen in step 2551):
+                # payload = { "model": config["model"], "messages": [ { "role": "system", "content": "You are an expert..." }, { "role": "user", "content": prompt } ] ... }
+                # The helper has a HARDCODED system prompt in line 100: "You are an expert at explaining..."
+                # This is BAD for Triage Agent which needs a specific persona!
+                # I should NOT use the helper if it overrides system prompt, OR I should accept that limitation, OR I should fix the helper.
+                # Given I am editing Triage Agent now, I will implement the customized call here for Triage to be safe.
+                
+                headers = {
+                    "Authorization": f"Bearer {self.llm_config['key']}",
+                    "Content-Type": "application/json"
+                }
+                
+                # Provider specific adjustments for OpenAI format
+                if self.llm_config['provider'] == "openrouter":
+                    headers["HTTP-Referer"] = "https://fraud-detector.internal"
+                
+                payload = {
+                    "model": self.llm_config['model'],
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    "temperature": 0.1,
+                    "response_format": {"type": "json_object"}
+                }
+                
+                response = requests.post(self.llm_config['url'], headers=headers, json=payload, timeout=10)
+                if response.status_code == 200:
+                    res_json = response.json()
+                    response_text = res_json['choices'][0]['message']['content']
+                else:
+                    logger.error(f"LLM Error: {response.text}")
+                    return None
+
             else:
-                logger.error(f"LLM Error: {response.text}")
-                return None
+                # HUGGING FACE PATH
+                headers = {
+                    "Authorization": f"Bearer {self.llm_config['key']}",
+                    "Content-Type": "application/json"
+                }
+                
+                payload = {
+                    "inputs": f"<|system|>\n{system_prompt}\n<|user|>\n{user_prompt}\n<|assistant|>",
+                    "parameters": {
+                        "max_new_tokens": 150,
+                        "temperature": 0.2,
+                        "return_full_text": False
+                    }
+                }
+                
+                response = requests.post(self.llm_config['url'], headers=headers, json=payload, timeout=10)
+                if response.status_code == 200:
+                    result = response.json()
+                    if isinstance(result, list) and 'generated_text' in result[0]:
+                        response_text = result[0]['generated_text'].strip()
+                else:
+                    logger.error(f"LLM Error: {response.text}")
+                    return None
+            
+            # Parse JSON
+            if response_text:
+                clean_text = response_text.replace("```json", "").replace("```", "").strip()
+                # Find start and end of JSON if needed
+                if "{" in clean_text:
+                    start = clean_text.find("{")
+                    end = clean_text.rfind("}") + 1
+                    clean_text = clean_text[start:end]
+                
+                return json.loads(clean_text)
+                
         except Exception as e:
-            logger.error(f"LLM Exception: {e}")
+            logger.error(f"LLM Triage failed: {e}")
             return None
+            
+        return None
 
     def _apply_thresholds(self, df: pd.DataFrame, p0_thresh: float, p1_thresh: float) -> pd.DataFrame:
         decisions = []
