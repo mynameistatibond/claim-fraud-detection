@@ -134,7 +134,7 @@ class ExplanationAgent:
                 return False
 
         # 2. Forbidden terms
-        forbidden = ["audit", "panel", "settings", "click", "link", "advanced view", "ui", "optimization"]
+        forbidden = ["audit", "panel", "settings", "click", "link", "advanced view", "optimization"]
         contract_str = json.dumps(contract).lower()
         
         for term in forbidden:
@@ -241,20 +241,22 @@ class DecisionContractBuilder:
     Enforces all arithmetic and logic rules from Tech Spec 3.3.
     """
     @staticmethod
-    def build(triage_result, scored_df, review_window_days, team_size, review_time_mins, appetite_str):
+    def build(triage_result, scored_df, review_window_days, team_size, review_time_mins, appetite_str, current_backlog_cases=0):
         # 1. Deterministic Computation Rules
         team_capacity_cases_per_day = int((team_size * 480) / review_time_mins)
         
         p0_count = triage_result["summary"]["p0_count"]
         p1_count = triage_result["workload_summary"]["assigned_work"]["p1"]
-        p2_count = len(scored_df) - p0_count - p1_count
         
         # Capacity Equivalent Demand: p0 + 0.6 * p1
         demand = p0_count + (0.6 * p1_count)
-        total_capacity = team_capacity_cases_per_day * review_window_days
         
-        if total_capacity > 0:
-            cap_ratio = demand / total_capacity
+        # Effective Capacity (deducting backlog)
+        total_window_capacity = (team_capacity_cases_per_day * review_window_days) - current_backlog_cases
+        total_window_capacity = max(0, total_window_capacity)
+        
+        if total_window_capacity > 0:
+            cap_ratio = demand / total_window_capacity
         else:
             cap_ratio = 999.0
         
@@ -268,8 +270,6 @@ class DecisionContractBuilder:
         # Window Label
         if review_window_days == 1:
             window_label = "today"
-        # elif review_window_days == 7:
-        #     window_label = "next 7 days"
         else:
             window_label = f"next {review_window_days} days"
 
@@ -289,7 +289,8 @@ class DecisionContractBuilder:
                     "review_window_days": review_window_days,
                     "team_size": team_size,
                     "review_time_mins_per_case": review_time_mins,
-                    "team_capacity_cases_per_day": team_capacity_cases_per_day
+                    "team_capacity_cases_per_day": team_capacity_cases_per_day,
+                    "existing_backlog": current_backlog_cases
                 },
                 "how_thresholds_were_set": "Thresholds were set to prioritize high-confidence fraud cases while staying within your operational capacity."
             },
@@ -297,7 +298,6 @@ class DecisionContractBuilder:
                 "window_label": window_label,
                 "p0_cases": p0_count,
                 "p1_cases": p1_count,
-                "p2_cases": p2_count,
                 "ordering_guarantee": "Cases are ordered from most to least likely fraud."
             },
             "policy": {
@@ -437,7 +437,7 @@ class ExplanationAgent:
                 return False
 
         # 2. Forbidden terms
-        forbidden = ["audit", "panel", "settings", "click", "link", "advanced view", "ui", "optimization"]
+        forbidden = ["audit", "panel", "settings", "click", "link", "advanced view", "optimization"]
         contract_str = json.dumps(contract).lower()
         
         for term in forbidden:
