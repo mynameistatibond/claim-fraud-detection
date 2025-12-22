@@ -171,14 +171,20 @@ class ExplanationAgent:
 
             # Validate and Parse (Shared)
             if text and self._validate_text(text, decision_contract):
-                return self._parse_to_ui_schema(text)
+                parsed = self._parse_to_ui_schema(text)
+                parsed["meta"] = {
+                    "source": "LLM",
+                    "provider": self.llm_config.get('provider', 'unknown'),
+                    "model": self.llm_config.get('model', 'unknown')
+                }
+                return parsed
             else:
                 logger.warning(f"LLM output failed validation. Text: {text[:100]}...")
-                return self._generate_fallback(decision_contract)
+                return self._generate_fallback(decision_contract, reason="Validation Failed")
 
         except Exception as e:
             logger.error(f"Explanation Agent Exception: {e}")
-            return self._generate_fallback(decision_contract)
+            return self._generate_fallback(decision_contract, reason=f"Exception: {str(e)}")
 
     def _validate_text(self, text: str, contract: dict) -> bool:
         """
@@ -295,7 +301,7 @@ class ExplanationAgent:
 
         return sections
 
-    def _generate_fallback(self, contract: dict) -> dict:
+    def _generate_fallback(self, contract: dict, reason: str = "Unknown") -> dict:
         """
         Deterministic fallback template (Spec 6.3).
         """
@@ -312,5 +318,10 @@ class ExplanationAgent:
                 f"Review Window: {c['window_label']}",
                 f"Team Capacity: {contract['decision_basis']['inputs_used']['team_capacity_cases_per_day']}/day",
                 f"Thresholds: P0 > {p['thresholds']['p0']}, P1 > {p['thresholds']['p1']}"
-            ]
+            ],
+            "meta": {
+                "source": "Fallback",
+                "reason": reason,
+                "provider": "Internal Rule Engine"
+            }
         }

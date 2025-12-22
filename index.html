@@ -1896,8 +1896,25 @@
                         const renderBullets = (items) => items.map(i => `<li>${i}</li>`).join('');
 
                         summaryText.innerHTML = `
-                            <div style="font-size: 1.15em; font-weight: 600; color: #feca57; margin-bottom: 8px;">
-                                ${n.headline}
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                                <div style="font-size: 1.15em; font-weight: 600; color: #feca57;">
+                                    ${n.headline}
+                                </div>
+                                ${n.meta ? `
+                                    <div title="${n.meta.reason || ''} (${n.meta.provider || ''})" style="
+                                        font-size: 0.7em; 
+                                        padding: 2px 6px; 
+                                        border-radius: 4px; 
+                                        background: ${n.meta.source === 'LLM' ? 'rgba(78, 205, 196, 0.2)' : 'rgba(255, 107, 107, 0.2)'}; 
+                                        color: ${n.meta.source === 'LLM' ? '#4ecdc4' : '#ff6b6b'}; 
+                                        border: 1px solid ${n.meta.source === 'LLM' ? '#4ecdc4' : '#ff6b6b'};
+                                        cursor: help;
+                                        white-space: nowrap;
+                                        margin-left: 8px;
+                                    ">
+                                        ${n.meta.source === 'LLM' ? '⚡ Agentic AI' : '🛡️ Rule Engine'}
+                                    </div>
+                                ` : ''}
                             </div>
                             
                             <!-- Impact -->
