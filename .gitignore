@@ -14,15 +14,17 @@ data/raw/*
 # data/processed/* 
 
 # Models
-# Allow models directory
-!models/
+# 1. Ignore everything in models/
 models/*
-# EXCLUDE the large file (>100MB)
-models/best_tree_models_calibrated.joblib
-# ALLOW the compressed version (<100MB)
-!models/best_tree_models_calibrated.joblib.gz
-# Allow other joblibs if they are <100MB
+# 2. Allow models folder structure
+!models/
+# 3. Allow joblib files (Un-ignore)
 !models/*.joblib
+# 4. BUT IGNORE the large file (Re-ignore) - MUST come after the wildcard include!
+models/best_tree_models_calibrated.joblib
+# 5. Allow the compressed version
+!models/best_tree_models_calibrated.joblib.gz
+# 6. Allow gitkeep
 !models/.gitkeep
 
 # Final Models

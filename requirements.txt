@@ -9,3 +9,4 @@ statsmodels
 ipykernel
 joblib
 missingno
+streamlit
