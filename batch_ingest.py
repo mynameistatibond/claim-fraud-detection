@@ -457,7 +457,7 @@ async def process_batch_file(
     # Build Deterministic Contract (Spec 3.3)
     decision_contract = DecisionContractBuilder.build(
         triage_result, scored_df, review_window_days, 
-        team_size, review_time_mins, appetite_str
+        team_size, review_time, appetite_str
     )
     triage_result["decision_contract"] = decision_contract
 
