@@ -436,15 +436,18 @@ async def process_batch_file(
     
     appetite_str = risk_decision['risk_appetite']
 
-    # 5b. Run Triage with Derived Appetite
-    triage_result = triage_agent.triage_batch(
+    # 5b. Run Triage with Derived Appetite (New API)
+    daily_capacity = int((team_size * 480) / max(1, review_time))
+    
+    policy_override = {
+        "capacity": daily_capacity,
+        "risk_appetite": appetite_str,
+        "review_window_days": review_window_days
+    }
+    
+    triage_result = triage_agent.run_batch_triage(
         scored_df, 
-        batch_size=len(scored_df),
-        team_size=team_size,
-        review_time_mins=review_time,
-        risk_appetite=appetite_str,
-        review_window_days=review_window_days,
-        current_backlog_cases=current_backlog_cases
+        policy_override=policy_override
     )
     
     # Attach Risk Analysis to Result
