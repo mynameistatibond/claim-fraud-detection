@@ -13,15 +13,18 @@ class DecisionContractBuilder:
     Enforces all arithmetic and logic rules from Tech Spec 3.3.
     """
     @staticmethod
+    @staticmethod
     def build(triage_result, scored_df, review_window_days, team_size, review_time_mins, appetite_str, current_backlog_cases=0):
         # 1. Deterministic Computation Rules
         team_capacity_cases_per_day = int((team_size * 480) / review_time_mins)
         
         p0_count = triage_result["summary"]["p0_count"]
-        p1_count = triage_result["workload_summary"]["assigned_work"]["p1"]
+        # Handle new keys safely (or assume exists from new TriageAgent)
+        p1_count = triage_result["summary"].get("p1_count", triage_result["workload_summary"]["assigned_work"]["p1"])
+        p2_count = triage_result["summary"].get("p2_count", 0)
         
-        # Capacity Equivalent Demand: p0 + 0.6 * p1
-        demand = p0_count + (0.6 * p1_count)
+        # Capacity Equivalent Demand: p0 (1.0) + p1 (0.6) + p2 (0.2)
+        demand = p0_count + (0.6 * p1_count) + (0.2 * p2_count)
         
         # Effective Capacity (deducting backlog)
         total_window_capacity = (team_capacity_cases_per_day * review_window_days) - current_backlog_cases
@@ -40,8 +43,10 @@ class DecisionContractBuilder:
             capacity_status = "backlog risk"
 
         # Detailed Workload Math (Per Person)
-        # Cases assigned vs Capacity
-        total_assigned = p0_count + p1_count
+        # Cases assigned vs Capacity (Count P0 + P1 fully + 50% P2 for headcount planning?)
+        # Or Just P0 + P1? User says P2 is "Maybe".
+        # Let's count them all but rely on recommended next step to prioritize.
+        total_assigned = p0_count + p1_count + p2_count
         cases_per_person = round(total_assigned / team_size, 1)
         hours_per_person_needed = round((cases_per_person * review_time_mins) / 60, 1)
         
@@ -68,7 +73,7 @@ class DecisionContractBuilder:
 
         # 2. Construct Contract
         contract = {
-            "contract_version": "1.0",
+            "contract_version": "1.1",
             "review_mode": {
                 "mode_label": mode_label,
                 "capacity_status": capacity_status
@@ -82,22 +87,23 @@ class DecisionContractBuilder:
                     "team_capacity_cases_per_day": team_capacity_cases_per_day,
                     "existing_backlog": current_backlog_cases
                 },
-                "how_thresholds_were_set": "Thresholds were set to prioritize high-confidence fraud cases while staying within your operational capacity."
+                "how_thresholds_were_set": "Agentic AI set 3 dynamic thresholds (P0, P1, P2) to optimize fraud capture within operational capacity."
             },
             "workload_commitment": {
                 "window_label": window_label,
                 "p0_cases": p0_count,
                 "p1_cases": p1_count,
-                "ordering_guarantee": "Strict ordering: P0 first, then P1 by highest fraud score."
+                "p2_cases": p2_count,
+                "ordering_guarantee": "Strict ordering: P0 -> P1 -> P2. Review P2 only if time remains."
             },
             "workload_analysis": workload_analysis,
             "policy": {
                 "thresholds": triage_result["decision_policy"]["thresholds"],
-                "p0_strictness_statement": "P0 thresholds are intentionally strict to ensure the most credible fraud cases are reviewed first.",
-                "p1_flex_statement": "P1/P2 are more flexible and expand or shrink based on available capacity."
+                "p0_strictness_statement": "P0 thresholds are strict to ensure the most credible fraud cases are covered.",
+                "p1_flex_statement": "P1/P2 expand or shrink based on available capacity and fraud score distribution."
             },
             "safety_statement": {
-                "why_safe": "Lower-priority claims have weaker fraud signals and can be reviewed later if capacity allows without significantly increasing risk."
+                "why_safe": "Claims below P2 Threshold (or < 0.25) are explicitly ignored as noise."
             }
         }
         return contract
