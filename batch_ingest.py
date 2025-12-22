@@ -452,7 +452,15 @@ async def process_batch_file(
         if 'drivers' in export_df.columns:
             export_df['drivers'] = export_df['drivers'].apply(lambda x: str(x) if isinstance(x, list) else x)
             
-        export_df.to_csv(output_path, index=False)
+        # Write with Metadata Headers
+        with open(output_path, 'w') as f:
+            f.write(f"# Risk Appetite: {risk_decision.get('risk_appetite', 'Unknown')}\n")
+            f.write(f"# Confidence: {risk_decision.get('confidence', 'N/A')}\n")
+            f.write(f"# Operating Mode: {operating_mode}\n")
+            f.write(f"# Review Window: {review_window_days} days\n")
+            f.write(f"# Generated: {time.ctime()}\n")
+            export_df.to_csv(f, index=False)
+            
         triage_result["csv_file"] = output_filename
         del triage_result["full_df"] # Remove from memory return
         
