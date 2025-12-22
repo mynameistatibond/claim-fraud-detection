@@ -14,40 +14,39 @@ class ExplanationAgent:
 
     def generate_ops_briefing(self, fact_sheet: dict) -> dict:
         """
-        Generates a human-centric operational briefing based strictly on the provided Fact Sheet.
+        Generates a human-centric operational explanation based strictly on the provided Fact Sheet.
         """
         if not self.llm_config:
             return self._generate_fallback(fact_sheet)
 
         system_prompt = (
             "You are a claims operations lead. "
-            "Use only the provided JSON fact sheet. "
-            "Do not invent numbers or thresholds. "
-            "Do not mention specific stats like p95 or share_ge unless in the audit details. "
-            "Output JSON only in the specified schema."
+            "Your goal is to explain the system's review mode and workload commitments to a human operator. "
+            "Use ONLY the provided JSON fact sheet. "
+            "Do NOT invent numbers, thresholds, or UI elements. "
+            "Do NOT use the word 'audit'. Use 'technical assumptions' instead. "
+            "Be decisive (one recommendation). "
+            "Output strictly valid JSON matching the schema."
         )
 
         user_prompt = f"""
-        Generate an operational briefing based on this fact sheet.
+        Generate an operational explanation based on this fact sheet.
 
-        FACT SHEET:
+        INPUT FACT SHEET:
         {json.dumps(fact_sheet, indent=2)}
 
-        OUTPUT SCHEMA:
+        OUTPUT SCHEMA (Strict JSON):
         {{
-            "title": "Short 1-line headline (e.g. 'Broad review mode — capacity available')",
-            "summary": "2-3 sentences explaining the situation clearly.",
-            "what_you_get": ["Bullet 1", "Bullet 2"],
-            "why_this_mode": ["Reason 1", "Reason 2", "Reason 3 (optional)"],
-            "recommended_next_step": {{
-                "action": "One concrete recommended action",
-                "reason": "Why this action constitutes a good trade-off"
-            }},
-            "audit_details": {{
-                "thresholds": "e.g. P0 >= 0.XX",
-                "capacity": "e.g. ~120/day",
-                "risk_shape": "e.g. P95=0.77"
-            }}
+            "headline": "Short 1-line headline (e.g. 'Broad review mode — spare capacity')",
+            "impact": "1-2 sentences. What does this change for work today? (Visibility/Volume)",
+            "workload_commitment": "What work is committed? Explicitly mention review window and P0 count. Frame P0 as primary.",
+            "why_this_is_safe": "Why is this reasonable? Capacity vs Workload fit. No jargon.",
+            "recommended_next_step": "One decisive instruction. Start with P0. Conditionally mention P1 if spare capacity.",
+            "technical_assumptions": [
+                "Bullet 1 (e.g. Thresholds)",
+                "Bullet 2 (e.g. Capacity)",
+                "Bullet 3 (e.g. Window)"
+            ]
         }}
         """
 
@@ -60,7 +59,7 @@ class ExplanationAgent:
                 "inputs": f"<|system|>\n{system_prompt}\n<|user|>\n{user_prompt}\n<|assistant|>",
                 "parameters": {
                     "max_new_tokens": 512,
-                    "temperature": 0.3, # Low temperature for factual consistency
+                    "temperature": 0.3, # Low temp for factual consistency
                     "return_full_text": False
                 }
             }
@@ -91,29 +90,23 @@ class ExplanationAgent:
 
     def _generate_fallback(self, fact_sheet: dict) -> dict:
         """
-        Deterministic fallback if LLM falls.
+        Deterministic fallback matching the new schema.
         """
         mode = fact_sheet.get("mode_label", "Standard Review")
-        status = fact_sheet.get("workload", {}).get("status", "Balanced")
+        status = fact_sheet.get("capacity_status", "balanced")
+        p0 = fact_sheet.get("workload", {}).get("p0_cases", "?")
+        window = fact_sheet.get("review_window_days", 1)
+        cap = fact_sheet.get("capacity", {}).get("daily_capacity_cases", "?")
         
         return {
-            "title": f"{mode} — {status.replace('_', ' ').capitalize()}",
-            "summary": "The system has analyzed the batch and set thresholds based on your team's capacity.",
-            "what_you_get": [
-                f"Prioritized list of {fact_sheet.get('counts', {}).get('p0', '?')} high-risk claims",
-                "Full CSV export for detailed analysis"
-            ],
-            "why_this_mode": [
-                "Based on current capacity constraints",
-                "Optimized for available review time"
-            ],
-            "recommended_next_step": {
-                "action": "Review P0 cases first",
-                "reason": "Ensures highest risk claims are covered"
-            },
-            "audit_details": {
-                "thresholds": "Check advanced panel",
-                "capacity": "Check settings",
-                "risk_shape": "N/A"
-            }
+            "headline": f"{mode} — {status.replace('_', ' ')}",
+            "impact": "The system has set thresholds to prioritize claims based on your available capacity.",
+            "workload_commitment": f"You are committed to reviewing {p0} high-priority cases over the next {window} day(s).",
+            "why_this_is_safe": "The workload is calibrated to fit within your team's estimated operational limits.",
+            "recommended_next_step": "Start by reviewing the identified P0 cases immediately.",
+            "technical_assumptions": [
+                f"Team Capacity: ~{cap}/day",
+                f"Review Window: {window} day(s)",
+                "Thresholds applied based on appetite"
+            ]
         }

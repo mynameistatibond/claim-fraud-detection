@@ -453,22 +453,30 @@ async def process_batch_file(
     # 5c. Generate Narrative (Product-Grade)
     explanation_agent = ExplanationAgent()
     
+    # Map status to detailed codes
+    status_map = {
+        "Overloaded": "overloaded", 
+        "Underloaded": "spare", 
+        "Balanced": "balanced"
+    }
+    cap_status = status_map.get(triage_result["workload_summary"].get("status"), "balanced")
+
     fact_sheet = {
-        "mode_label": f"{'Strict' if appetite_str == 'Conservative' else ('Broad' if appetite_str == 'Aggressive' else 'Standard')} Review Mode",
+        "mode_label": f"{'Strict' if appetite_str == 'Conservative' else ('Broad' if appetite_str == 'Aggressive' else 'Standard')} review mode",
+        "capacity_status": cap_status,
         "review_window_days": review_window_days,
-        "daily_capacity_cases": triage_result["summary"]["capacity_used"],
-        "batch_size": len(scored_df),
-        "thresholds": triage_result["decision_policy"]["thresholds"],
-        "counts": {
-            "p0": triage_result["summary"]["p0_count"],
-            "p1": triage_result["workload_summary"]["assigned_work"]["p1"],
-            "p2": len(scored_df) - triage_result["summary"]["p0_count"] - triage_result["workload_summary"]["assigned_work"]["p1"]
+        
+        "capacity": {
+            "daily_capacity_cases": triage_result["summary"]["capacity_used"]
         },
-        "workload": triage_result["workload_summary"],
-        "risk_shape": {
-            "p95": risk_decision["signals"].get("p95"),
-            "share_ge_0_3": risk_decision["signals"].get("share_ge_0_3")
-        }
+
+        "workload": {
+            "p0_cases": triage_result["summary"]["p0_count"],
+            "p1_cases": triage_result["workload_summary"]["assigned_work"]["p1"],
+            "p2_cases": len(scored_df) - triage_result["summary"]["p0_count"] - triage_result["workload_summary"]["assigned_work"]["p1"]
+        },
+
+        "thresholds": triage_result["decision_policy"]["thresholds"]
     }
     
     try:
