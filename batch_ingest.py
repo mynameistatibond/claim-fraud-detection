@@ -8,7 +8,7 @@ from pathlib import Path
 from preprocessing import preprocess_input, DEFAULTS
 from triage_agent import FraudTriageAgent
 from risk_appetite_agent import RiskAppetiteAgent
-from explanation_agent import ExplanationAgent
+from explanation_agent import ExplanationAgent, DecisionContractBuilder
 
 # --- CONFIGURATION (Spec 3, 2.2) ---
 FRIENDLY_TO_INTERNAL = {
@@ -451,48 +451,23 @@ async def process_batch_file(
     triage_result['risk_analysis'] = risk_decision
     
     # 5c. Generate Narrative (Product-Grade)
+    # 5c. Agentic Explanation System v2
     explanation_agent = ExplanationAgent()
     
-    # Map status to detailed codes
-    status_map = {
-        "Overloaded": "overloaded", 
-        "Underloaded": "spare capacity", 
-        "Balanced": "balanced capacity"
-    }
-    cap_status = status_map.get(triage_result["workload_summary"].get("status"), "balanced capacity")
-    
-    # STRICT DECISION CONTRACT (Phase 7)
-    decision_contract = {
-        "review_mode": {
-            "label": f"{'Strict' if appetite_str == 'Conservative' else ('Broad' if appetite_str == 'Aggressive' else 'Standard')} review mode",
-            "capacity_status": cap_status
-        },
-        "decision_basis": {
-            "model_type": "calibrated fraud detection model",
-            "constraints_used": ["review window", "team capacity"]
-        },
-        "workload_commitment": {
-            "review_window_days": review_window_days,
-            "p0_cases": triage_result["summary"]["p0_count"],
-            "p1_available": triage_result["workload_summary"]["assigned_work"]["p1"] > 0
-        },
-        "ordering_guarantee": "Cases are ordered from highest to lowest fraud likelihood",
-        "safety_rationale": {
-            "p0_strict": True,
-            "lower_priority_deferral_safe": True
-        },
-        "system_assumptions": {
-            "review_window_days": review_window_days,
-            "team_capacity_cases_per_day": triage_result["summary"]["capacity_used"],
-            "thresholds": triage_result["decision_policy"]["thresholds"]
-        }
-    }
-    
+    # Build Deterministic Contract (Spec 3.3)
+    decision_contract = DecisionContractBuilder.build(
+        triage_result, scored_df, review_window_days, 
+        team_size, review_time_mins, appetite_str
+    )
+    triage_result["decision_contract"] = decision_contract
+
     try:
-        ops_briefing = explanation_agent.generate_ops_briefing(decision_contract)
+        # Generate Text, Validate, Parse to UI Schema
+        ops_briefing = explanation_agent.generate_explanation(decision_contract)
         triage_result["narrative"] = ops_briefing
     except Exception as e:
         print(f"Explanation Generation Failed: {e}")
+        triage_result["narrative"] = None
         triage_result["narrative"] = None
     
     # Save Full Results CSV
