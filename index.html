@@ -556,7 +556,203 @@
             border-bottom-color: var(--clr-text);
             outline: none;
         }
+
+        /* --- GLOBAL FORM INHERITANCE (Requested) --- */
+        input,
+        select,
+        button,
+        textarea {
+            font-family: inherit;
+            color: #ffffff;
+        }
+
+        /* Custom File Upload Styling */
+        .file-upload-wrapper {
+            margin: 0 auto 20px auto;
+            text-align: center;
+        }
+
+        .file-upload-input {
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+            position: absolute;
+            z-index: -1;
+        }
+
+        .file-upload-label {
+            display: inline-block;
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.08);
+            /* Matches card style */
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .file-upload-label:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.4);
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+
+        .file-upload-label i {
+            margin-right: 8px;
+            opacity: 0.7;
+        }
+
+        /* --- FLATPICKR OVERRIDES (Cobalt Theme) --- */
+        .flatpickr-calendar {
+            background: #0500a1 !important;
+            /* Deep Cobalt */
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5) !important;
+            font-family: 'Shippori Mincho B1', serif !important;
+        }
+
+        .flatpickr-month {
+            background: transparent !important;
+            color: white !important;
+            fill: white !important;
+        }
+
+        .flatpickr-current-month span.cur-month {
+            font-weight: 600 !important;
+        }
+
+        .flatpickr-weekdays {
+            background: transparent !important;
+        }
+
+        span.flatpickr-weekday {
+            color: rgba(255, 255, 255, 0.6) !important;
+        }
+
+        .flatpickr-day {
+            color: white !important;
+        }
+
+        .flatpickr-day.selected,
+        .flatpickr-day.startRange,
+        .flatpickr-day.endRange,
+        .flatpickr-day.selected.inRange,
+        .flatpickr-day.startRange.inRange,
+        .flatpickr-day.endRange.inRange,
+        .flatpickr-day:focus,
+        .flatpickr-day:hover {
+            background: #4ecdc4 !important;
+            /* Cyan accent */
+            border-color: #4ecdc4 !important;
+            color: #0500a1 !important;
+            /* Dark text for contrast */
+            font-weight: bold !important;
+        }
+
+        .flatpickr-day.today {
+            border-color: rgba(255, 255, 255, 0.5) !important;
+        }
+
+        /* --- MINIMAL BADGES (User Requested) --- */
+        .priority-badge {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: 500;
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            display: inline-block;
+            white-space: nowrap;
+        }
+
+        .badge-p0 {
+            border-color: rgba(255, 255, 255, 0.7);
+            background: rgba(255, 255, 255, 0.2);
+            font-weight: 600;
+        }
+
+        .badge-p1 {
+            border-color: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .badge-p2 {
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .badge-ignore {
+            opacity: 0.6;
+            border-style: dashed;
+        }
+
+        /* Driver Pills - Minimal */
+        .driver-pill {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            margin-right: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.02);
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* --- MODE TABS --- */
+        .mode-tabs {
+            display: flex;
+            justify-content: center;
+            /* Centered */
+            gap: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 40px;
+            /* More space */
+            padding-left: 0;
+            margin-left: 0;
+        }
+
+        .tab-item {
+            padding: 12px 35px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.5);
+            background: transparent;
+            border: 1px solid transparent;
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+            /* Rounded top corners */
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: -1px;
+            /* Overlap container border */
+        }
+
+        .tab-item:hover {
+            color: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-item.active {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.1);
+            /* Subtle "active" bg */
+            border-color: rgba(255, 255, 255, 0.3);
+            /* Visible border */
+            border-bottom: 1px solid var(--clr-bg);
+            /* Match bg to "open" the tab */
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        }
     </style>
+    <!-- FLATPICKR JS -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 </head>
 
 <body>
@@ -567,24 +763,20 @@
             <div class="subtitle">Predictive analysis of auto claim irregularities</div>
         </header>
 
+        <!-- MODE TABS -->
+        <div class="mode-tabs">
+            <div class="tab-item active" data-tab="single" id="tab-single">Single Claim Analysis</div>
+            <div class="tab-item" data-tab="batch" id="tab-batch">Batch Upload Analysis</div>
+        </div>
 
         <!-- CONFIG -->
         <div class="config-bar">
-            <!-- GLOBAL MODE selector (New) -->
-            <div class="control-group" style="grid-column: 1 / -1;">
-                <label>Analysis Mode</label>
-                <select id="analysis_mode">
-                    <option value="single" selected>Single claim (form)</option>
-                    <option value="batch">Batch upload (CSV)</option>
-                </select>
-            </div>
-
             <!-- Model Selection -->
             <div class="control-group">
                 <label>Prediction Model</label>
                 <select id="model">
-                    <option value="xgb" selected>XGBoost — Quick signal</option>
-                    <option value="voting">Voting Ensemble — Best overall signal</option>
+                    <option value="xgb">XGBoost — Quick signal</option>
+                    <option value="voting" selected>Voting Ensemble — Best overall signal</option>
                     <option value="et">Extra Trees — Stable signal</option>
                     <option value="rf">Random Forest — Clear reasoning</option>
                 </select>
@@ -602,8 +794,8 @@
             <div class="control-group">
                 <label>Scenario</label>
                 <select id="scenario">
-                    <option value="auto_flagger" selected>Auto-Flagger (Operational)</option>
-                    <option value="dashboard">Dashboard Review (Calibrated)</option>
+                    <option value="auto_flagger">Auto-Flagger (Operational)</option>
+                    <option value="dashboard" selected>Dashboard Review (Calibrated)</option>
                 </select>
                 <div id="scenario_desc" class="helper-text" style="line-height: 1.4; margin-top: 8px;">
                     Scenario determines <b>scoring behavior</b> (e.g. Model Calibration), while Operating Mode sets the
@@ -618,17 +810,25 @@
             <div style="padding: 40px;">
                 <div style="font-size: 18px; margin-bottom: 15px; font-weight: 500;">Batch Processing Workflow</div>
 
-                <input type="file" id="batchFile" accept=".csv"
-                    style="display: block; margin: 0 auto 20px auto; max-width: 300px;">
+                <div class="file-upload-wrapper">
+                    <input type="file" id="batchFile" accept=".csv" class="file-upload-input">
+                    <label for="batchFile" class="file-upload-label" id="batchFileLabel">
+                        <span>Choose CSV File...</span>
+                    </label>
+                </div>
 
                 <div style="font-size: 14px; opacity: 0.7; max-width: 400px; margin: 0 auto; line-height: 1.5;">
-                    Upload a CSV file with one row per claim.<br>
-                    Batch processing logic will be added in a later step.
+                    Upload a CSV file with one row per claim.
                 </div>
 
                 <div style="margin-top: 20px; font-size: 13px; opacity: 0.5;">
-                    <span style="border-bottom: 1px dotted rgba(255,255,255,0.5); cursor: not-allowed;">Download CSV
-                        template</span>
+                    <a href="/download_template" download="claim_template.csv"
+                        style="color: rgba(255,255,255,0.8); text-decoration: none; border-bottom: 1px dotted rgba(255,255,255,0.5); cursor: pointer; transition: color 0.2s;">Download
+                        CSV template</a>
+                    <span style="opacity: 0.3; margin: 0 10px;">|</span>
+                    <span id="openDocsBtn"
+                        style="color: #feca57; cursor: pointer; border-bottom: 1px dashed #feca57;">Wanna know how
+                        exactly?</span>
                 </div>
 
                 <!-- Capacity Inputs (New) -->
@@ -669,12 +869,33 @@
                         <div style="flex: 1;">
                             <label style="font-size: 0.8em; opacity: 0.6; display: block; margin-bottom: 5px;">Review
                                 Window</label>
+
+                            <!-- Flatpickr CSS -->
+                            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
                             <select id="reviewWindow"
                                 style="width: 100%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 8px; border-radius: 4px;">
                                 <option value="1" selected>Today (1 day)</option>
                                 <option value="3">Next 3 days</option>
+                                <option value="5">Next 5 days (Work Week)</option>
                                 <option value="7">Next 7 days</option>
+                                <option value="14">Next 14 days (Sprint)</option>
+                                <option value="30">Next 30 days (Month)</option>
+                                <option value="custom" style="font-style: italic; color: #feca57;">Select specific end
+                                    date...</option>
                             </select>
+
+                            <!-- Custom Date Picker Helper -->
+                            <div id="customDateContainer" style="margin-top: 8px;">
+                                <input type="text" id="customDateInput" style="display:none;">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
+                                    <input type="checkbox" id="workDaysOnly" checked
+                                        style="width: auto; height: auto; margin: 0; cursor: pointer;">
+                                    <label for="workDaysOnly"
+                                        style="font-size: 0.75em; opacity: 0.8; cursor: pointer; margin: 0; padding: 0;">Count
+                                        Work Days Only (Mon-Fri)</label>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -1146,20 +1367,46 @@
                 border: 1px solid rgba(255, 255, 255, 0.1);
                 opacity: 0.6;
             }
+
+            .batch-table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 0.9em;
+                /* Transparent/White Theme */
+                background: rgba(255, 255, 255, 0.02);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 6px;
+                /* Keep radius if desired, might need overflow:hidden on container */
+            }
+
+            .batch-table th,
+            .batch-table td {
+                text-align: left;
+                padding: 12px 15px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            }
+
+            .batch-table th {
+                /* Transparent Header */
+                background: rgba(255, 255, 255, 0.05);
+                font-weight: 500;
+                /* Lighter weight */
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: rgba(255, 255, 255, 0.6);
+                font-size: 0.85em;
+            }
         </style>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <div style="font-size: 1.2rem; font-weight: 500;">Batch Analysis Results</div>
-            <a id="downloadResultsBtn" href="#" target="_blank"
-                style="display:none; text-decoration: none; font-size: 13px; padding: 6px 12px; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; color: white; background: rgba(255,255,255,0.05);">↓
-                Download Full Triage CSV</a>
+        <div style="text-align: center; margin-bottom: 25px;">
+            <div style="font-size: 1.4rem; font-weight: 500; letter-spacing: 0.02em;">Batch Analysis Results</div>
         </div>
 
         <!-- AGENT SUMMARY BOX -->
         <div id="agentSummaryBox" class="agent-summary"
             style="display:none; flex-direction: column; align-items: flex-start;">
             <div style="display: flex; align-items: flex-start; gap: 12px; width: 100%;">
-                <div class="icon">🤖</div>
+                <!-- Emoji removed for minimal look -->
                 <div style="flex: 1;">
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
                         <span id="riskAppetiteBadge"
@@ -1169,6 +1416,20 @@
                     <div id="agentSummaryText" style="line-height: 1.5;">Agent logic initialized.</div>
                 </div>
             </div>
+        </div>
+
+        <!-- Download Button Results (Moved here) -->
+        <div style="text-align: center; margin: 20px 0 30px 0;">
+            <a id="downloadResultsBtn" href="#" target="_blank"
+                style="display:none; text-decoration: none; font-size: 15px; font-weight: 500; padding: 12px 24px; border-radius: 6px; color: white; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); transition: all 0.2s ease;">
+                ↓ Download Full Triage CSV
+            </a>
+            <style>
+                #downloadResultsBtn:hover {
+                    background: rgba(255, 255, 255, 0.2) !important;
+                    transform: translateY(-1px);
+                }
+            </style>
         </div>
 
         <table class="batch-table">
@@ -1187,6 +1448,171 @@
                 <!-- Rows injected via JS -->
             </tbody>
         </table>
+    </div>
+
+    <!-- DATA DOCUMENTATION SIDEBAR -->
+    <div id="docsSidebar"
+        style="position: fixed; top: 0; right: -500px; width: 480px; height: 100vh; background: var(--clr-bg); border-left: 1px solid var(--clr-divider); box-shadow: -20px 0 50px rgba(0,0,0,0.6); z-index: 9999; transition: right 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); display: flex; flex-direction: column;">
+
+        <!-- Header -->
+        <div style="padding: 40px 40px 20px 40px; border-bottom: 1px solid var(--clr-divider);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="font-size: 20px; font-weight: 500; letter-spacing: 0.05em; color: var(--clr-text);">Data
+                    Specification</h2>
+                <button id="closeDocsBtn"
+                    style="background: none; border: none; font-size: 28px; line-height: 1; color: var(--clr-text); opacity: 0.5; cursor: pointer; padding: 0;">&times;</button>
+            </div>
+            <p style="font-size: 13px; opacity: 0.6; margin-top: 10px; line-height: 1.5; font-family: inherit;">Your CSV
+                must contain these exact columns. Headers are case-sensitive.</p>
+        </div>
+
+        <!-- Content -->
+        <div style="flex: 1; overflow-y: auto; padding: 0 40px 60px 40px;">
+            <style>
+                .doc-section {
+                    margin-top: 35px;
+                }
+
+                .doc-title {
+                    font-size: 12px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.1em;
+                    color: #feca57;
+                    margin-bottom: 15px;
+                    font-weight: 700;
+                    border-bottom: 1px solid var(--clr-divider);
+                    padding-bottom: 5px;
+                }
+
+                .doc-item {
+                    margin-bottom: 18px;
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+                    padding-bottom: 15px;
+                }
+
+                .doc-header {
+                    font-family: 'SF Mono', 'Roboto Mono', monospace;
+                    font-size: 13px;
+                    color: var(--clr-text);
+                    font-weight: 600;
+                    margin-bottom: 4px;
+                    letter-spacing: -0.02em;
+                }
+
+                .doc-desc {
+                    font-size: 13px;
+                    opacity: 0.7;
+                    line-height: 1.4;
+                }
+
+                .doc-meta {
+                    font-size: 11px;
+                    opacity: 0.5;
+                    margin-top: 4px;
+                    font-style: italic;
+                }
+            </style>
+
+            <div class="doc-section">
+                <div class="doc-title">Financial & Policy</div>
+                <div class="doc-item">
+                    <div class="doc-header">policy_annual_premium</div>
+                    <div class="doc-desc">Annual cost of the insurance policy.</div>
+                    <div class="doc-meta">Float • e.g. 1200.50 </div>
+                </div>
+                <div class="doc-item">
+                    <div class="doc-header">total_claim_amount</div>
+                    <div class="doc-desc">Total value of the claim requested.</div>
+                    <div class="doc-meta">Float • e.g. 50000 </div>
+                </div>
+                <div class="doc-item">
+                    <div class="doc-header">umbrella_limit</div>
+                    <div class="doc-desc">Umbrella policy coverage limit.</div>
+                    <div class="doc-meta">Integer • 0, 1000000, 5000000, 10000000</div>
+                </div>
+                <div class="doc-item">
+                    <div class="doc-header">capital-gains</div>
+                    <div class="doc-desc">Reported capital gains valid for the period. Note the hyphen.</div>
+                    <div class="doc-meta">Float • >= 0</div>
+                </div>
+                <div class="doc-item">
+                    <div class="doc-header">capital-loss</div>
+                    <div class="doc-desc">Reported capital loss. Provide as positive number or negative (logic handles
+                        both).</div>
+                    <div class="doc-meta">Float</div>
+                </div>
+            </div>
+
+            <div class="doc-section">
+                <div class="doc-title">Incident Details</div>
+                <div class="doc-item">
+                    <div class="doc-header">collision_type</div>
+                    <div class="doc-desc">Type of impact.</div>
+                    <div class="doc-meta">Options: Front Collision, Rear Collision, Side Collision, ?</div>
+                </div>
+                <div class="doc-item">
+                    <div class="doc-header">incident_severity</div>
+                    <div class="doc-desc">Assessed damage severity.</div>
+                    <div class="doc-meta">Options: Major Damage, Minor Damage, Total Loss, Trivial Damage</div>
+                </div>
+                <div class="doc-item">
+                    <div class="doc-header">incident_hour_of_the_day</div>
+                    <div class="doc-desc">Hour when incident occurred (24h format).</div>
+                    <div class="doc-meta">Integer • 0-23</div>
+                </div>
+                <div class="doc-item">
+                    <div class="doc-header">authorities_contacted</div>
+                    <div class="doc-desc">Agency contacted at scene.</div>
+                    <div class="doc-meta">Options: Police, Fire, Ambulance, Other, None</div>
+                </div>
+                <div class="doc-item">
+                    <div class="doc-header">police_report_available</div>
+                    <div class="doc-desc">Whether a report exists.</div>
+                    <div class="doc-meta">Options: YES, NO, ?</div>
+                </div>
+                <div class="doc-item">
+                    <div class="doc-header">number_of_vehicles_involved</div>
+                    <div class="doc-meta">Integer • >= 1</div>
+                </div>
+                <div class="doc-item">
+                    <div class="doc-header">bodily_injuries</div>
+                    <div class="doc-meta">Integer • >= 0</div>
+                </div>
+            </div>
+
+            <div class="doc-section">
+                <div class="doc-title">Customer History</div>
+                <div class="doc-item">
+                    <div class="doc-header">months_as_customer</div>
+                    <div class="doc-desc">Total tenure in months.</div>
+                </div>
+                <div class="doc-item">
+                    <div class="doc-header">days_since_bind</div>
+                    <div class="doc-desc">Days since the current policy was bound/started.</div>
+                </div>
+                <div class="doc-item">
+                    <div class="doc-header">age</div>
+                    <div class="doc-desc">Insured's age in years.</div>
+                </div>
+                <div class="doc-item">
+                    <div class="doc-header">vehicle_age</div>
+                    <div class="doc-desc">Vehicle age in years.</div>
+                </div>
+            </div>
+
+            <div class="doc-section">
+                <div class="doc-title">Breakdown Shares (Optional)</div>
+                <div class="doc-item">
+                    <div class="doc-header">injury_share</div>
+                    <div class="doc-desc">Percentage of claim for injury. (0-100)</div>
+                </div>
+                <div class="doc-item">
+                    <div class="doc-header">property_share</div>
+                    <div class="doc-desc">Percentage of claim for property. (0-100)</div>
+                </div>
+            </div>
+
+        </div>
     </div>
 
     <script>
@@ -1704,7 +2130,8 @@
         // ========================================
         // ANALYSIS MODE LOGIC (NEW)
         // ========================================
-        const modeSelector = document.getElementById('analysis_mode');
+        const tabSingle = document.getElementById('tab-single');
+        const tabBatch = document.getElementById('tab-batch');
         const batchPanel = document.getElementById('batchPanel');
         const tierSections = document.querySelectorAll('.tier-section');
         const predictBtn = document.getElementById('predictBtn');
@@ -1712,10 +2139,25 @@
         // Initial State
         let analysisMode = "single";
 
-        modeSelector.addEventListener('change', (e) => {
-            analysisMode = e.target.value;
+        function setMode(mode) {
+            analysisMode = mode;
+
+            // Update Tab UI
+            if (mode === 'single') {
+                tabSingle.classList.add('active');
+                tabBatch.classList.remove('active');
+            } else {
+                tabSingle.classList.remove('active');
+                tabBatch.classList.add('active');
+            }
+
             toggleModeUI();
-        });
+        }
+
+        if (tabSingle && tabBatch) {
+            tabSingle.addEventListener('click', () => setMode('single'));
+            tabBatch.addEventListener('click', () => setMode('batch'));
+        }
 
         function toggleModeUI() {
             clearResults(); // Always clear old results on switch
@@ -1947,10 +2389,10 @@
                             </div>
                             
                             <!-- Technical Assumptions -->
-                            <div>
-                                <details style="cursor: pointer; opacity: 0.6; font-size: 0.85em;">
-                                    <summary style="outline: none;">Technical Assumptions</summary>
-                                    <ul style="margin: 4px 0 0 0; padding-left: 20px; line-height: 1.4;">
+                            <div style="margin-top: 20px;">
+                                <details style="cursor: pointer; opacity: 0.7; font-size: 0.9em;">
+                                    <summary style="outline: none; font-weight: 500;">Technical Assumptions</summary>
+                                    <ul style="margin: 8px 0 0 0; padding-left: 20px; line-height: 1.5; opacity: 0.9;">
                                         ${renderBullets(n.technical_assumptions)}
                                     </ul>
                                 </details>
@@ -1976,7 +2418,9 @@
                         } else {
                             // Balanced
                             displayMode = "Standard Review Mode";
-                            modeColor = "#feca57"; // Yellowish/White
+                            // modeColor = "#feca57"; // Yellowish - REMOVED per user request
+                            // New Style: White text, transparent bg
+                            modeColor = "rgba(255, 255, 255, 0.1)";
                         }
 
                         // Phase 5: Capacity Impact Analysis Override
@@ -1984,60 +2428,14 @@
                             consequenceText = data.workload_summary.message_html;
                         }
 
-                        // 2. The "Why" (Logic)
-                        let whyHtml = "";
-                        if (ra.signals) {
-                            const cap = ra.signals.daily_capacity || "?";
-                            const total = data.summary.total_rows || "?";
-                            const ratio = ra.signals.capacity_ratio ? ra.signals.capacity_ratio.toFixed(1) : "?";
-
-                            whyHtml = `
-                                <div style="margin-top: 8px;">
-                                    <details style="cursor: pointer; opacity: 0.8; font-size: 0.9em;">
-                                        <summary style="outline: none;"><b>Why this mode?</b></summary>
-                                        <ul style="margin: 4px 0 0 0; padding-left: 20px; line-height: 1.4;">
-                                            <li>Your team can review <b>~${cap} cases/day</b></li>
-                                            <li>This batch contains <b>~${total} claims</b></li>
-                                            <li>Capacity Ratio: <b>${ratio}x</b></li>
-                                        </ul>
-                                    </details>
-                                </div>
-                            `;
-                        }
-
-                        // 3. Advanced Details
-                        let advancedHtml = "";
-                        let bullets = [];
-                        const confLabel = ra.confidence >= 0.8 ? "High" : (ra.confidence >= 0.6 ? "Medium" : "Low");
-                        bullets.push(`Internal Appetite: ${ra.risk_appetite} (Conf: ${confLabel})`);
-                        if (data.decision_policy && data.decision_policy.thresholds) {
-                            const th = data.decision_policy.thresholds;
-                            bullets.push(`Active Policy: P0 \u2265 ${th.p0}, P1 \u2265 ${th.p1}`);
-                        }
-                        if (ra.signals) {
-                            bullets.push(`P95 Score: ${ra.signals.p95 ? ra.signals.p95.toFixed(2) : '?'}`);
-                        }
-                        if (data.metric_context && data.metric_context.operating_mode) {
-                            bullets.push(`Op Mode: ${data.metric_context.operating_mode}`);
-                        }
-
-                        advancedHtml = `
-                            <div style="margin-top: 6px;">
-                                <details style="cursor: pointer; opacity: 0.6; font-size: 0.85em;">
-                                    <summary style="outline: none;">Advanced details</summary>
-                                    <ul style="margin: 4px 0 0 0; padding-left: 20px; line-height: 1.4;">
-                                        ${bullets.map(b => `<li>${b}</li>`).join('')}
-                                    </ul>
-                                </details>
-                            </div>
-                        `;
+                        // ...
 
                         // Render Final HTML
                         summaryText.innerHTML = `
-                            <div style="font-size: 1.1em; font-weight: 600; color: ${modeColor}; margin-bottom: 4px;">
+                            <div style="font-size: 1.0em; font-weight: 600; color: #ffffff; background: ${modeColor}; display: inline-block; padding: 4px 10px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 8px;">
                                 ${displayMode}
                             </div>
-                            <div style="font-size: 0.95em; opacity: 0.9; line-height: 1.4; margin-bottom: 0px;">
+                            <div style="font-size: 0.9em; opacity: 0.9; line-height: 1.4; margin-bottom: 0px;">
                                 ${consequenceText}
                             </div>
                             ${whyHtml}
@@ -2047,35 +2445,88 @@
                     }
 
                     // --- NEW: Agent Policy Table (Requested) ---
+                    // --- NEW: Agent Policy Table (Requested) ---
                     if (data.decision_policy && data.decision_policy.thresholds && data.summary) {
                         const t = data.decision_policy.thresholds;
                         const s = data.summary;
                         const mins = parseFloat(document.getElementById('review_time').value) || 20;
+                        const teamSize = parseInt(document.getElementById('team_size').value) || 5;
+                        const reviewWindow = parseInt(document.getElementById('reviewWindow').value) || 1;
 
-                        // Helper to calc hours
-                        const calcHrs = (count) => ((count * mins) / 60).toFixed(1);
+                        // Total Hours Available
+                        const totalCapVal = (teamSize * reviewWindow * 8.0);
+                        const totalCap = totalCapVal.toFixed(1);
 
-                        // Define Rows (P0, P1, P2)
-                        // P3 is implicit (Ignore)
+                        // Helper to calc hours (returns float)
+                        const getHrs = (count) => (count * mins) / 60;
+
+                        // P0 Logic
+                        const p0_req = getHrs(s.p0_count);
+                        const p0_avail = totalCapVal; // P0 gets full access
+
+                        // P1 Logic (gets what is left after P0)
+                        const p1_req = getHrs(s.p1_count);
+                        const p1_avail = Math.max(0, totalCapVal - p0_req);
+
+                        // P2 Logic (gets what is left after P0 + P1)
+                        const p2_req = getHrs(s.p2_count);
+                        const p2_avail = Math.max(0, totalCapVal - p0_req - p1_req);
+
+                        // P3 Logic (Ignored)
+                        const p3_count = s.p3_count || (data.summary.total_rows - s.p0_count - s.p1_count - s.p2_count);
+
+                        // Comment Logic
+                        // Comment Logic (Minimal: White/Transparent)
+                        const getComment = (req, avail, isIgnored) => {
+                            if (isIgnored) return "—";
+                            if (avail <= 0.1 && req > 0) return `<span style="opacity: 0.8; border-bottom: 1px dotted rgba(255,255,255,0.4);">No Capacity</span>`;
+                            if (req <= avail + 0.1) return `<span style="opacity: 0.8;">Fully Covered</span>`;
+                            const canDo = Math.floor((avail * 60) / mins);
+                            if (canDo <= 0) return `<span style="opacity: 0.8; border-bottom: 1px dotted rgba(255,255,255,0.4);">No Capacity</span>`;
+                            return `<span style="opacity: 0.8;">Partial: Top ${canDo} only</span>`;
+                        };
+
+                        // Define Rows
                         const rows = [
-                            { p: "P0", label: "Must Review", thresh: `> ${t.p0}`, count: s.p0_count, hrs: calcHrs(s.p0_count), cls: "badge-p0" },
-                            { p: "P1", label: "Should Review", thresh: `> ${t.p1}`, count: s.p1_count, hrs: calcHrs(s.p1_count), cls: "badge-p1" },
-                            { p: "P2", label: "Maybe Review", thresh: `> ${t.p2}`, count: s.p2_count, hrs: calcHrs(s.p2_count), cls: "badge-p2" },
-                            { p: "P3", label: "Ignore", thresh: `< ${t.p2}`, count: s.p3_count || (data.summary.total_rows - s.p0_count - s.p1_count - s.p2_count), hrs: "0.0", cls: "badge-ignore" }
+                            {
+                                p: "P0", label: "Must Review", cls: "badge-p0",
+                                thresh: `> ${t.p0}`, count: s.p0_count,
+                                timeDisplay: `${p0_req.toFixed(1)} / ${p0_avail.toFixed(1)} hrs`,
+                                comment: getComment(p0_req, p0_avail, false)
+                            },
+                            {
+                                p: "P1", label: "Should Review", cls: "badge-p1",
+                                thresh: `> ${t.p1}`, count: s.p1_count,
+                                timeDisplay: `${p1_req.toFixed(1)} / ${p1_avail.toFixed(1)} hrs`,
+                                comment: getComment(p1_req, p1_avail, false)
+                            },
+                            {
+                                p: "P2", label: "Maybe Review", cls: "badge-p2",
+                                thresh: `> ${t.p2}`, count: s.p2_count,
+                                timeDisplay: `${p2_req.toFixed(1)} / ${p2_avail.toFixed(1)} hrs`,
+                                comment: getComment(p2_req, p2_avail, false)
+                            },
+                            {
+                                p: "P3", label: "Ignore", cls: "badge-ignore",
+                                thresh: `< ${t.p2}`, count: p3_count,
+                                timeDisplay: "—",
+                                comment: `<span style="opacity: 0.5; font-style: italic;">Safe to Auto-Approve</span>`
+                            }
                         ];
 
                         const tableHtml = `
-                            <div style="margin-top: 20px; background: rgba(0,0,0,0.2); border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
-                                <div style="padding: 10px 15px; background: rgba(255,255,255,0.05); font-size: 0.85em; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; color: #feca57; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <div style="margin-top: 20px; background: rgba(255,255,255,0.02); border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
+                                <div style="padding: 10px 15px; background: rgba(255,255,255,0.05); font-size: 0.85em; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; color: #ffffff; border-bottom: 1px solid rgba(255,255,255,0.05);">
                                     Agent Decision Logic
                                 </div>
                                 <table style="width: 100%; border-collapse: collapse; font-size: 0.9em;">
                                     <thead>
-                                        <tr style="text-align: left; color: rgba(255,255,255,0.6);">
+                                        <tr style="text-align: left; color: rgba(255,255,255,0.8);">
                                             <th style="padding: 10px 15px; font-weight: 500;">Priority</th>
                                             <th style="padding: 10px 15px; font-weight: 500;">Threshold (Score)</th>
                                             <th style="padding: 10px 15px; font-weight: 500;">Cases</th>
-                                            <th style="padding: 10px 15px; font-weight: 500;">Est. Time (Team Total)</th>
+                                            <th style="padding: 10px 15px; font-weight: 500;">Est. Time / Remaining Cap</th>
+                                            <th style="padding: 10px 15px; font-weight: 500;">Agent Analysis</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -2087,7 +2538,8 @@
                                                 </td>
                                                 <td style="padding: 10px 15px; font-family: monospace;">${r.thresh}</td>
                                                 <td style="padding: 10px 15px;">${r.count}</td>
-                                                <td style="padding: 10px 15px; opacity: 0.8;">${r.hrs} hrs</td>
+                                                <td style="padding: 10px 15px; opacity: 0.8;">${r.timeDisplay}</td>
+                                                <td style="padding: 10px 15px;">${r.comment}</td>
                                             </tr>
                                         `).join('')}
                                     </tbody>
@@ -2103,6 +2555,10 @@
                     if (badge) badge.style.display = 'none';
                     if (confEl) confEl.style.display = 'none';
 
+                    // summaryBox.style.display = 'flex';
+                    // Apply minimal styling to the container if not already set by CSS
+                    summaryBox.style.background = 'rgba(255, 255, 255, 0.02)';
+                    summaryBox.style.border = '1px solid rgba(255, 255, 255, 0.1)';
                     summaryBox.style.display = 'flex';
 
                     // Legacy badge logic removed (subsumed by summaryBox)
@@ -2113,7 +2569,12 @@
                 // Sort by Risk Score Descending (Data already sorted by backend, but safe to ensure)
                 // Backend sends "rows".
 
-                data.rows.forEach(row => {
+                // Backend sends "rows".
+
+                // Limit to first 20 rows as requested
+                const displayRows = data.rows.slice(0, 20);
+
+                displayRows.forEach(row => {
                     const tr = document.createElement('tr');
 
                     // Triage Badge Logic
@@ -2148,11 +2609,9 @@
                     // Risk Score
                     const prob = row.probability;
                     const pct = (prob * 100).toFixed(1) + "%";
-                    let color = "var(--clr-low)"; // Low
+                    // Minimal: always white, maybe bold
+                    let color = "white";
 
-                    if (prob >= 0.3) { color = "var(--clr-med)"; }
-                    if (prob >= 0.5) { color = "var(--clr-high)"; }
-                    if (prob >= 0.7) { color = "var(--clr-crit)"; }
 
                     // Drivers (Handle 'top_drivers' from new API or 'drivers' from old)
                     const drivers = row.top_drivers || row.drivers || [];
@@ -2163,7 +2622,7 @@
                     const d3 = drivers[2] ? createDriverPill(drivers[2]) : "-";
 
                     tr.innerHTML = `
-                        <td style="font-weight:bold; color: var(--clr-text-main);">${row.claim_id || row.original_index}</td>
+                        <td style="font-size: 0.9em; opacity: 0.9; color: var(--clr-text-main); font-family: monospace;">${row.claim_id || row.original_index}</td>
                         <td>${badgeHtml}</td>
                         <td style="font-weight:bold; color: ${color}; font-size: 1.1em;">
                             ${pct}
@@ -2175,6 +2634,38 @@
                     tbody.appendChild(tr);
                 });
 
+                // --- NEW: Truncation Footer (Requested) ---
+                const existingFooter = document.getElementById('truncationFooter');
+                if (existingFooter) existingFooter.remove();
+
+                if (data.rows.length > 20) {
+                    const footer = document.createElement('div');
+                    footer.id = 'truncationFooter';
+                    footer.style.textAlign = 'center';
+                    footer.style.marginTop = '30px';
+                    footer.style.padding = '20px';
+                    footer.style.opacity = '0.9';
+
+                    footer.innerHTML = `
+                        <div style="margin-bottom: 15px; font-size: 14px; opacity: 0.7; font-style: italic;">
+                            Showing top 20 cases. To review full analysis:
+                        </div>
+                        <a href="#" onclick="document.getElementById('downloadResultsBtn').click(); return false;"
+                           style="text-decoration: none; font-size: 14px; font-weight: 500; padding: 10px 20px; border-radius: 6px; color: white; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); transition: all 0.2s ease; display: inline-block;">
+                           ↓ Download Full Triage CSV
+                        </a>
+                    `;
+                    // Add hover effect
+                    footer.querySelector('a').addEventListener('mouseenter', e => {
+                        e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+                    });
+                    footer.querySelector('a').addEventListener('mouseleave', e => {
+                        e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+                    });
+
+                    resultsContainer.appendChild(footer);
+                }
+
                 resultsContainer.style.display = 'block';
                 // Scroll to results
                 resultsContainer.scrollIntoView({ behavior: 'smooth' });
@@ -2183,10 +2674,8 @@
             function createDriverPill(d) {
                 // d = {name: "Severity: Major", effect: "↑ ...", value: ...}
                 const isRisk = d.effect.includes("Increases");
-                const cls = isRisk ? "driver-up" : "driver-down";
                 const arrow = isRisk ? "↑" : "↓";
-                // Shorten text if needed? "Severity: Major Damage" is fine.
-                return `<span class="driver-pill ${cls}">${d.name} ${arrow}</span>`;
+                return `<span class="driver-pill">${d.name} ${arrow}</span>`;
             }
 
 
@@ -2321,8 +2810,140 @@
         // Initial setup of function exposure
         // Removed setCapMode exposure as it is deleted
 
-    </script>
+        // --- FILE INPUT UX ---
+        const fileInput = document.getElementById('batchFile');
+        const fileLabel = document.getElementById('batchFileLabel');
+        if (fileInput && fileLabel) {
+            fileInput.addEventListener('change', (e) => {
+                const fileName = e.target.files[0] ? e.target.files[0].name : "Choose CSV File...";
+                fileLabel.querySelector('span').innerText = fileName;
+                fileLabel.style.borderColor = e.target.files[0] ? "var(--clr-text)" : "";
+            });
+        }
+        // ========================================
+        // CUSTOM CALENDAR LOGIC (RANGE MODE)
+        // ========================================
+        const reviewWindowSelect = document.getElementById('reviewWindow');
+        const customDateInput = document.getElementById('customDateInput');
+        const customDateContainer = document.getElementById('customDateContainer');
+        const workDaysOnlyCheckbox = document.getElementById('workDaysOnly');
+        let fpInstance = null;
+        let lastStart = null;
+        let lastEnd = null;
 
+        // Init Flatpickr
+        if (customDateInput) {
+            console.log("DEBUG: Init Flatpickr");
+            fpInstance = flatpickr(customDateInput, {
+                mode: "range",
+                minDate: "today",
+                theme: "dark",
+                dateFormat: "Y-m-d",
+                onClose: function (selectedDates) {
+                    console.log("DEBUG: onClose", selectedDates);
+                    if (selectedDates.length === 2) {
+                        lastStart = selectedDates[0];
+                        lastEnd = selectedDates[1];
+                        console.log("DEBUG: Two dates selected", lastStart, lastEnd);
+                        updateReviewWindowFromRange();
+                    } else {
+                        console.log("DEBUG: Incomplete range");
+                        if (!lastStart) {
+                            reviewWindowSelect.value = "1";
+                            customDateContainer.style.display = 'none';
+                        }
+                    }
+                }
+            });
+            customDateContainer.style.display = 'none';
+        }
+
+        reviewWindowSelect.addEventListener('change', (e) => {
+            console.log("DEBUG: Select Change", e.target.value);
+            if (e.target.value === 'custom') {
+                customDateContainer.style.display = 'block';
+                if (fpInstance) setTimeout(() => fpInstance.open(), 100);
+            } else {
+                customDateContainer.style.display = 'none';
+                lastStart = null;
+                lastEnd = null;
+                if (fpInstance) fpInstance.clear();
+            }
+        });
+
+        workDaysOnlyCheckbox.addEventListener('change', () => {
+            console.log("DEBUG: Checkbox Change");
+            if (lastStart && lastEnd) {
+                updateReviewWindowFromRange();
+            }
+        });
+
+        function updateReviewWindowFromRange() {
+            console.log("DEBUG: updateReviewWindowFromRange");
+            if (!lastStart || !lastEnd) return;
+
+            const start = new Date(lastStart);
+            const end = new Date(lastEnd);
+            start.setHours(0, 0, 0, 0);
+            end.setHours(0, 0, 0, 0);
+
+            let daysDiff = 0;
+            const isWorkDays = workDaysOnlyCheckbox.checked;
+
+            if (isWorkDays) {
+                let count = 0;
+                let iter = new Date(start);
+                while (iter <= end) {
+                    const day = iter.getDay();
+                    if (day !== 0 && day !== 6) {
+                        count++;
+                    }
+                    iter.setDate(iter.getDate() + 1);
+                }
+                daysDiff = count;
+            } else {
+                const diffTime = Math.abs(end - start);
+                daysDiff = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            }
+
+            if (daysDiff <= 0) daysDiff = 1;
+
+            let dynOpt = document.getElementById('dynamic-date-option');
+            if (!dynOpt) {
+                console.log("DEBUG: Creating new option");
+                dynOpt = document.createElement('option');
+                dynOpt.id = 'dynamic-date-option';
+                reviewWindowSelect.add(dynOpt, reviewWindowSelect.options[reviewWindowSelect.options.length - 1]);
+            }
+
+            const dayLabel = isWorkDays ? "work days" : "days";
+            const startStr = start.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+            const endStr = end.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+
+            let label = `${startStr} - ${endStr}`;
+            if (start.getTime() === end.getTime()) label = startStr;
+
+            console.log("DEBUG: Setting text", label, daysDiff);
+            dynOpt.value = daysDiff;
+            dynOpt.text = `${label} (${daysDiff} ${dayLabel})`;
+            // Force select the option directly
+            dynOpt.selected = true;
+        }
+
+        // --- DOCS SIDEBAR ---
+        const docsSidebar = document.getElementById('docsSidebar');
+        const openDocsBtn = document.getElementById('openDocsBtn');
+        const closeDocsBtn = document.getElementById('closeDocsBtn');
+
+        if (docsSidebar && openDocsBtn && closeDocsBtn) {
+            openDocsBtn.addEventListener('click', () => {
+                docsSidebar.style.right = '0';
+            });
+            closeDocsBtn.addEventListener('click', () => {
+                docsSidebar.style.right = '-500px';
+            });
+        }
+    </script>
 </body>
 
 </html>

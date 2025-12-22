@@ -30,7 +30,15 @@ class FraudTriageAgent:
     def __init__(self):
         self.llm_config = get_llm_config()
 
-    def run_batch_triage(self, df: pd.DataFrame, policy_override: dict = None) -> dict:
+    # Map of Base Model Name -> Optimal F2 Threshold (Uncalibrated)
+    MODEL_THRESHOLDS = {
+        "RandomForest": 0.49,
+        "XGBoost": 0.54,
+        "VotingEnsemble": 0.53,
+        "ExtraTrees": 0.45
+    }
+
+    def run_batch_triage(self, df: pd.DataFrame, policy_override: dict = None, model_name: str = "VotingEnsemble") -> dict:
         """
         Main entry point for batch analysis.
         Orchestrates LLM decision or falls back to rules.
@@ -44,7 +52,7 @@ class FraudTriageAgent:
         
         # 2. Strategy & LLM Decision
         strategy = self._determine_strategy(batch_size)
-        llm_decision = self._call_llm_triage(df, batch_size, capacity, risk_appetite)
+        llm_decision = self._call_llm_triage(df, batch_size, capacity, risk_appetite, model_name)
         
         # 3. Apply Decision (LLM or Fallback)
         triage_results = self.apply_triage_policy(df, llm_decision, risk_appetite, review_window_days)
@@ -185,7 +193,7 @@ class FraudTriageAgent:
         else:
             return "TRIAGE_DASHBOARD"
 
-    def _call_llm_triage(self, df: pd.DataFrame, batch_size: int, capacity: int, risk_appetite: str):
+    def _call_llm_triage(self, df: pd.DataFrame, batch_size: int, capacity: int, risk_appetite: str, model_name: str):
         if not self.llm_config:
             return None
             
@@ -208,6 +216,10 @@ class FraudTriageAgent:
             "max": round(float(np.max(valid_probs)), 3)
         }
         
+        # Dynamic Threshold Lookup
+        base_name = model_name.split("_")[0]
+        optimal_thresh = self.MODEL_THRESHOLDS.get(base_name, 0.53)
+        
         system_prompt = (
             "You are an expert Fraud Operations Manager. Your goal is to triage a batch of insurance claims "
             "into 3 prioritization queues (P0, P1, P2) to maximize fraud detection within limited human review capacity.\n"
@@ -226,23 +238,36 @@ class FraudTriageAgent:
         Batch Statistics (For Reviewable Claims > 0.25):
         {json.dumps(stats, indent=2)}
         
+        ## Reference ML Performance ({base_name} Model)
+        - **Optimal High-Recall Point:** {optimal_thresh} (This should be your **P1 Threshold** anchor).
+        - **Fraud Zone:** Scores > {optimal_thresh} contain ~86% of fraud with good precision.
+        - **Marginal Zone:** Scores 0.25 to {optimal_thresh} contain the remaining ~14% of fraud but are noisier. Be careful ignoring these!
+        
         Definitions:
-        - P0 (Must Review): High Risk. Ideal Count <= Capacity.
-        - P1 (Should Review): Medium Risk.
-        - P2 (Maybe Review): Low Risk. Floor is 0.25. (P2 Threshold MUST be >= 0.25).
+        - P0 (Must Review): Very High Risk.
+        - P1 (Should Review): High Risk (Anchor ~{optimal_thresh}).
+        - P2 (Maybe Review): Marginal Risk (0.25 to P1).
+        - P3 (Ignore): < P2 Threshold.
+        
+        CRITICAL CAPACITY RULES:
+        1. **Baseline Floor**: 0.25. (Scores < 0.25 are strictly ignored).
+        2. **Agent Discretion**: You MAY raise the P2 threshold above 0.25 (e.g. to 0.30 or 0.35) if using a high-threshold model (like {base_name}) where lower scores are likely noise.
+        3. **Capacity Management**: 
+           - **Available Capacity**: Try to cover down to 0.25 to maximize Recall, but prioritize quality.
+           - **Overloaded**: Raise P2 aggressively to protect P0/P1.
         
         Task:
         1. Determine 'p0_threshold'.
-        2. Determine 'p1_threshold'.
-        3. Determine 'p2_threshold' (Must be >= 0.25). If capacity is tight, raise this to ignore more case.
+        2. Determine 'p1_threshold' (Start near {optimal_thresh}).
+        3. Determine 'p2_threshold'. (Usually 0.25, but can be higher for noise reduction).
         4. Provide 'rationale'.
         
         Output Schema:
         {{
-            "p0_threshold": 0.85,
-            "p1_threshold": 0.65,
-            "p2_threshold": 0.35, 
-            "rationale": "High volume of risky claims..."
+            "p0_threshold": <float_between_0_1>,
+            "p1_threshold": <float_between_0_1>,
+            "p2_threshold": <float_between_0_1>, 
+            "rationale": "<your_reasoning_here>"
         }}
         """
         

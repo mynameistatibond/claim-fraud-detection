@@ -447,7 +447,8 @@ async def process_batch_file(
     
     triage_result = triage_agent.run_batch_triage(
         scored_df, 
-        policy_override=policy_override
+        policy_override=policy_override,
+        model_name=model_key
     )
     
     # Attach Risk Analysis to Result

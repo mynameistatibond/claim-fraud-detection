@@ -822,6 +822,13 @@ async def download_output(filename: str):
         raise HTTPException(status_code=404, detail="File not found")
     return FileResponse(file_path, media_type='text/csv', filename=filename)
 
+@app.get("/download_template")
+async def download_template():
+    file_path = Path("static") / "claim_template.csv"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Template not found")
+    return FileResponse(file_path, media_type='text/csv', filename="claim_template.csv")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
