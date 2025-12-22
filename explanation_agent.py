@@ -1,9 +1,10 @@
+
 import os
 import json
 import logging
 import re
 import requests
-from llm_explainer import get_llm_config
+from llm_explainer import get_llm_config, call_openai_format_api
 
 logger = logging.getLogger(__name__)
 
@@ -87,16 +88,13 @@ class ExplanationAgent:
     def __init__(self):
         self.llm_config = get_llm_config()
 
-    # Added import for specific helper if not already there, but keeping it clean
-    from llm_explainer import call_openai_format_api
-
     def generate_explanation(self, decision_contract: dict) -> dict:
         """
         Generates the explanation text, validates it, and parses it for the UI.
-        Returns a dict matching the UI schema.
+        Returns a dict matching the UI schema with metadata.
         """
         if not self.llm_config:
-            return self._generate_fallback(decision_contract)
+            return self._generate_fallback(decision_contract, reason="No LLM Config")
 
         system_prompt = (
             "You are a senior claims operations lead writing the official explanation of a decision that has already been made.\n\n"
@@ -129,18 +127,41 @@ class ExplanationAgent:
         try:
             # Check format from config (added in llm_explainer)
             api_format = self.llm_config.get("format", "huggingface")
+            text = ""
 
             if api_format == "openai":
                 # GROQ / OPENROUTER PATH
-                full_prompt = f"{system_prompt}\n\n{user_prompt}"
-                # call_openai_format_api expects (config, prompt)
-                # But looking at llm_explainer.py, it constructs messages from prompt.
-                # Let's double check llm_explainer.py signature in next step if needed, 
-                # but based on reading it earlier:
-                # def call_openai_format_api(config, prompt): matches.
-                # It puts prompt in user message.
+                # Custom implementation to preserve System Prompt (avoiding helper override)
+                headers = {
+                    "Authorization": f"Bearer {self.llm_config['key']}",
+                    "Content-Type": "application/json"
+                }
                 
-                text = call_openai_format_api(self.llm_config, full_prompt)
+                # Provider specific adjustments
+                if self.llm_config['provider'] == "openrouter":
+                    headers["HTTP-Referer"] = "https://fraud-detector.internal"
+
+                payload = {
+                    "model": self.llm_config['model'],
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    "temperature": 0.1
+                }
+                
+                response = requests.post(self.llm_config['url'], headers=headers, json=payload, timeout=15)
+                
+                if response.status_code == 200:
+                    try:
+                        res_json = response.json()
+                        text = res_json['choices'][0]['message']['content'].strip()
+                    except Exception as e:
+                        logger.error(f"OpenAI Format Parse Error: {e}")
+                        return self._generate_fallback(decision_contract, reason="LLM Parse Error")
+                else:
+                    logger.error(f"LLM Error {response.status_code}: {response.text}")
+                    return self._generate_fallback(decision_contract, reason=f"API Error {response.status_code}")
                 
             else:
                 # HUGGING FACE PATH
@@ -164,10 +185,10 @@ class ExplanationAgent:
                         text = result[0]['generated_text'].strip()
                     else:
                         logger.error(f"Unexpected LLM response format: {result}")
-                        return self._generate_fallback(decision_contract)
+                        return self._generate_fallback(decision_contract, reason="Invalid HF Response")
                 else:
                     logger.error(f"LLM Error {response.status_code}: {response.text}")
-                    return self._generate_fallback(decision_contract)
+                    return self._generate_fallback(decision_contract, reason=f"API Error {response.status_code}")
 
             # Validate and Parse (Shared)
             if text and self._validate_text(text, decision_contract):
