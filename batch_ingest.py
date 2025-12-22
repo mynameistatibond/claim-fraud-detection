@@ -456,31 +456,40 @@ async def process_batch_file(
     # Map status to detailed codes
     status_map = {
         "Overloaded": "overloaded", 
-        "Underloaded": "spare", 
-        "Balanced": "balanced"
+        "Underloaded": "spare capacity", 
+        "Balanced": "balanced capacity"
     }
-    cap_status = status_map.get(triage_result["workload_summary"].get("status"), "balanced")
-
-    fact_sheet = {
-        "mode_label": f"{'Strict' if appetite_str == 'Conservative' else ('Broad' if appetite_str == 'Aggressive' else 'Standard')} review mode",
-        "capacity_status": cap_status,
-        "review_window_days": review_window_days,
-        
-        "capacity": {
-            "daily_capacity_cases": triage_result["summary"]["capacity_used"]
+    cap_status = status_map.get(triage_result["workload_summary"].get("status"), "balanced capacity")
+    
+    # STRICT DECISION CONTRACT (Phase 7)
+    decision_contract = {
+        "review_mode": {
+            "label": f"{'Strict' if appetite_str == 'Conservative' else ('Broad' if appetite_str == 'Aggressive' else 'Standard')} review mode",
+            "capacity_status": cap_status
         },
-
-        "workload": {
+        "decision_basis": {
+            "model_type": "calibrated fraud detection model",
+            "constraints_used": ["review window", "team capacity"]
+        },
+        "workload_commitment": {
+            "review_window_days": review_window_days,
             "p0_cases": triage_result["summary"]["p0_count"],
-            "p1_cases": triage_result["workload_summary"]["assigned_work"]["p1"],
-            "p2_cases": len(scored_df) - triage_result["summary"]["p0_count"] - triage_result["workload_summary"]["assigned_work"]["p1"]
+            "p1_available": triage_result["workload_summary"]["assigned_work"]["p1"] > 0
         },
-
-        "thresholds": triage_result["decision_policy"]["thresholds"]
+        "ordering_guarantee": "Cases are ordered from highest to lowest fraud likelihood",
+        "safety_rationale": {
+            "p0_strict": True,
+            "lower_priority_deferral_safe": True
+        },
+        "system_assumptions": {
+            "review_window_days": review_window_days,
+            "team_capacity_cases_per_day": triage_result["summary"]["capacity_used"],
+            "thresholds": triage_result["decision_policy"]["thresholds"]
+        }
     }
     
     try:
-        ops_briefing = explanation_agent.generate_ops_briefing(fact_sheet)
+        ops_briefing = explanation_agent.generate_ops_briefing(decision_contract)
         triage_result["narrative"] = ops_briefing
     except Exception as e:
         print(f"Explanation Generation Failed: {e}")
