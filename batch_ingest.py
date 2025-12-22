@@ -7,6 +7,7 @@ import time
 from pathlib import Path
 from preprocessing import preprocess_input, DEFAULTS
 from triage_agent import FraudTriageAgent
+from risk_appetite_agent import RiskAppetiteAgent
 
 # --- CONFIGURATION (Spec 3, 2.2) ---
 FRIENDLY_TO_INTERNAL = {
@@ -397,18 +398,42 @@ async def process_batch_file(
     rows_list = [{k:v for k,v in r.items() if k != "original_index"} for r in results]
     scored_df = pd.DataFrame(rows_list)
     
-    # Initialize Agent
-    agent = FraudTriageAgent()
+    # Initialize Agents
+    triage_agent = FraudTriageAgent()
+    risk_agent = RiskAppetiteAgent()
     
-    # Run Triage
-    # batch_size is total_raw (includes invalid rows, to capture magnitude)
-    triage_result = agent.triage_batch(
+    # 5a. Compute Risk Appetite (Product-Grade)
+    probs = scored_df['probability'].astype(float).values
+    batch_stats = {}
+    if len(probs) > 0:
+        batch_stats = {
+            "p95": float(np.percentile(probs, 95)),
+            "share_ge_0_3": float((probs >= 0.3).mean()),
+            "count": len(probs)
+        }
+        
+    # Decide Appetite
+    risk_decision = risk_agent.decide_appetite(
+        team_size=team_size,
+        review_time_mins=review_time,
+        batch_size=len(scored_df), 
+        batch_stats=batch_stats,
+        operating_mode="daily_ops"
+    )
+    
+    appetite_str = risk_decision['risk_appetite']
+
+    # 5b. Run Triage with Derived Appetite
+    triage_result = triage_agent.triage_batch(
         scored_df, 
         len(scored_df),
         team_size=team_size,
         review_time_mins=review_time,
-        risk_appetite="balanced"
+        risk_appetite=appetite_str
     )
+    
+    # Attach Risk Analysis to Result
+    triage_result['risk_analysis'] = risk_decision
     
     # Save Full Results CSV
     output_filename = f"batch_results_{int(time.time())}.csv"

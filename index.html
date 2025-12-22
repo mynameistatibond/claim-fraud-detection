@@ -1116,9 +1116,19 @@
         </div>
 
         <!-- AGENT SUMMARY BOX -->
-        <div id="agentSummaryBox" class="agent-summary" style="display:none;">
-            <div class="icon">🤖</div>
-            <div id="agentSummaryText">Agent logic initialized.</div>
+        <div id="agentSummaryBox" class="agent-summary"
+            style="display:none; flex-direction: column; align-items: flex-start;">
+            <div style="display: flex; align-items: flex-start; gap: 12px; width: 100%;">
+                <div class="icon">🤖</div>
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                        <span id="riskAppetiteBadge"
+                            style="font-size: 0.8rem; padding: 2px 8px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.05);">Balanced</span>
+                        <span id="riskConfidence" style="font-size: 0.75rem; opacity: 0.6;"></span>
+                    </div>
+                    <div id="agentSummaryText" style="line-height: 1.5;">Agent logic initialized.</div>
+                </div>
+            </div>
         </div>
 
         <table class="batch-table">
@@ -1831,9 +1841,33 @@
                 }
 
                 // SHOW AGENT SUMMARY
+                // SHOW AGENT SUMMARY
                 if (data.summary && data.summary.rationale) {
                     summaryText.innerText = data.summary.rationale;
                     summaryBox.style.display = 'flex';
+
+                    // Update Risk Appetite Badge
+                    if (data.risk_analysis) {
+                        const ra = data.risk_analysis;
+                        const badge = document.getElementById('riskAppetiteBadge');
+                        const confEl = document.getElementById('riskConfidence');
+
+                        badge.innerText = ra.risk_appetite;
+                        badge.title = Array.isArray(ra.rationale) ? ra.rationale.join('\n') : ra.rationale;
+                        confEl.innerText = `Conf: ${Math.round(ra.confidence * 100)}%`;
+
+                        // Color Coding
+                        if (ra.risk_appetite === 'Aggressive') {
+                            badge.style.borderColor = '#ff6b6b';
+                            badge.style.color = '#ff6b6b';
+                        } else if (ra.risk_appetite === 'Conservative') {
+                            badge.style.borderColor = '#4ecdc4';
+                            badge.style.color = '#4ecdc4';
+                        } else {
+                            badge.style.borderColor = 'rgba(255,255,255,0.3)';
+                            badge.style.color = '#dddddd';
+                        }
+                    }
                 } else {
                     summaryBox.style.display = 'none';
                 }
