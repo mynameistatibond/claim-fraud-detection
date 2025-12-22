@@ -634,361 +634,406 @@
                     style="margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); text-align: left;">
                     <label style="font-size: 0.9em; opacity: 0.8; margin-bottom: 10px; display: block;">Review Capacity
                         Settings</label>
-                    <div style="display: flex; gap: 15px;">
+                    <div style="display: flex; gap: 15px; margin-bottom: 15px;">
                         <div style="flex: 1;">
                             <label style="font-size: 0.8em; opacity: 0.6; display: block; margin-bottom: 5px;">Team
                                 Size</label>
                             <input type="number" id="team_size" value="5" min="1"
-                                style="width: 100%; padding: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px;">
+                                style="width: 100%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 8px; border-radius: 4px;">
                         </div>
                         <div style="flex: 1;">
-                            <label style="font-size: 0.8em; opacity: 0.6; display: block; margin-bottom: 5px;">Avg
-                                Review Time (min)</label>
+                            <label style="font-size: 0.8em; opacity: 0.6; display: block; margin-bottom: 5px;">Review
+                                Time
+                                (min)</label>
                             <input type="number" id="review_time" value="20" min="1"
-                                style="width: 100%; padding: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px;">
+                                style="width: 100%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 8px; border-radius: 4px;">
                         </div>
                     </div>
+
+                    <!-- Risk Context Inputs -->
+                    <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                        <div style="flex: 1;">
+                            <label style="font-size: 0.8em; opacity: 0.6; display: block; margin-bottom: 5px;">Operating
+                                Mode</label>
+                            <select id="operatingMode"
+                                style="width: 100%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 8px; border-radius: 4px;">
+                                <option value="daily_ops" selected>Daily Operations</option>
+                                <option value="incident_sweep">Incident Sweep</option>
+                                <option value="regulatory_audit">Regulatory / Audit</option>
+                            </select>
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="font-size: 0.8em; opacity: 0.6; display: block; margin-bottom: 5px;">Review
+                                Window</label>
+                            <select id="reviewWindow"
+                                style="width: 100%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 8px; border-radius: 4px;">
+                                <option value="1" selected>Today (1 day)</option>
+                                <option value="3">Next 3 days</option>
+                                <option value="7">Next 7 days</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Backlog -->
+                    <details style="font-size: 0.85em; opacity: 0.8; cursor: pointer;">
+                        <summary style="margin-bottom: 10px; opacity: 0.6;">Advanced capacity context</summary>
+                        <div style="margin-bottom: 10px;">
+                            <label style="font-size: 0.9em; display: block; margin-bottom: 5px;">Existing backlog
+                                (cases)</label>
+                            <input type="number" id="backlogInput" value="0" min="0" placeholder="0"
+                                style="width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 6px; border-radius: 4px;">
+                        </div>
+                    </details> <input type="number" id="team_size" value="5" min="1"
+                        style="width: 100%; padding: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px;">
+                </div>
+                <div style="flex: 1;">
+                    <label style="font-size: 0.8em; opacity: 0.6; display: block; margin-bottom: 5px;">Avg
+                        Review Time (min)</label>
+                    <input type="number" id="review_time" value="20" min="1"
+                        style="width: 100%; padding: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px;">
                 </div>
             </div>
         </div>
+    </div>
+    </div>
 
 
-        <!-- TIER 1 -->
-        <div class="tier-section">
-            <div class="tier-header"><span class="tier-title">01 / Incident & Injury</span></div>
+    <!-- TIER 1 -->
+    <div class="tier-section">
+        <div class="tier-header"><span class="tier-title">01 / Incident & Injury</span></div>
+        <div class="form-grid">
+            <div class="control-group">
+                <label>Incident Severity</label>
+                <select id="incident_severity">
+                    <option value="Major Damage">Major damage</option>
+                    <option value="Minor Damage" selected>Minor damage</option>
+                    <option value="Total Loss">Total loss</option>
+                    <option value="Trivial Damage">Trivial damage</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>Collision Type</label>
+                <select id="collision_type">
+                    <option value="Rear Collision" selected>Rear collision</option>
+                    <option value="Front Collision">Front collision</option>
+                    <option value="Side Collision">Side collision</option>
+                    <option value="?">Unknown / Not Reported</option>
+                </select>
+            </div>
+
+            <!-- Incident Time (Moved from Tier 2) -->
+            <div class="control-group">
+                <div class="slider-header"><label>Incident Time</label><span class="slider-val"
+                        id="val_hour">12:00</span></div>
+                <input type="range" id="incident_hour_of_the_day" min="0" max="23" step="1" value="12">
+                <div class="helper-text" id="helper_hour">Afternoon</div>
+            </div>
+
+            <div class="control-group">
+                <label>Bodily Injuries</label>
+                <select id="bodily_injuries">
+                    <option value="0">0</option>
+                    <option value="1" selected>1</option>
+                    <option value="2">2</option>
+                    <option value="3">3+</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- TIER 2 -->
+    <div class="tier-section">
+        <div class="tier-header"><span class="tier-title">02 / Claim Amount</span></div>
+        <div class="control-group" style="margin-bottom: 30px;">
+            <div class="slider-header"><label>Total Claim Amount ($)</label><span class="slider-val"
+                    id="val_total_claim">$58,000</span></div>
+            <div class="helper-text" style="opacity: 0.6; margin-bottom: 10px;">Total amount claimed before internal
+                allocation.</div>
+            <input type="range" id="total_claim_amount" min="1000" max="100000" step="1000" value="58000">
+        </div>
+
+        <!-- BREAKDOWN BLOCK -->
+        <div
+            style="margin-top: 30px; background: rgba(255,255,255,0.03); padding: 25px 25px 15px 25px; border-radius: 4px; margin-left: 20px; border-left: 2px solid var(--clr-divider);">
+            <div style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 5px;">
+                Claim Amount Breakdown</div>
+            <div style="font-size: 13px; opacity: 0.6; margin-bottom: 25px; font-style: italic;">Estimated
+                distribution of the total claim amount (percentages are relative and do not need to sum perfectly)
+            </div>
+
             <div class="form-grid">
+                <!-- Injury Portion -->
                 <div class="control-group">
-                    <label>Incident Severity</label>
-                    <select id="incident_severity">
-                        <option value="Major Damage">Major damage</option>
-                        <option value="Minor Damage" selected>Minor damage</option>
-                        <option value="Total Loss">Total loss</option>
-                        <option value="Trivial Damage">Trivial damage</option>
-                    </select>
+                    <div class="slider-header">
+                        <label>Injury-Related Portion</label>
+                        <span class="slider-val" id="val_injury_share">10%</span>
+                    </div>
+                    <input type="range" id="injury_share" min="0" max="100" step="5" value="10">
+                    <div class="helper-text">Medical and bodily injury related costs</div>
                 </div>
 
+                <!-- Property Portion -->
                 <div class="control-group">
-                    <label>Collision Type</label>
-                    <select id="collision_type">
-                        <option value="Rear Collision" selected>Rear collision</option>
-                        <option value="Front Collision">Front collision</option>
-                        <option value="Side Collision">Side collision</option>
-                        <option value="?">Unknown / Not Reported</option>
-                    </select>
-                </div>
-
-                <!-- Incident Time (Moved from Tier 2) -->
-                <div class="control-group">
-                    <div class="slider-header"><label>Incident Time</label><span class="slider-val"
-                            id="val_hour">12:00</span></div>
-                    <input type="range" id="incident_hour_of_the_day" min="0" max="23" step="1" value="12">
-                    <div class="helper-text" id="helper_hour">Afternoon</div>
-                </div>
-
-                <div class="control-group">
-                    <label>Bodily Injuries</label>
-                    <select id="bodily_injuries">
-                        <option value="0">0</option>
-                        <option value="1" selected>1</option>
-                        <option value="2">2</option>
-                        <option value="3">3+</option>
-                    </select>
+                    <div class="slider-header">
+                        <label>Property Damage Portion</label>
+                        <span class="slider-val" id="val_prop_share">10%</span>
+                    </div>
+                    <input type="range" id="property_share" min="0" max="100" step="5" value="10">
+                    <div class="helper-text">Vehicle and physical property damage</div>
                 </div>
             </div>
-        </div>
 
-        <!-- TIER 2 -->
-        <div class="tier-section">
-            <div class="tier-header"><span class="tier-title">02 / Claim Amount</span></div>
-            <div class="control-group" style="margin-bottom: 30px;">
-                <div class="slider-header"><label>Total Claim Amount ($)</label><span class="slider-val"
-                        id="val_total_claim">$58,000</span></div>
-                <div class="helper-text" style="opacity: 0.6; margin-bottom: 10px;">Total amount claimed before internal
-                    allocation.</div>
-                <input type="range" id="total_claim_amount" min="1000" max="100000" step="1000" value="58000">
-            </div>
-
-            <!-- BREAKDOWN BLOCK -->
+            <!-- Remainder -->
             <div
-                style="margin-top: 30px; background: rgba(255,255,255,0.03); padding: 25px 25px 15px 25px; border-radius: 4px; margin-left: 20px; border-left: 2px solid var(--clr-divider);">
-                <div style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 5px;">
-                    Claim Amount Breakdown</div>
-                <div style="font-size: 13px; opacity: 0.6; margin-bottom: 25px; font-style: italic;">Estimated
-                    distribution of the total claim amount (percentages are relative and do not need to sum perfectly)
-                </div>
+                style="margin-top: 25px; border-top: 1px solid var(--clr-divider); padding-top: 15px; text-align: right;">
+                <label style="opacity: 0.5; font-size: 12px; display: block; margin-bottom: 4px;">Other /
+                    Administrative (Calculated)</label>
+                <div id="val_remainder"
+                    style="font-size: 16px; opacity: 0.7; font-family: 'Shippori Mincho B1', serif;">80%</div>
+                <div class="helper-text" style="text-align: right; opacity: 0.4;">Remaining claim components (legal,
+                    admin, other)</div>
+            </div>
+        </div>
+    </div>
 
-                <div class="form-grid">
-                    <!-- Injury Portion -->
-                    <div class="control-group">
-                        <div class="slider-header">
-                            <label>Injury-Related Portion</label>
-                            <span class="slider-val" id="val_injury_share">10%</span>
-                        </div>
-                        <input type="range" id="injury_share" min="0" max="100" step="5" value="10">
-                        <div class="helper-text">Medical and bodily injury related costs</div>
-                    </div>
 
-                    <!-- Property Portion -->
-                    <div class="control-group">
-                        <div class="slider-header">
-                            <label>Property Damage Portion</label>
-                            <span class="slider-val" id="val_prop_share">10%</span>
-                        </div>
-                        <input type="range" id="property_share" min="0" max="100" step="5" value="10">
-                        <div class="helper-text">Vehicle and physical property damage</div>
-                    </div>
-                </div>
+    <!-- TIER 3 -->
+    <div class="tier-section">
+        <div class="tier-header"><span class="tier-title">03 / Policy & Tenure</span></div>
+        <div class="form-grid">
+            <div class="control-group">
+                <div class="slider-header"><label>Annual Premium</label><span class="slider-val"
+                        id="val_premium">$1,200</span></div>
+                <input type="range" id="policy_annual_premium" min="500" max="3000" step="100" value="1200">
+            </div>
 
-                <!-- Remainder -->
-                <div
-                    style="margin-top: 25px; border-top: 1px solid var(--clr-divider); padding-top: 15px; text-align: right;">
-                    <label style="opacity: 0.5; font-size: 12px; display: block; margin-bottom: 4px;">Other /
-                        Administrative (Calculated)</label>
-                    <div id="val_remainder"
-                        style="font-size: 16px; opacity: 0.7; font-family: 'Shippori Mincho B1', serif;">80%</div>
-                    <div class="helper-text" style="text-align: right; opacity: 0.4;">Remaining claim components (legal,
-                        admin, other)</div>
-                </div>
+            <div class="control-group">
+                <div class="slider-header"><label>Months as Customer</label><span class="slider-val"
+                        id="val_tenure">200</span></div>
+                <input type="range" id="months_as_customer" min="0" max="500" step="12" value="200">
+            </div>
+            <!-- Policy Age Abstracted -->
+            <div class="control-group">
+                <label>When did the policy start?</label>
+                <select id="days_since_bind">
+                    <option value="90">Less than 6 months ago</option>
+                    <option value="270">6–12 months ago</option>
+                    <option value="540">1–2 years ago</option>
+                    <option value="1500" selected>2–5 years ago</option>
+                    <option value="3000">More than 5 years ago</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- TIER 4 -->
+    <div class="tier-section">
+        <div class="tier-header"><span class="tier-title">04 / Vehicle Context</span></div>
+        <div class="form-grid">
+            <div class="control-group">
+                <div class="slider-header"><label>Vehicle Age</label><span class="slider-val" id="val_veh_age">10
+                        yrs</span></div>
+                <input type="range" id="vehicle_age" min="0" max="30" step="1" value="10">
+            </div>
+
+            <div class="control-group">
+                <label>Vehicles Involved</label>
+                <select id="number_of_vehicles_involved">
+                    <option value="1" selected>1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4+</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- TIER 5 -->
+    <div class="tier-section">
+        <div class="tier-header"><span class="tier-title">05 / Administrative</span></div>
+        <div class="form-grid">
+            <div class="control-group">
+                <label>Police Report Filed</label>
+                <select id="police_report_available">
+                    <option value="YES">Yes</option>
+                    <option value="NO">No</option>
+                    <option value="?">Unknown</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>Authorities Involved</label>
+                <select id="authorities_contacted">
+                    <option value="Police" selected>Police</option>
+                    <option value="Fire">Fire department</option>
+                    <option value="Ambulance">Ambulance</option>
+                    <option value="Other">Other</option>
+                    <option value="None">None</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- TIER 6 -->
+    <div class="tier-section" style="border-bottom: none;">
+        <div class="tier-header"><span class="tier-title">06 / Edge Variables</span></div>
+        <div class="form-grid">
+            <div class="control-group">
+                <label>Umbrella Limit</label>
+                <select id="umbrella_limit">
+                    <option value="0" selected>None</option>
+                    <option value="1000000">$1M</option>
+                    <option value="5000000">$5M</option>
+                    <option value="10000000">$10M+</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <div class="slider-header"><label>Insured Age</label><span class="slider-val" id="val_age">38
+                        yrs</span></div>
+                <input type="range" id="age" min="18" max="100" step="1" value="38">
             </div>
         </div>
 
+        <!-- CAPITAL IMPACT -->
+        <!-- FINANCIAL CAPITAL ACTIVITY -->
+        <div class="control-group"
+            style="margin-top: 40px; border-top: 1px solid var(--clr-divider); padding-top: 25px;">
+            <div style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 5px;">
+                Financial Capital Activity (Optional)</div>
+            <div style="font-size: 13px; opacity: 0.6; margin-bottom: 25px; font-style: italic;">Summary of observed
+                capital inflows and outflows around the incident period.</div>
 
-        <!-- TIER 3 -->
-        <div class="tier-section">
-            <div class="tier-header"><span class="tier-title">03 / Policy & Tenure</span></div>
             <div class="form-grid">
+                <!-- Gains -->
                 <div class="control-group">
-                    <div class="slider-header"><label>Annual Premium</label><span class="slider-val"
-                            id="val_premium">$1,200</span></div>
-                    <input type="range" id="policy_annual_premium" min="500" max="3000" step="100" value="1200">
+                    <div class="slider-header"><label>Capital Gains</label><span class="slider-val"
+                            id="val_cap_gain">$0</span></div>
+                    <input type="range" id="capital_gains" min="0" max="100000" step="5000" value="0">
                 </div>
 
+                <!-- Losses -->
                 <div class="control-group">
-                    <div class="slider-header"><label>Months as Customer</label><span class="slider-val"
-                            id="val_tenure">200</span></div>
-                    <input type="range" id="months_as_customer" min="0" max="500" step="12" value="200">
-                </div>
-                <!-- Policy Age Abstracted -->
-                <div class="control-group">
-                    <label>When did the policy start?</label>
-                    <select id="days_since_bind">
-                        <option value="90">Less than 6 months ago</option>
-                        <option value="270">6–12 months ago</option>
-                        <option value="540">1–2 years ago</option>
-                        <option value="1500" selected>2–5 years ago</option>
-                        <option value="3000">More than 5 years ago</option>
-                    </select>
+                    <div class="slider-header"><label>Capital Losses</label><span class="slider-val"
+                            id="val_cap_loss">$0</span></div>
+                    <input type="range" id="capital_loss" min="0" max="100000" step="5000" value="0">
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- TIER 4 -->
-        <div class="tier-section">
-            <div class="tier-header"><span class="tier-title">04 / Vehicle Context</span></div>
-            <div class="form-grid">
-                <div class="control-group">
-                    <div class="slider-header"><label>Vehicle Age</label><span class="slider-val" id="val_veh_age">10
-                            yrs</span></div>
-                    <input type="range" id="vehicle_age" min="0" max="30" step="1" value="10">
-                </div>
+    <!-- ACTION -->
+    <div class="action-bar">
+        <button class="primary-btn" id="predictBtn">Analyze Claim</button>
 
-                <div class="control-group">
-                    <label>Vehicles Involved</label>
-                    <select id="number_of_vehicles_involved">
-                        <option value="1" selected>1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4+</option>
-                    </select>
+        <!-- Progress Bar (Async Batch) -->
+        <div id="progressContainer" style="display: none; margin-top: 15px; width: 100%;">
+            <div
+                style="background: rgba(255,255,255,0.1); border-radius: 4px; height: 8px; overflow: hidden; position: relative;">
+                <div id="progressBarFill"
+                    style="background: var(--clr-accent); width: 0%; height: 100%; transition: width 0.3s ease;">
                 </div>
+            </div>
+            <div id="progressText"
+                style="text-align: center; margin-top: 8px; color: rgba(255,255,255,0.6); font-size: 0.85em;">
+                Initializing...</div>
+        </div>
+
+        <div id="errorBox" style="color: #ffcccc; margin-top: 20px; display: none; font-size: 14px;"></div>
+    </div>
+
+    <!-- RESULT -->
+    <div id="resultBox" class="result-box" style="display:none; text-align: left; padding-top: 20px;">
+
+        <!-- 1. PRIMARY RISK SCORE (Vertical, Authoritative) -->
+        <div class="result-section" style="margin-bottom: 30px;">
+            <div id="resScoreVal" style="font-size: 56px; font-weight: 500; line-height: 1; margin-bottom: 10px;">
+                --%</div>
+            <div id="resScoreLabel"
+                style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.15em; font-weight: 500; opacity: 0.7;">
+                --</div>
+        </div>
+
+        <!-- 2. RISK CONTEXT -->
+        <div class="result-section" style="margin-bottom: 30px;">
+            <div
+                style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.5; margin-bottom: 5px;">
+                Risk Context</div>
+            <div id="resContextText" style="font-size: 15px; font-style: italic; opacity: 0.9;">--</div>
+        </div>
+
+        <!-- 3. DECISION RECOMMENDATION (Card Style) -->
+        <div class="result-section"
+            style="margin-bottom: 20px; padding: 20px; border-radius: 6px; background: rgba(255,255,255,0.08);">
+            <div
+                style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.6; margin-bottom: 12px;">
+                Recommended Action</div>
+            <div id="resActionHeader" style="font-size: 16px; font-weight: 500; margin-bottom: 15px;">--</div>
+            <div style="font-size: 14px; opacity: 0.8; margin-bottom: 5px;">Next steps:</div>
+            <div id="resActionSteps" style="font-size: 14px; line-height: 1.6; opacity: 0.9; padding-left: 5px;">--
+            </div>
+
+            <!-- SHAP TRIGGER -->
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button id="viewDriversBtn" class="secondary-btn shine-hover">
+                    View risk drivers</button>
+                <button id="explainWhyBtn" class="secondary-btn shine-hover">
+                    Explain Why ✨</button>
             </div>
         </div>
 
-        <!-- TIER 5 -->
-        <div class="tier-section">
-            <div class="tier-header"><span class="tier-title">05 / Administrative</span></div>
-            <div class="form-grid">
-                <div class="control-group">
-                    <label>Police Report Filed</label>
-                    <select id="police_report_available">
-                        <option value="YES">Yes</option>
-                        <option value="NO">No</option>
-                        <option value="?">Unknown</option>
-                    </select>
-                </div>
+        <!-- RISK DRIVERS PANEL (Hidden) -->
+        <div id="driversPanel"
+            style="display:none; margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--clr-divider);">
+            <div style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">Risk Drivers (Model-Based
+                Explanation)</div>
 
-                <div class="control-group">
-                    <label>Authorities Involved</label>
-                    <select id="authorities_contacted">
-                        <option value="Police" selected>Police</option>
-                        <option value="Fire">Fire department</option>
-                        <option value="Ambulance">Ambulance</option>
-                        <option value="Other">Other</option>
-                        <option value="None">None</option>
-                    </select>
-                </div>
+            <!-- Mandatory Disclosure -->
+            <div style="font-size: 12px; line-height: 1.5; opacity: 0.6; margin-bottom: 20px;">
+                These drivers are generated using an explainable <b>ExtraTrees uncalibrated reference model</b>
+                trained on the same data.
+                They indicate patterns associated with risk, not the internal logic of the selected prediction
+                model.
+            </div>
+
+            <div id="driversList" style="display: block;"></div>
+
+            <div style="margin-top: 15px; font-size: 11px; opacity: 0.7; font-style: italic;">
+                These factors indicate statistical associations, not proof of fraud.
             </div>
         </div>
 
-        <!-- TIER 6 -->
-        <div class="tier-section" style="border-bottom: none;">
-            <div class="tier-header"><span class="tier-title">06 / Edge Variables</span></div>
-            <div class="form-grid">
-                <div class="control-group">
-                    <label>Umbrella Limit</label>
-                    <select id="umbrella_limit">
-                        <option value="0" selected>None</option>
-                        <option value="1000000">$1M</option>
-                        <option value="5000000">$5M</option>
-                        <option value="10000000">$10M+</option>
-                    </select>
-                </div>
-
-                <div class="control-group">
-                    <div class="slider-header"><label>Insured Age</label><span class="slider-val" id="val_age">38
-                            yrs</span></div>
-                    <input type="range" id="age" min="18" max="100" step="1" value="38">
-                </div>
+        <!-- LLM SUMMARY PANEL (Hidden) -->
+        <div id="llmSummaryBox" class="result-section"
+            style="display:none; margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--clr-divider);">
+            <div
+                style="font-size: 16px; font-weight: 500; margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+                How to read this score <span
+                    style="font-size: 11px; opacity: 0.8; font-weight: 600; border: 1px solid rgba(255,255,255,0.5); padding: 2px 6px; border-radius: 4px; letter-spacing: 0.05em;">AI
+                    GENERATED</span>
             </div>
 
-            <!-- CAPITAL IMPACT -->
-            <!-- FINANCIAL CAPITAL ACTIVITY -->
-            <div class="control-group"
-                style="margin-top: 40px; border-top: 1px solid var(--clr-divider); padding-top: 25px;">
-                <div style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 5px;">
-                    Financial Capital Activity (Optional)</div>
-                <div style="font-size: 13px; opacity: 0.6; margin-bottom: 25px; font-style: italic;">Summary of observed
-                    capital inflows and outflows around the incident period.</div>
+            <div id="llmSummaryText" style="font-size: 15px; opacity: 0.9; line-height: 1.6; margin-bottom: 15px;">
+            </div>
 
-                <div class="form-grid">
-                    <!-- Gains -->
-                    <div class="control-group">
-                        <div class="slider-header"><label>Capital Gains</label><span class="slider-val"
-                                id="val_cap_gain">$0</span></div>
-                        <input type="range" id="capital_gains" min="0" max="100000" step="5000" value="0">
-                    </div>
+            <ul id="llmBullets"
+                style="margin-bottom: 15px; padding-left: 20px; opacity: 0.85; font-size: 14px; line-height: 1.5;">
+            </ul>
 
-                    <!-- Losses -->
-                    <div class="control-group">
-                        <div class="slider-header"><label>Capital Losses</label><span class="slider-val"
-                                id="val_cap_loss">$0</span></div>
-                        <input type="range" id="capital_loss" min="0" max="100000" step="5000" value="0">
-                    </div>
-                </div>
+            <div id="llmDisclaimer"
+                style="font-size: 12px; opacity: 0.5; font-style: italic; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
             </div>
         </div>
 
-        <!-- ACTION -->
-        <div class="action-bar">
-            <button class="primary-btn" id="predictBtn">Analyze Claim</button>
-
-            <!-- Progress Bar (Async Batch) -->
-            <div id="progressContainer" style="display: none; margin-top: 15px; width: 100%;">
-                <div
-                    style="background: rgba(255,255,255,0.1); border-radius: 4px; height: 8px; overflow: hidden; position: relative;">
-                    <div id="progressBarFill"
-                        style="background: var(--clr-accent); width: 0%; height: 100%; transition: width 0.3s ease;">
-                    </div>
-                </div>
-                <div id="progressText"
-                    style="text-align: center; margin-top: 8px; color: rgba(255,255,255,0.6); font-size: 0.85em;">
-                    Initializing...</div>
-            </div>
-
-            <div id="errorBox" style="color: #ffcccc; margin-top: 20px; display: none; font-size: 14px;"></div>
+        <!-- 4. METADATA (Single Line, Quiet) -->
+        <div id="metaFooter"
+            style="border-top: 1px solid var(--clr-divider); margin-top: 20px; padding-top: 15px; font-size: 11px; opacity: 0.4; text-align: center;">
+            --
         </div>
+    </div>
 
-        <!-- RESULT -->
-        <div id="resultBox" class="result-box" style="display:none; text-align: left; padding-top: 20px;">
-
-            <!-- 1. PRIMARY RISK SCORE (Vertical, Authoritative) -->
-            <div class="result-section" style="margin-bottom: 30px;">
-                <div id="resScoreVal" style="font-size: 56px; font-weight: 500; line-height: 1; margin-bottom: 10px;">
-                    --%</div>
-                <div id="resScoreLabel"
-                    style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.15em; font-weight: 500; opacity: 0.7;">
-                    --</div>
-            </div>
-
-            <!-- 2. RISK CONTEXT -->
-            <div class="result-section" style="margin-bottom: 30px;">
-                <div
-                    style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.5; margin-bottom: 5px;">
-                    Risk Context</div>
-                <div id="resContextText" style="font-size: 15px; font-style: italic; opacity: 0.9;">--</div>
-            </div>
-
-            <!-- 3. DECISION RECOMMENDATION (Card Style) -->
-            <div class="result-section"
-                style="margin-bottom: 20px; padding: 20px; border-radius: 6px; background: rgba(255,255,255,0.08);">
-                <div
-                    style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.6; margin-bottom: 12px;">
-                    Recommended Action</div>
-                <div id="resActionHeader" style="font-size: 16px; font-weight: 500; margin-bottom: 15px;">--</div>
-                <div style="font-size: 14px; opacity: 0.8; margin-bottom: 5px;">Next steps:</div>
-                <div id="resActionSteps" style="font-size: 14px; line-height: 1.6; opacity: 0.9; padding-left: 5px;">--
-                </div>
-
-                <!-- SHAP TRIGGER -->
-                <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    <button id="viewDriversBtn" class="secondary-btn shine-hover">
-                        View risk drivers</button>
-                    <button id="explainWhyBtn" class="secondary-btn shine-hover">
-                        Explain Why ✨</button>
-                </div>
-            </div>
-
-            <!-- RISK DRIVERS PANEL (Hidden) -->
-            <div id="driversPanel"
-                style="display:none; margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--clr-divider);">
-                <div style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">Risk Drivers (Model-Based
-                    Explanation)</div>
-
-                <!-- Mandatory Disclosure -->
-                <div style="font-size: 12px; line-height: 1.5; opacity: 0.6; margin-bottom: 20px;">
-                    These drivers are generated using an explainable <b>ExtraTrees uncalibrated reference model</b>
-                    trained on the same data.
-                    They indicate patterns associated with risk, not the internal logic of the selected prediction
-                    model.
-                </div>
-
-                <div id="driversList" style="display: block;"></div>
-
-                <div style="margin-top: 15px; font-size: 11px; opacity: 0.7; font-style: italic;">
-                    These factors indicate statistical associations, not proof of fraud.
-                </div>
-            </div>
-
-            <!-- LLM SUMMARY PANEL (Hidden) -->
-            <div id="llmSummaryBox" class="result-section"
-                style="display:none; margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--clr-divider);">
-                <div
-                    style="font-size: 16px; font-weight: 500; margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
-                    How to read this score <span
-                        style="font-size: 11px; opacity: 0.8; font-weight: 600; border: 1px solid rgba(255,255,255,0.5); padding: 2px 6px; border-radius: 4px; letter-spacing: 0.05em;">AI
-                        GENERATED</span>
-                </div>
-
-                <div id="llmSummaryText" style="font-size: 15px; opacity: 0.9; line-height: 1.6; margin-bottom: 15px;">
-                </div>
-
-                <ul id="llmBullets"
-                    style="margin-bottom: 15px; padding-left: 20px; opacity: 0.85; font-size: 14px; line-height: 1.5;">
-                </ul>
-
-                <div id="llmDisclaimer"
-                    style="font-size: 12px; opacity: 0.5; font-style: italic; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
-                </div>
-            </div>
-
-            <!-- 4. METADATA (Single Line, Quiet) -->
-            <div id="metaFooter"
-                style="border-top: 1px solid var(--clr-divider); margin-top: 20px; padding-top: 15px; font-size: 11px; opacity: 0.4; text-align: center;">
-                --
-            </div>
-        </div>
-
-        <!-- CLOSE MAIN CONTAINER -->
+    <!-- CLOSE MAIN CONTAINER -->
     </div>
 
     <!-- BATCH RESULTS CONTAINER (Outside main container for wider layout) -->
@@ -1745,8 +1790,13 @@
                     const teamSize = document.getElementById('team_size').value;
                     const reviewTime = document.getElementById('review_time').value;
 
+                    // New Risk Inputs
+                    const opMode = document.getElementById('operatingMode').value;
+                    const reviewWindow = document.getElementById('reviewWindow').value;
+                    const backlog = document.getElementById('backlogInput').value || 0;
+
                     // 1. Submit Job
-                    const submitResp = await fetch(`/submit_batch?model=${model}&scenario=${scenario}&explain=true&team_size=${teamSize}&review_time=${reviewTime}`, {
+                    const submitResp = await fetch(`/submit_batch?model=${model}&scenario=${scenario}&explain=true&team_size=${teamSize}&review_time=${reviewTime}&operating_mode=${opMode}&review_window_days=${reviewWindow}&current_backlog_cases=${backlog}`, {
                         method: 'POST',
                         body: formData
                     });

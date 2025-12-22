@@ -127,7 +127,10 @@ async def process_batch_file(
     explain: bool = False,
     progress_callback: callable = None,
     team_size: int = 5,
-    review_time: int = 20
+    review_time: int = 20,
+    operating_mode: str = "daily_ops",
+    review_window_days: int = 1,
+    current_backlog_cases: int = 0
 ) -> dict:
     """
     Main entry point for batch processing.
@@ -418,7 +421,9 @@ async def process_batch_file(
         review_time_mins=review_time,
         batch_size=len(scored_df), 
         batch_stats=batch_stats,
-        operating_mode="daily_ops"
+        operating_mode=operating_mode,
+        review_window_days=review_window_days,
+        current_backlog=current_backlog_cases
     )
     
     appetite_str = risk_decision['risk_appetite']

@@ -662,7 +662,7 @@ class JobStatusResponse(BaseModel):
     error: Optional[str] = None
     created_at: str
 
-async def run_batch_job(job_id: str, file_content: bytes, model_name: str, scenario: str, explain: bool, team_size: int, review_time: int):
+async def run_batch_job(job_id: str, file_content: bytes, model_name: str, scenario: str, explain: bool, team_size: int, review_time: int, operating_mode: str, review_window_days: int, current_backlog_cases: int):
     """
     Background Task Wrapper for Batch Processing
     """
@@ -690,7 +690,10 @@ async def run_batch_job(job_id: str, file_content: bytes, model_name: str, scena
             explain=explain,
             progress_callback=update_progress,
             team_size=team_size,
-            review_time=review_time
+            review_time=review_time,
+            operating_mode=operating_mode,
+            review_window_days=review_window_days,
+            current_backlog_cases=current_backlog_cases
         )
         
         JOBS[job_id]["status"] = "completed"
@@ -746,7 +749,10 @@ async def submit_batch(
     scenario: str = Query("dashboard", pattern="^(dashboard|auto_flagger|underwriter)$"),
     explain: bool = True,
     team_size: int = Query(5, ge=1, description="Number of investigators"),
-    review_time: int = Query(20, ge=1, description="Minutes per review")
+    review_time: int = Query(20, ge=1, description="Minutes per review"),
+    operating_mode: str = Query("daily_ops", pattern="^(daily_ops|incident_sweep|regulatory_audit)$", description="Operational Context"),
+    review_window_days: int = Query(1, ge=1, description="Days to review"),
+    current_backlog_cases: int = Query(0, ge=0, description="Existing Backlog")
 ):
     """
     Async Batch Submission. Returns Job ID.
@@ -775,14 +781,17 @@ async def submit_batch(
     # Launch Background Task
     # Launch Background Task
     background_tasks.add_task(
-        run_batch_job,
-        job_id,
-        contents,
-        model,
-        scenario,
+        run_batch_job, 
+        job_id, 
+        contents, 
+        model, 
+        scenario, 
         explain,
         team_size,
-        review_time
+        review_time,
+        operating_mode,
+        review_window_days,
+        current_backlog_cases
     )
     
     return {"job_id": job_id, "status": "pending"}
