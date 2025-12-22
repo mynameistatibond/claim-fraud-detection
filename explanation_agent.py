@@ -54,11 +54,19 @@ class DecisionContractBuilder:
         available_hours_per_person = review_window_days * 8
         utilization_pct = round((hours_per_person_needed / available_hours_per_person) * 100, 1) if available_hours_per_person > 0 else 100
 
+        # P0 Specifics for Overload Context
+        p0_cases_per_person = round(p0_count / team_size, 1)
+        p0_hours_per_person = round((p0_cases_per_person * review_time_mins) / 60, 1)
+        hours_remaining_after_p0 = round(available_hours_per_person - p0_hours_per_person, 1)
+
         workload_analysis = {
             "cases_per_person": cases_per_person,
             "hours_needed_per_person": hours_per_person_needed,
             "available_hours_per_person": available_hours_per_person,
             "utilization_pct": utilization_pct,
+            "p0_hours_per_person": p0_hours_per_person,
+            "hours_remaining_after_p0": max(0, hours_remaining_after_p0),
+            "is_overloaded": utilization_pct > 100,
             "recommendation": "Free time available" if utilization_pct < 85 else ("Balanced workload" if utilization_pct < 105 else "Overload risk")
         }
 
@@ -133,6 +141,7 @@ class ExplanationAgent:
             "- Use the provided Workload Analysis metrics. Do not invent new ones.\n"
             "- Be explicit, human, and accountable.\n"
             "- P0 must be described as strict and the first priority. P1/P2 are optional depending on capacity.\n"
+            "- **IF IS_OVERLOADED (utilization > 100%):** You MUST explicitly state that P0 cases alone will take X hours per person. Recommend finishing P0 first. State clearly how many hours (if any) remain for P1.\n"
             "- Provide exactly one recommended next step.\n"
             "- Output the explanation in the specified section structure only, using plain text."
         )
