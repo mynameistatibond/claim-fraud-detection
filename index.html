@@ -1887,6 +1887,7 @@
                 // SHOW AGENT SUMMARY
                 if (data.summary && data.summary.rationale) {
                     // Rich Summary Construction
+                    const ra = data.risk_analysis || {};
                     let bullets = [];
 
                     // 1. Appetite & Confidence
