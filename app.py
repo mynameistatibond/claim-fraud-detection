@@ -661,6 +661,7 @@ class JobStatusResponse(BaseModel):
     result: Optional[dict] = None
     error: Optional[str] = None
     created_at: str
+    api_version: str = "v1"
 
 async def run_batch_job(job_id: str, file_content: bytes, model_name: str, scenario: str, explain: bool, team_size: int, review_time: int, operating_mode: str, review_window_days: int, current_backlog_cases: int):
     """
@@ -810,7 +811,8 @@ async def get_job_status(job_id: str):
         progress=job.get("progress", 0),
         result=job.get("result"),
         error=job.get("error"),
-        created_at=job.get("created_at")
+        created_at=job.get("created_at"),
+        api_version="v1"
     )
 
 @app.get("/outputs/{filename}")

@@ -604,8 +604,8 @@
                     <option value="dashboard">Dashboard Review (Calibrated)</option>
                 </select>
                 <div id="scenario_desc" class="helper-text" style="line-height: 1.4; margin-top: 8px;">
-                    Optimized for detecting potentially fraudulent claims. Designed for automated or semi-automated
-                    flagging where recall is critical.
+                    Scenario determines <b>scoring behavior</b> (e.g. Model Calibration), while Operating Mode sets the
+                    <b>review posture</b> (e.g. Triage Thresholds).
                 </div>
             </div>
         </div>
@@ -632,8 +632,10 @@
                 <!-- Capacity Inputs (New) -->
                 <div
                     style="margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); text-align: left;">
-                    <label style="font-size: 0.9em; opacity: 0.8; margin-bottom: 10px; display: block;">Review Capacity
+                    <label style="font-size: 0.9em; opacity: 0.8; margin-bottom: 5px; display: block;">Review Capacity
                         Settings</label>
+                    <div style="font-size: 11px; opacity: 0.5; margin-bottom: 10px;">These settings influence how
+                        strictly the system prioritizes cases (Capacity vs Load).</div>
                     <div style="display: flex; gap: 15px; margin-bottom: 15px;">
                         <div style="flex: 1;">
                             <label style="font-size: 0.8em; opacity: 0.6; display: block; margin-bottom: 5px;">Team
@@ -1884,18 +1886,55 @@
                 // SHOW AGENT SUMMARY
                 // SHOW AGENT SUMMARY
                 if (data.summary && data.summary.rationale) {
-                    summaryText.innerText = data.summary.rationale;
+                    // Rich Summary Construction
+                    let bullets = [];
+
+                    // 1. Appetite & Confidence
+                    const confType = ra.confidence_type === "operational" ? "operational" : "statistical";
+                    const confLabel = ra.confidence >= 0.8 ? "High" : (ra.confidence >= 0.6 ? "Medium" : "Low");
+                    let headerText = `${ra.risk_appetite} (Confidence: ${confLabel})`;
+
+                    // 2. Rationale (Top 2)
+                    if (Array.isArray(ra.rationale)) {
+                        ra.rationale.slice(0, 2).forEach(r => bullets.push(r));
+                    } else if (ra.rationale) {
+                        bullets.push(ra.rationale);
+                    }
+
+                    // 3. Signals (Explicit)
+                    if (ra.signals) {
+                        bullets.push(`Capacity Ratio: ${ra.signals.capacity_ratio}x`);
+                        if (data.decision_policy && data.decision_policy.thresholds) {
+                            const th = data.decision_policy.thresholds;
+                            bullets.push(`Active Policy: P0 \u2265 ${th.p0}, P1 \u2265 ${th.p1}`);
+                        }
+                    }
+
+                    // 4. Mode
+                    if (data.metric_context && data.metric_context.operating_mode) {
+                        bullets.push(`Mode: ${data.metric_context.operating_mode}`);
+                    } else if (ra.guardrails && ra.guardrails.baseline_appetite) {
+                        // Fallback if needed
+                    }
+
+                    // Render
+                    summaryText.innerHTML = `
+                        <div style="font-weight: 600; margin-bottom: 6px; font-size: 1.05em;">${headerText}</div>
+                        <ul style="margin: 0; padding-left: 20px; opacity: 0.9; line-height: 1.5;">
+                            ${bullets.map(b => `<li>${b}</li>`).join('')}
+                        </ul>
+                    `;
                     summaryBox.style.display = 'flex';
 
                     // Update Risk Appetite Badge
                     if (data.risk_analysis) {
-                        const ra = data.risk_analysis;
                         const badge = document.getElementById('riskAppetiteBadge');
                         const confEl = document.getElementById('riskConfidence');
 
                         badge.innerText = ra.risk_appetite;
-                        badge.title = Array.isArray(ra.rationale) ? ra.rationale.join('\n') : ra.rationale;
-                        confEl.innerText = `Conf: ${Math.round(ra.confidence * 100)}%`;
+                        badge.title = bullets.join('\n');
+                        confEl.innerText = ""; // Clear old conf text as it is in header now
+                        confEl.style.display = 'none'; // Cleaner to hide it since it is in header
 
                         // Color Coding
                         if (ra.risk_appetite === 'Aggressive') {
