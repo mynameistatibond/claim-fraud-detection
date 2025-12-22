@@ -2042,7 +2042,59 @@
                             </div>
                             ${whyHtml}
                             ${advancedHtml}
+                            ${advancedHtml}
                         `;
+                    }
+
+                    // --- NEW: Agent Policy Table (Requested) ---
+                    if (data.decision_policy && data.decision_policy.thresholds && data.summary) {
+                        const t = data.decision_policy.thresholds;
+                        const s = data.summary;
+                        const mins = parseFloat(document.getElementById('review_time').value) || 20;
+
+                        // Helper to calc hours
+                        const calcHrs = (count) => ((count * mins) / 60).toFixed(1);
+
+                        // Define Rows (P0, P1, P2)
+                        // P3 is implicit (Ignore)
+                        const rows = [
+                            { p: "P0", label: "Must Review", thresh: `> ${t.p0}`, count: s.p0_count, hrs: calcHrs(s.p0_count), cls: "badge-p0" },
+                            { p: "P1", label: "Should Review", thresh: `> ${t.p1}`, count: s.p1_count, hrs: calcHrs(s.p1_count), cls: "badge-p1" },
+                            { p: "P2", label: "Maybe Review", thresh: `> ${t.p2}`, count: s.p2_count, hrs: calcHrs(s.p2_count), cls: "badge-p2" },
+                            { p: "P3", label: "Ignore", thresh: `< ${t.p2}`, count: s.p3_count || (data.summary.total_rows - s.p0_count - s.p1_count - s.p2_count), hrs: "0.0", cls: "badge-ignore" }
+                        ];
+
+                        const tableHtml = `
+                            <div style="margin-top: 20px; background: rgba(0,0,0,0.2); border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
+                                <div style="padding: 10px 15px; background: rgba(255,255,255,0.05); font-size: 0.85em; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; color: #feca57; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                    Agent Decision Logic
+                                </div>
+                                <table style="width: 100%; border-collapse: collapse; font-size: 0.9em;">
+                                    <thead>
+                                        <tr style="text-align: left; color: rgba(255,255,255,0.6);">
+                                            <th style="padding: 10px 15px; font-weight: 500;">Priority</th>
+                                            <th style="padding: 10px 15px; font-weight: 500;">Threshold (Score)</th>
+                                            <th style="padding: 10px 15px; font-weight: 500;">Cases</th>
+                                            <th style="padding: 10px 15px; font-weight: 500;">Est. Time</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${rows.map(r => `
+                                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                                <td style="padding: 10px 15px;">
+                                                    <span class="priority-badge ${r.cls}" style="font-size: 0.85em; padding: 2px 8px;">${r.p}</span>
+                                                    <span style="opacity: 0.6; font-size: 0.9em; margin-left: 6px;">${r.label}</span>
+                                                </td>
+                                                <td style="padding: 10px 15px; font-family: monospace;">${r.thresh}</td>
+                                                <td style="padding: 10px 15px;">${r.count}</td>
+                                                <td style="padding: 10px 15px; opacity: 0.8;">${r.hrs} hrs</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        `;
+                        summaryText.innerHTML += tableHtml;
                     }
 
                     // Hide Legacy Badges (Subsumed by new UI)
