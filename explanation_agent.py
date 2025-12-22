@@ -59,6 +59,10 @@ class DecisionContractBuilder:
         p0_hours_per_person = round((p0_cases_per_person * review_time_mins) / 60, 1)
         hours_remaining_after_p0 = round(available_hours_per_person - p0_hours_per_person, 1)
 
+        # Non-P0 Demand
+        p1_p2_cases = p1_count + p2_count
+        p1_p2_hours_needed = round(((p1_p2_cases / team_size) * review_time_mins) / 60, 1)
+
         workload_analysis = {
             "cases_per_person": cases_per_person,
             "hours_needed_per_person": hours_per_person_needed,
@@ -66,6 +70,7 @@ class DecisionContractBuilder:
             "utilization_pct": utilization_pct,
             "p0_hours_per_person": p0_hours_per_person,
             "hours_remaining_after_p0": max(0, hours_remaining_after_p0),
+            "p1_p2_hours_needed": p1_p2_hours_needed,
             "is_overloaded": utilization_pct > 100,
             "recommendation": "Free time available" if utilization_pct < 85 else ("Balanced workload" if utilization_pct < 105 else "Overload risk")
         }
@@ -140,8 +145,10 @@ class ExplanationAgent:
             "- Do NOT use the word 'audit'.\n"
             "- Use the provided Workload Analysis metrics. Do not invent new ones.\n"
             "- Be explicit, human, and accountable.\n"
+            "- **Distinction:** Clearly state that the 'ML Model' provided the scores, but the 'Agentic AI' decided the thresholds and capacity allocation.\n"
             "- P0 must be described as strict and the first priority. P1/P2 are optional depending on capacity.\n"
             "- **IF IS_OVERLOADED (utilization > 100%):** You MUST explicitly state that P0 cases alone will take X hours per person. Recommend finishing P0 first. State clearly how many hours (if any) remain for P1.\n"
+            "- **IF NOT OVERLOADED:** Compare 'Hours Remaining after P0' vs 'Hours Required for P1/P2' to confirm fit.\n"
             "- Provide exactly one recommended next step.\n"
             "- Output the explanation in the specified section structure only, using plain text."
         )
