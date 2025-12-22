@@ -741,6 +741,8 @@ async def batch_predict(
     )
     return result
 
+# TODO: Refactor Risk Context to POST body (JSON) instead of query params (Issue 5)
+# Example: { "risk_context": { "team_size": 5, ... } }
 @app.post("/submit_batch")
 async def submit_batch(
     background_tasks: BackgroundTasks,

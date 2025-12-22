@@ -407,13 +407,20 @@ async def process_batch_file(
     
     # 5a. Compute Risk Appetite (Product-Grade)
     probs = scored_df['probability'].astype(float).values
-    batch_stats = {}
+    
+    # Enforce Stats Contract (Default safe values)
+    batch_stats = {
+        "p95": 0.0,
+        "share_ge_0_3": 0.0,
+        "count": 0
+    }
+    
     if len(probs) > 0:
-        batch_stats = {
+        batch_stats.update({
             "p95": float(np.percentile(probs, 95)),
             "share_ge_0_3": float((probs >= 0.3).mean()),
             "count": len(probs)
-        }
+        })
         
     # Decide Appetite
     risk_decision = risk_agent.decide_appetite(
