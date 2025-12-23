@@ -1,11 +1,10 @@
 
 import logging
 import json
-import requests
 import numpy as np
 import math
-from typing import Dict, Any, Optional, List
-from llm_explainer import get_llm_config
+from typing import Dict, Any, Optional
+from llm_explainer import get_llm_config, robust_api_call
 
 logger = logging.getLogger(__name__)
 
@@ -174,37 +173,33 @@ class RiskAppetiteAgent:
         """
         
         try:
-            # Simplified LLM call using requests similar to triage_agent
-            headers = {
-                "Authorization": f"Bearer {self.llm_config['key']}",
-                "Content-Type": "application/json"
-            }
-            if self.llm_config['provider'] == "openrouter":
-                headers["HTTP-Referer"] = "https://fraud-detector.internal"
-                
-            payload = {
-                "model": self.llm_config['model'],
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
-                "temperature": 0.0,
-                "response_format": {"type": "json_object"} if self.llm_config['format'] == "openai" else None
-            }
+            # Simplified LLM call using shared robust caller
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
             
-            response = requests.post(self.llm_config['url'], headers=headers, json=payload, timeout=8)
-            if response.status_code == 200:
-                content = response.json()['choices'][0]['message']['content']
-                if "```" in content:
-                    content = content.split("```json")[1].split("```")[0].strip() if "```json" in content else content.split("```")[1].split("```")[0]
+            content = robust_api_call(
+                self.llm_config, 
+                messages, 
+                temperature=0.0,
+                json_mode=(self.llm_config.get('format') == "openai")
+            )
+            
+            if content:
+                # Clean Markdown if present
+                if "```json" in content:
+                    content = content.split("```json")[1].split("```")[0].strip()
+                elif "```" in content:
+                    content = content.split("```")[1].split("```")[0].strip()
                 
                 result = json.loads(content)
                 
                 # Robustness check for rationale
                 if "rationale" in result:
-                     if not isinstance(result["rationale"], list):
-                         result["rationale"] = [str(result["rationale"])]
-                         
+                        if not isinstance(result["rationale"], list):
+                            result["rationale"] = [str(result["rationale"])]
+                            
                 return result
         except Exception as e:
             logger.warning(f"Risk Appetite LLM Failed: {e}")

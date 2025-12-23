@@ -59,25 +59,8 @@ EXPLANATION_SOURCE_MODEL = "ExtraTrees_uncalibrated"
 
 # Feature Name Mapping (Technical -> User)
 # We keep this for the final display Mapping
-FEATURE_MAP = {
-    "total_claim_amount": "Claim Value",
-    "injury_share": "Injury Cost Portion",
-    "property_share": "Property Damage Portion",
-    "incident_hour_of_the_day": "Incident Time",
-    "months_as_customer": "Policy Tenure",
-    "policy_annual_premium": "Annual Premium",
-    "vehicle_age": "Vehicle Age",
-    "age": "Insured Age",
-    "capital-gains": "Capital Gains",
-    "capital-loss": "Capital Losses",
-    "umbrella_limit": "Umbrella Limit",
-    "bodily_injuries": "Bodily Injuries",
-    "number_of_vehicles_involved": "Vehicles Involved",
-    "incident_severity_Major Damage": "Major Damage Severity",
-    "incident_severity_Total Loss": "Total Loss Severity",
-    "collision_type_Rear Collision": "Rear Collision Type",
-    "authorities_contacted_Police": "Police Contacted"
-}
+# Feature Name Mapping (Technical -> User)
+from mappings import DISPLAY_LABEL_MAP as FEATURE_MAP
 
 class ClaimInput(BaseModel):
     """Input schema accepting Raw + New Categorical Features"""

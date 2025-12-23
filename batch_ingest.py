@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 import io
-import json
 import asyncio
 import time
 from pathlib import Path
@@ -11,26 +10,7 @@ from risk_appetite_agent import RiskAppetiteAgent
 from explanation_agent import ExplanationAgent, DecisionContractBuilder
 
 # --- CONFIGURATION (Spec 3, 2.2) ---
-FRIENDLY_TO_INTERNAL = {
-    "Claim Value": "total_claim_amount",
-    "Injury Cost Portion": "injury_share",
-    "Property Damage Portion": "property_share",
-    "Incident Time": "incident_hour_of_the_day",
-    "Policy Tenure": "months_as_customer",
-    "Annual Premium": "policy_annual_premium",
-    "Vehicle Age": "vehicle_age",
-    "Insured Age": "age",
-    "Capital Gains": "capital-gains",
-    "Capital Losses": "capital-loss",
-    "Umbrella Limit": "umbrella_limit",
-    "Bodily Injuries": "bodily_injuries",
-    "Vehicles Involved": "number_of_vehicles_involved",
-    "Days Since Policy Start": "days_since_bind",
-    "Police Report Available": "police_report_available",
-    "Incident Severity": "incident_severity",
-    "Collision Type": "collision_type",
-    "Authorities Contacted": "authorities_contacted"
-}
+from mappings import CSV_INPUT_MAP as FRIENDLY_TO_INTERNAL
 
 # --- TYPE SAFETY HELPERS ---
 def safe_cast(key, val):

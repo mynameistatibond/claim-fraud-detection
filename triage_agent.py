@@ -3,9 +3,8 @@ import pandas as pd
 import numpy as np
 import json
 import logging
-import requests
 import time
-from llm_explainer import get_llm_config, call_openai_format_api, robust_api_call
+from llm_explainer import get_llm_config, robust_api_call
 
 logger = logging.getLogger(__name__)
 
